@@ -2,9 +2,11 @@
 
 import {
   BotIcon,
+  Code2,
   FolderKanbanIcon,
   Info,
   Languages,
+  Newspaper,
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
@@ -121,58 +123,38 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">Nouvelle discussion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Projets"
-                  >
-                    <Link href="/projects" onClick={() => setOpenMobile(false)}>
-                      <FolderKanbanIcon className="size-4" />
-                      <span className="font-medium">Projets</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Mes mAIs"
-                  >
-                    <Link href="/mais" onClick={() => setOpenMobile(false)}>
-                      <BotIcon className="size-4" />
-                      <span className="font-medium">Mes mAIs</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Traduction"
-                  >
-                    <Link
-                      href="/translation"
-                      onClick={() => setOpenMobile(false)}
+                {[
+                  {
+                    href: "/projects",
+                    icon: FolderKanbanIcon,
+                    label: "Projets",
+                  },
+                  { href: "/mais", icon: BotIcon, label: "Mes mAIs" },
+                  { href: "/coder", icon: Code2, label: "Coder" },
+                  { href: "/news", icon: Newspaper, label: "Actualités" },
+                  {
+                    href: "/translation",
+                    icon: Languages,
+                    label: "Traduction",
+                  },
+                  { href: "/about", icon: Info, label: "À Propos" },
+                ].map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                      tooltip={item.label}
                     >
-                      <Languages className="size-4" />
-                      <span className="font-medium">Traduction</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="À Propos"
-                  >
-                    <Link href="/about" onClick={() => setOpenMobile(false)}>
-                      <Info className="size-4" />
-                      <span className="font-medium">À Propos</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <item.icon className="size-4" />
+                        <span className="font-medium">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
 
                 {user && (
                   <SidebarMenuItem>

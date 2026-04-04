@@ -30,17 +30,47 @@ const PureChatItem = ({
   chat,
   isActive,
   onDelete,
+  onRename,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
+  onRename: (chatId: string, title: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
   });
+
+  const handleRename = () => {
+    const nextTitle = chat.title.includes("(renommé)")
+      ? chat.title.replace("(renommé)", "").trim()
+      : `${chat.title} (renommé)`;
+    onRename(chat.id, nextTitle);
+  };
+
+  const handleCopyId = async () => {
+    await navigator.clipboard.writeText(chat.id);
+  };
+
+  const handleExportChat = async () => {
+    const response = await fetch(`/api/messages?chatId=${chat.id}`);
+    const payload = await response.json();
+    const content = JSON.stringify(
+      { chat: { id: chat.id, title: chat.title }, messages: payload.messages },
+      null,
+      2
+    );
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${chat.title.replace(/\s+/g, "-").toLowerCase() || "discussion"}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <SidebarMenuItem>
@@ -70,6 +100,19 @@ const PureChatItem = ({
           className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl"
           side="bottom"
         >
+          <DropdownMenuItem className="cursor-pointer" onSelect={handleRename}>
+            Renommer
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer" onSelect={handleCopyId}>
+            Copier l'ID
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={handleExportChat}
+          >
+            Exporter
+          </DropdownMenuItem>
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer">
               <ShareIcon />

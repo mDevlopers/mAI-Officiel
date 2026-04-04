@@ -298,6 +298,9 @@ export function UserSettingsDialog({
           <DialogTitle className="flex items-center gap-2 text-base">
             <BadgeCheck className="size-4 text-blue-500" />
             Paramètres complets
+            <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              v0.1.2
+            </span>
           </DialogTitle>
           <DialogDescription>
             Profil, personnalisation IA, projets, ingestion et style de réponse.

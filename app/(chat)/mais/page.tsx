@@ -103,7 +103,7 @@ export default function MaisPage() {
   };
 
   return (
-    <div className="flex h-full flex-col p-8 md:p-12 overflow-y-auto w-full">
+    <div className="liquid-glass flex h-full w-full flex-col overflow-y-auto p-8 md:p-12">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
