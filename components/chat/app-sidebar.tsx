@@ -3,6 +3,8 @@
 import {
   BotIcon,
   FolderKanbanIcon,
+  Info,
+  Languages,
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
@@ -143,6 +145,35 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                    tooltip="Traduction"
+                  >
+                    <Link
+                      href="/translation"
+                      onClick={() => setOpenMobile(false)}
+                    >
+                      <Languages className="size-4" />
+                      <span className="font-medium">Traduction</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                    tooltip="À Propos"
+                  >
+                    <Link href="/about" onClick={() => setOpenMobile(false)}>
+                      <Info className="size-4" />
+                      <span className="font-medium">À Propos</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton

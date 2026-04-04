@@ -174,7 +174,7 @@ export const ModelSelectorLogo = ({
   ...props
 }: ModelSelectorLogoProps) => {
   let logoProvider = provider;
-  if (provider === "ollama") logoProvider = "meta";
+  if (provider === "ollama") logoProvider = "llama";
   if (provider === "openrouter") logoProvider = "fastrouter";
 
   return (

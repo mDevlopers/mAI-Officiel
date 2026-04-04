@@ -1,5 +1,5 @@
-import { customProvider, gateway } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { customProvider, gateway } from "ai";
 import { createOllama } from "ollama-ai-provider";
 import { isTestEnvironment } from "../constants";
 import { titleModel } from "./models";
@@ -49,11 +49,7 @@ export function getLanguageModel(modelId: string) {
     })();
 
     if (fallbackFn) {
-        return fallbackFn([
-          or1(cleanId),
-          or2(cleanId),
-          or3(cleanId),
-        ]);
+      return fallbackFn([or1(cleanId), or2(cleanId), or3(cleanId)]);
     }
 
     // fallback missing in this version
