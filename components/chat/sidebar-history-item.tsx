@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import type { Chat } from "@/lib/db/schema";
 import {
@@ -30,17 +30,46 @@ const PureChatItem = ({
   chat,
   isActive,
   onDelete,
+  onPin,
+  onRename,
+  onReport,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
+  onPin: (chatId: string) => void;
+  onRename: (chatId: string, title: string) => void;
+  onReport: (chatId: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
   });
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(chat.title);
+
+  const handleCopyId = async () => {
+    await navigator.clipboard.writeText(chat.id);
+  };
+
+  const handleExportChat = async () => {
+    const response = await fetch(`/api/messages?chatId=${chat.id}`);
+    const payload = await response.json();
+    const content = JSON.stringify(
+      { chat: { id: chat.id, title: chat.title }, messages: payload.messages },
+      null,
+      2
+    );
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${chat.title.replace(/\s+/g, "-").toLowerCase() || "discussion"}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <SidebarMenuItem>
@@ -70,6 +99,56 @@ const PureChatItem = ({
           className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl"
           side="bottom"
         >
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => {
+              setIsRenaming(true);
+              setRenameValue(chat.title);
+            }}
+          >
+            Renommer
+          </DropdownMenuItem>
+          {isRenaming && (
+            <div className="px-2 pb-2">
+              <input
+                className="h-8 w-full rounded-md border border-border/50 bg-background/80 px-2 text-xs"
+                onChange={(event) => setRenameValue(event.target.value)}
+                value={renameValue}
+              />
+              <button
+                className="mt-1 w-full rounded-md bg-primary/10 py-1 text-xs text-primary"
+                onClick={() => {
+                  onRename(chat.id, renameValue.trim());
+                  setIsRenaming(false);
+                }}
+                type="button"
+              >
+                Enregistrer le titre complet
+              </button>
+            </div>
+          )}
+          <DropdownMenuItem className="cursor-pointer" onSelect={handleCopyId}>
+            Copier l'ID
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={handleExportChat}
+          >
+            Exporter
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => onPin(chat.id)}
+          >
+            Épingler
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => onReport(chat.id)}
+          >
+            Signaler
+          </DropdownMenuItem>
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer">
               <ShareIcon />
@@ -79,9 +158,7 @@ const PureChatItem = ({
               <DropdownMenuSubContent className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl">
                 <DropdownMenuItem
                   className="cursor-pointer flex-row justify-between"
-                  onClick={() => {
-                    setVisibilityType("private");
-                  }}
+                  onClick={() => setVisibilityType("private")}
                 >
                   <div className="flex flex-row items-center gap-2">
                     <LockIcon size={12} />
@@ -93,9 +170,7 @@ const PureChatItem = ({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer flex-row justify-between"
-                  onClick={() => {
-                    setVisibilityType("public");
-                  }}
+                  onClick={() => setVisibilityType("public")}
                 >
                   <div className="flex flex-row items-center gap-2">
                     <GlobeIcon />

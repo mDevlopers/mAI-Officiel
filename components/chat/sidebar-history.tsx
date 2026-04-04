@@ -8,6 +8,7 @@ import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
+import { useLocalStorage } from "usehooks-ts";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -120,6 +121,10 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pinnedChatIds, setPinnedChatIds] = useLocalStorage<string[]>(
+    "mai.pinned.chats",
+    []
+  );
 
   const hasReachedEnd = paginatedChatHistories
     ? paginatedChatHistories.some((page) => page.hasMore === false)
@@ -128,6 +133,53 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const hasEmptyChatHistory = paginatedChatHistories
     ? paginatedChatHistories.every((page) => page.chats.length === 0)
     : false;
+
+  const handleRename = async (chatId: string, title: string) => {
+    mutate(
+      (chatHistories) => {
+        if (!chatHistories) {
+          return chatHistories;
+        }
+        return chatHistories.map((chatHistory) => ({
+          ...chatHistory,
+          chats: chatHistory.chats.map((chat) =>
+            chat.id === chatId ? { ...chat, title } : chat
+          ),
+        }));
+      },
+      { revalidate: false }
+    );
+
+    await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: chatId, title }),
+    });
+
+    toast.success("Titre de la discussion mis à jour");
+  };
+
+  const handlePin = (chatId: string) => {
+    setPinnedChatIds((currentIds) =>
+      currentIds.includes(chatId)
+        ? currentIds.filter((id) => id !== chatId)
+        : [chatId, ...currentIds]
+    );
+    toast.success("Épinglage mis à jour");
+  };
+
+  const handleReport = (chatId: string) => {
+    const currentReports = JSON.parse(
+      localStorage.getItem("mai.reports.chats") ?? "[]"
+    );
+    currentReports.unshift({
+      chatId,
+      createdAt: new Date().toISOString(),
+      type: "conversation",
+    });
+    localStorage.setItem("mai.reports.chats", JSON.stringify(currentReports));
+    toast.success("Conversation signalée");
+  };
 
   const handleDelete = () => {
     const chatToDelete = deleteId;
@@ -257,7 +309,15 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                       })
                     : chatsFromHistory;
 
-                const groupedChats = groupChatsByDate(indexedChats);
+                const sortedChats = [...indexedChats].sort((a, b) => {
+                  const aPinned = pinnedChatIds.includes(a.id);
+                  const bPinned = pinnedChatIds.includes(b.id);
+                  if (aPinned === bPinned) {
+                    return 0;
+                  }
+                  return aPinned ? -1 : 1;
+                });
+                const groupedChats = groupChatsByDate(sortedChats);
 
                 return (
                   <div className="flex flex-col gap-4">
@@ -275,6 +335,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            onRename={handleRename}
+                            onReport={handleReport}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -295,6 +358,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            onRename={handleRename}
+                            onReport={handleReport}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -315,6 +381,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            onRename={handleRename}
+                            onReport={handleReport}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -335,6 +404,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            onRename={handleRename}
+                            onReport={handleReport}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -355,6 +427,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                               setDeleteId(chatId);
                               setShowDeleteDialog(true);
                             }}
+                            onPin={handlePin}
+                            onRename={handleRename}
+                            onReport={handleReport}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}

@@ -2,10 +2,10 @@
 
 import {
   BotIcon,
+  Code2,
   FolderKanbanIcon,
-  Info,
   Languages,
-  PanelLeftIcon,
+  Newspaper,
   PenSquareIcon,
   TrashIcon,
 } from "lucide-react";
@@ -45,12 +45,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { BrandStarLogoIcon } from "./icons";
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
-  const { setOpenMobile, toggleSidebar } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
@@ -74,30 +73,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
         <SidebarHeader className="pb-0 pt-3">
           <SidebarMenu>
             <SidebarMenuItem className="flex flex-row items-center justify-between">
-              <div className="group/logo relative flex items-center justify-center">
-                <SidebarMenuButton
-                  asChild
-                  className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
-                  tooltip="MAI"
-                >
-                  <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <BrandStarLogoIcon size={20} />
-                  </Link>
-                </SidebarMenuButton>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      className="pointer-events-none absolute inset-0 size-8 opacity-0 group-data-[collapsible=icon]:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100"
-                      onClick={() => toggleSidebar()}
-                    >
-                      <PanelLeftIcon className="size-4" />
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent className="hidden md:block" side="right">
-                    Ouvrir la barre latérale
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              <SidebarMenuButton
+                asChild
+                className="size-8 !px-0 items-center justify-center"
+                tooltip="MAI"
+              >
+                <Link href="/" onClick={() => setOpenMobile(false)}>
+                  <BrandStarLogoIcon size={20} />
+                </Link>
+              </SidebarMenuButton>
               <div className="group-data-[collapsible=icon]:hidden">
                 <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
               </div>
@@ -121,58 +105,52 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">Nouvelle discussion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Projets"
-                  >
-                    <Link href="/projects" onClick={() => setOpenMobile(false)}>
-                      <FolderKanbanIcon className="size-4" />
-                      <span className="font-medium">Projets</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Mes mAIs"
-                  >
-                    <Link href="/mais" onClick={() => setOpenMobile(false)}>
-                      <BotIcon className="size-4" />
-                      <span className="font-medium">Mes mAIs</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="Traduction"
-                  >
-                    <Link
-                      href="/translation"
-                      onClick={() => setOpenMobile(false)}
+                {[
+                  {
+                    href: "/projects",
+                    icon: FolderKanbanIcon,
+                    label: "Projets",
+                  },
+                  { href: "/mais", icon: BotIcon, label: "Mes mAIs" },
+                  {
+                    href: "/coder",
+                    icon: Code2,
+                    label: "Coder",
+                    restricted: true,
+                  },
+                  {
+                    href: "/news",
+                    icon: Newspaper,
+                    label: "Actualités",
+                    restricted: true,
+                  },
+                  {
+                    href: "/translation",
+                    icon: Languages,
+                    label: "Traduction",
+                  },
+                ].map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                      tooltip={item.label}
                     >
-                      <Languages className="size-4" />
-                      <span className="font-medium">Traduction</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                    tooltip="À Propos"
-                  >
-                    <Link href="/about" onClick={() => setOpenMobile(false)}>
-                      <Info className="size-4" />
-                      <span className="font-medium">À Propos</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpenMobile(false)}
+                      >
+                        <item.icon className="size-4" />
+                        <span className="font-medium">{item.label}</span>
+                        {item.restricted ? (
+                          <span className="rounded-full bg-red-500/90 px-1.5 py-0.5 text-[9px] text-white">
+                            Accès restreint
+                          </span>
+                        ) : null}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
 
                 {user && (
                   <SidebarMenuItem>

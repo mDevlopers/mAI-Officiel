@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export const BotIcon = () => {
   return (
     <svg
@@ -286,10 +288,10 @@ export const FileIcon = ({ size = 16 }: { size?: number }) => {
 
 export const BrandStarLogoIcon = ({ size = 28 }: { size?: number }) => {
   return (
-    <img
+    <Image
       alt="mAI Logo"
       height={size}
-      src="/images/logo.png"
+      src="/mai-logo.svg"
       style={{ objectFit: "contain", width: size, height: size }}
       width={size}
     />

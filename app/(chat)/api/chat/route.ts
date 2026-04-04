@@ -407,3 +407,34 @@ export async function DELETE(request: Request) {
 
   return Response.json(deletedChat, { status: 200 });
 }
+
+export async function PATCH(request: Request) {
+  const session = await auth();
+
+  if (!session?.user) {
+    return new ChatbotError("unauthorized:chat").toResponse();
+  }
+
+  try {
+    const { id, title } = (await request.json()) as {
+      id?: string;
+      title?: string;
+    };
+
+    if (!id || !title?.trim()) {
+      return new ChatbotError("bad_request:api").toResponse();
+    }
+
+    const chat = await getChatById({ id });
+
+    if (!chat || chat.userId !== session.user.id) {
+      return new ChatbotError("forbidden:chat").toResponse();
+    }
+
+    await updateChatTitleById({ chatId: id, title: title.trim() });
+
+    return Response.json({ id, title: title.trim() }, { status: 200 });
+  } catch {
+    return new ChatbotError("bad_request:api").toResponse();
+  }
+}

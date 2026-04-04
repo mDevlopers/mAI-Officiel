@@ -47,6 +47,37 @@ export function PureMessageActions({
     toast.success("Copied to clipboard!");
   };
 
+  const handlePinMessage = () => {
+    const pinnedMessages = JSON.parse(
+      localStorage.getItem("mai.pinned.messages") ?? "[]"
+    );
+    if (!pinnedMessages.includes(message.id)) {
+      pinnedMessages.unshift(message.id);
+      localStorage.setItem(
+        "mai.pinned.messages",
+        JSON.stringify(pinnedMessages)
+      );
+    }
+    toast.success("Message épinglé");
+  };
+
+  const handleReportMessage = () => {
+    const reports = JSON.parse(
+      localStorage.getItem("mai.reports.messages") ?? "[]"
+    );
+    reports.unshift({
+      messageId: message.id,
+      chatId,
+      questionnaire: {
+        gravite: "moyenne",
+        categorie: "contenu IA",
+      },
+      createdAt: new Date().toISOString(),
+    });
+    localStorage.setItem("mai.reports.messages", JSON.stringify(reports));
+    toast.success("Message signalé");
+  };
+
   if (message.role === "user") {
     return (
       <Actions className="-mr-0.5 justify-end opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
@@ -68,6 +99,20 @@ export function PureMessageActions({
           >
             <CopyIcon />
           </Action>
+          <Action
+            className="size-7 text-muted-foreground/50 hover:text-foreground"
+            onClick={handlePinMessage}
+            tooltip="Épingler"
+          >
+            📌
+          </Action>
+          <Action
+            className="size-7 text-muted-foreground/50 hover:text-foreground"
+            onClick={handleReportMessage}
+            tooltip="Signaler"
+          >
+            🚩
+          </Action>
         </div>
       </Actions>
     );
@@ -81,6 +126,20 @@ export function PureMessageActions({
         tooltip="Copy"
       >
         <CopyIcon />
+      </Action>
+      <Action
+        className="text-muted-foreground/50 hover:text-foreground"
+        onClick={handlePinMessage}
+        tooltip="Épingler"
+      >
+        📌
+      </Action>
+      <Action
+        className="text-muted-foreground/50 hover:text-foreground"
+        onClick={handleReportMessage}
+        tooltip="Signaler"
+      >
+        🚩
       </Action>
 
       <Action

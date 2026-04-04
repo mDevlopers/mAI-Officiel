@@ -52,13 +52,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   type ChatModel,
   chatModels,
   DEFAULT_CHAT_MODEL,
@@ -88,6 +81,43 @@ function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
   // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
+}
+
+function getModelLogoProvider(
+  model: Pick<ChatModel, "id" | "name" | "provider">
+) {
+  const id = model.id.toLowerCase();
+  const name = model.name.toLowerCase();
+
+  if (id.includes("deepseek") || name.includes("deepseek")) {
+    return "deepseek";
+  }
+  if (id.includes("openai/") || id.includes("/gpt") || name.includes("gpt")) {
+    return "openai";
+  }
+  if (id.includes("stepfun") || name.includes("step 1")) {
+    return "stepfun";
+  }
+  if (id.includes("liquid/") || name.includes("lfm")) {
+    return "liquid";
+  }
+  if (id.includes("gemini") || id.includes("/google/")) {
+    return "google";
+  }
+  if (id.includes("claude") || id.includes("/anthropic/")) {
+    return "anthropic";
+  }
+  if (id.includes("nemotron")) {
+    return "nvidia";
+  }
+  if (id.includes("llama")) {
+    return "llama";
+  }
+
+  if (model.provider === "ollama") {
+    return "llama";
+  }
+  return model.provider;
 }
 
 function PureMultimodalInput({
@@ -131,7 +161,6 @@ function PureMultimodalInput({
 }) {
   const router = useRouter();
   const { setTheme, resolvedTheme } = useTheme();
-  const [agentMode, setAgentMode] = useState("execution");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
   const hasAutoFocused = useRef(false);
@@ -555,7 +584,7 @@ function PureMultimodalInput({
             }
           }}
           placeholder={
-            editingMessage ? "Edit your message..." : "Ask anything..."
+            editingMessage ? "Edit your message..." : "Posez une question..."
           }
           ref={textareaRef}
           value={input}
@@ -565,26 +594,12 @@ function PureMultimodalInput({
             <ContextualActionsMenu
               fileInputRef={fileInputRef}
               hasVision={true}
-              onActionToggle={(_action) => {
-                // We'll just pass these via some state to parent/submit later if needed,
-                // for now we can rely on chat route fetching it or store in state
-              }}
               status={status}
             />
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
-            <Select onValueChange={setAgentMode} value={agentMode}>
-              <SelectTrigger className="h-7 w-auto min-w-[130px] rounded-lg text-[12px] text-muted-foreground border-none bg-transparent hover:text-foreground">
-                <SelectValue placeholder="Mode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="planification">Planification</SelectItem>
-                <SelectItem value="investigation">Investigation</SelectItem>
-                <SelectItem value="execution">Exécution</SelectItem>
-              </SelectContent>
-            </Select>
           </PromptInputTools>
 
           {status === "submitted" ? (
@@ -647,12 +662,10 @@ function PureContextualActionsMenu({
   fileInputRef,
   status,
   hasVision,
-  onActionToggle,
 }: {
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
   status: UseChatHelpers<ChatMessage>["status"];
   hasVision: boolean;
-  onActionToggle: (action: string) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -810,8 +823,8 @@ function PureModelSelectorCompact({
   const selectedModel =
     activeModels.find((m: ChatModel) => m.id === selectedModelId) ??
     activeModels.find((m: ChatModel) => m.id === DEFAULT_CHAT_MODEL) ??
-    activeModels[0];
-  const [provider] = selectedModel.id.split("/");
+    activeModels[0] ??
+    chatModels[0];
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
@@ -821,7 +834,7 @@ function PureModelSelectorCompact({
           data-testid="model-selector"
           variant="ghost"
         >
-          {provider && <ModelSelectorLogo provider={provider} />}
+          <ModelSelectorLogo provider={getModelLogoProvider(selectedModel)} />
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>
       </ModelSelectorTrigger>
@@ -843,7 +856,7 @@ function PureModelSelectorCompact({
             > = {};
             for (const model of allModels) {
               const key = curatedIds.has(model.id)
-                ? "_available"
+                ? "_curated"
                 : model.provider;
               if (!grouped[key]) {
                 grouped[key] = [];
@@ -854,10 +867,10 @@ function PureModelSelectorCompact({
             const customAgents = modelsData?.customAgents || [];
 
             const sortedKeys = Object.keys(grouped).sort((a, b) => {
-              if (a === "_available") {
+              if (a === "_curated") {
                 return -1;
               }
-              if (b === "_available") {
+              if (b === "_curated") {
                 return 1;
               }
               return a.localeCompare(b);
@@ -897,7 +910,7 @@ function PureModelSelectorCompact({
                         className={cn(
                           "flex w-full",
                           selectedModelId === `agent-${agent.id}` &&
-                            "border-b border-dashed border-foreground/50"
+                            "bg-muted/50"
                         )}
                         key={`agent-${agent.id}`}
                         onSelect={() => {
@@ -915,10 +928,9 @@ function PureModelSelectorCompact({
                         value={`agent-${agent.id}`}
                       >
                         {agent.image ? (
-                          <img
-                            alt={agent.name}
-                            className="w-4 h-4 rounded-sm object-cover mr-1"
-                            src={agent.image}
+                          <div
+                            className="mr-1 h-4 w-4 rounded-sm bg-cover bg-center"
+                            style={{ backgroundImage: `url(${agent.image})` }}
                           />
                         ) : (
                           <BotIcon className="w-4 h-4 mr-1 text-primary" />
@@ -931,20 +943,19 @@ function PureModelSelectorCompact({
                 {sortedKeys.map((key) => (
                   <ModelSelectorGroup
                     heading={
-                      key === "_available"
-                        ? "Available"
+                      key === "_curated"
+                        ? undefined
                         : (providerNames[key] ?? key)
                     }
                     key={key}
                   >
                     {grouped[key].map(({ model, curated }) => {
-                      const logoProvider = model.id.split("/")[0];
+                      const logoProvider = getModelLogoProvider(model);
                       return (
                         <ModelSelectorItem
                           className={cn(
                             "flex w-full",
-                            model.id === selectedModel.id &&
-                              "border-b border-dashed border-foreground/50",
+                            model.id === selectedModel.id && "bg-muted/50",
                             !curated && "opacity-40 cursor-default"
                           )}
                           key={model.id}
