@@ -3,20 +3,20 @@ import { z } from "zod";
 
 export const webSearch = tool({
   description: "Search the web for up-to-date information, news, or general knowledge.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe("The search query to send to the web search engine."),
   }),
-  execute: async ({ query }, { toolCallId, messages }) => {
+  execute: async (input) => {
     try {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        return JSON.stringify({ error: "Clé API SerpAPI non configurée." });
+        return { error: "Clé API SerpAPI non configurée." };
       }
 
-      const response = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}&engine=google`);
+      const response = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(input.query)}&api_key=${apiKey}&engine=google`);
 
       if (!response.ok) {
-        return JSON.stringify({ error: `Erreur SerpAPI: ${response.statusText}` });
+        return { error: `Erreur SerpAPI: ${response.statusText}` };
       }
 
       const data = await response.json();
@@ -29,10 +29,10 @@ export const webSearch = tool({
         snippet: result.snippet,
       }));
 
-      return JSON.stringify({ results });
+      return { results };
     } catch (error) {
       console.error("Web Search Tool Error:", error);
-      return JSON.stringify({ error: "Échec de la recherche web." });
+      return { error: "Échec de la recherche web." };
     }
   },
 });
