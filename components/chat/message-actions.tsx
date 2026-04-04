@@ -10,6 +10,7 @@ import {
   MessageActions as Actions,
 } from "../ai-elements/message";
 import { CopyIcon, PencilEditIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import { PinIcon, AlertTriangleIcon, RefreshCwIcon } from "lucide-react";
 
 export function PureMessageActions({
   chatId,
@@ -17,12 +18,14 @@ export function PureMessageActions({
   vote,
   isLoading,
   onEdit,
+  regenerate,
 }: {
   chatId: string;
   message: ChatMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   onEdit?: () => void;
+  regenerate?: () => void;
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
@@ -44,8 +47,16 @@ export function PureMessageActions({
     }
 
     await copyToClipboard(textFromParts);
-    toast.success("Copied to clipboard!");
+    toast.success("Copié dans le presse-papiers !");
   };
+
+  const handlePin = () => {
+     toast.success("Message épinglé");
+  }
+
+  const handleReport = () => {
+     toast.success("Message signalé");
+  }
 
   if (message.role === "user") {
     return (
@@ -56,15 +67,22 @@ export function PureMessageActions({
               className="size-7 text-muted-foreground/50 hover:text-foreground"
               data-testid="message-edit-button"
               onClick={onEdit}
-              tooltip="Edit"
+              tooltip="Modifier"
             >
               <PencilEditIcon />
             </Action>
           )}
           <Action
             className="size-7 text-muted-foreground/50 hover:text-foreground"
+            onClick={handlePin}
+            tooltip="Épingler"
+          >
+            <PinIcon className="size-4" />
+          </Action>
+          <Action
+            className="size-7 text-muted-foreground/50 hover:text-foreground"
             onClick={handleCopy}
-            tooltip="Copy"
+            tooltip="Copier"
           >
             <CopyIcon />
           </Action>
@@ -78,9 +96,35 @@ export function PureMessageActions({
       <Action
         className="text-muted-foreground/50 hover:text-foreground"
         onClick={handleCopy}
-        tooltip="Copy"
+        tooltip="Copier"
       >
         <CopyIcon />
+      </Action>
+
+      <Action
+         className="text-muted-foreground/50 hover:text-foreground"
+         onClick={handlePin}
+         tooltip="Épingler"
+      >
+         <PinIcon className="size-4" />
+      </Action>
+
+      {regenerate && (
+         <Action
+           className="text-muted-foreground/50 hover:text-foreground"
+           onClick={regenerate}
+           tooltip="Réessayer (Regénérer)"
+         >
+           <RefreshCwIcon className="size-4" />
+         </Action>
+      )}
+
+      <Action
+         className="text-muted-foreground/50 hover:text-foreground"
+         onClick={handleReport}
+         tooltip="Signaler"
+      >
+         <AlertTriangleIcon className="size-4" />
       </Action>
 
       <Action

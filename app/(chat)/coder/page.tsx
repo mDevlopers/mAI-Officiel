@@ -1,5 +1,5 @@
 import { ChatShell } from "@/components/chat/shell";
 
 export default function Page() {
-  return <ChatShell />;
+  return <ChatShell mode="coder" />;
 }

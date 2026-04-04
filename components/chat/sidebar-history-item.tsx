@@ -25,6 +25,7 @@ import {
   ShareIcon,
   TrashIcon,
 } from "./icons";
+import { ArchiveIcon, Edit2Icon, FolderKanbanIcon, PinIcon } from "lucide-react";
 
 const PureChatItem = ({
   chat,
@@ -70,6 +71,23 @@ const PureChatItem = ({
           className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl"
           side="bottom"
         >
+          <DropdownMenuItem onSelect={() => {}}>
+            <Edit2Icon className="size-4 mr-2" />
+            <span>Renommer</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => {}}>
+            <FolderKanbanIcon className="size-4 mr-2" />
+            <span>Ajouter à un projet</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => {}}>
+            <PinIcon className="size-4 mr-2" />
+            <span>Épingler</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => {}}>
+            <ArchiveIcon className="size-4 mr-2" />
+            <span>Archiver</span>
+          </DropdownMenuItem>
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer">
               <ShareIcon />

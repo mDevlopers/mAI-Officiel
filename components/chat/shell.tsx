@@ -26,7 +26,7 @@ import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 
-export function ChatShell() {
+export function ChatShell({ mode = "chat" }: { mode?: "chat" | "coder" }) {
   const {
     chatId,
     messages,
@@ -82,6 +82,7 @@ export function ChatShell() {
             chatId={chatId}
             isReadonly={isReadonly}
             selectedVisibilityType={visibilityType}
+            mode={mode}
           />
 
           <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background md:rounded-tl-[12px] md:border-t md:border-l md:border-border/40">
@@ -105,6 +106,7 @@ export function ChatShell() {
               setMessages={setMessages}
               status={status}
               votes={votes}
+              mode={mode}
             />
 
             <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
@@ -143,6 +145,7 @@ export function ChatShell() {
                   setMessages={setMessages}
                   status={status}
                   stop={stop}
+                  mode={mode}
                 />
               )}
             </div>

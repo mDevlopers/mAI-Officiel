@@ -13,7 +13,7 @@ export default function AboutPage() {
             Version
           </span>
           <span className="text-sm font-bold bg-background px-2 py-0.5 rounded-full border border-border shadow-sm">
-            v0.1.1
+            v0.1.2
           </span>
         </div>
       </div>
@@ -32,7 +32,7 @@ export default function AboutPage() {
           </p>
           <p className="text-muted-foreground leading-relaxed">
             La version{" "}
-            <strong className="text-foreground font-medium">0.1.1</strong>{" "}
+            <strong className="text-foreground font-medium">0.1.2</strong>{" "}
             introduit de nouvelles fonctionnalités d'expertise traductologique,
             avec le support de plus de 100 langues, ainsi que des outils
             intégrés d'analyse lexicale et de suggestions de synonymes.

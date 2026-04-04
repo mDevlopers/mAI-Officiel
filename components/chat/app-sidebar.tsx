@@ -2,9 +2,11 @@
 
 import {
   BotIcon,
+  CodeIcon,
   FolderKanbanIcon,
   Info,
   Languages,
+  NewspaperIcon,
   PanelLeftIcon,
   PenSquareIcon,
   TrashIcon,
@@ -121,6 +123,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">Nouvelle discussion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -133,6 +136,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -145,6 +149,33 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                    tooltip="Coder"
+                  >
+                    <Link href="/coder" onClick={() => setOpenMobile(false)}>
+                      <CodeIcon className="size-4" />
+                      <span className="font-medium">Coder</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                    tooltip="Actualités"
+                  >
+                    <Link href="/news" onClick={() => setOpenMobile(false)}>
+                      <NewspaperIcon className="size-4" />
+                      <span className="font-medium">Actualités</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild

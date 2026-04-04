@@ -1,5 +1,6 @@
 "use client";
 
+import { ModeSelector } from "./mode-selector";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
@@ -91,6 +92,7 @@ function setCookie(name: string, value: string) {
 }
 
 function PureMultimodalInput({
+  mode = "chat",
   chatId,
   input,
   setInput,
@@ -114,6 +116,7 @@ function PureMultimodalInput({
   setInput: Dispatch<SetStateAction<string>>;
   status: UseChatHelpers<ChatMessage>["status"];
   stop: () => void;
+  mode?: "chat" | "coder";
   attachments: Attachment[];
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
   messages: UIMessage[];
@@ -562,7 +565,8 @@ function PureMultimodalInput({
         />
         <PromptInputFooter className="px-3 pb-3">
           <PromptInputTools>
-            <ContextualActionsMenu
+            <ModeSelector mode={mode} />
+          <ContextualActionsMenu
               fileInputRef={fileInputRef}
               hasVision={true}
               onActionToggle={(_action) => {
@@ -1002,6 +1006,7 @@ function PureStopButton({
   setMessages,
 }: {
   stop: () => void;
+  mode?: "chat" | "coder";
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
 }) {
   return (

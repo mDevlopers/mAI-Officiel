@@ -11,10 +11,12 @@ function PureChatHeader({
   chatId,
   selectedVisibilityType,
   isReadonly,
+  mode = "chat",
 }: {
   chatId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
+  mode?: "chat" | "coder";
 }) {
   const { state, toggleSidebar, isMobile } = useSidebar();
 
@@ -35,13 +37,13 @@ function PureChatHeader({
 
       <div className="ml-1 flex items-center gap-2">
         <Image
-          alt="Logo mAI"
+          alt={mode === "coder" ? "Logo Coder" : "Logo mAI"}
           className="size-5"
           height={20}
-          src="/mai-logo.svg"
+          src={mode === "coder" ? "/logo.png" : "/mai-logo.svg"}
           width={20}
         />
-        <span className="font-semibold text-sm">mAI</span>
+        <span className="font-semibold text-sm">{mode === "coder" ? "Coder" : "mAI"}</span>
       </div>
 
       {!isReadonly && (
@@ -62,6 +64,7 @@ export const ChatHeader = memo(PureChatHeader, (prevProps, nextProps) => {
   return (
     prevProps.chatId === nextProps.chatId &&
     prevProps.selectedVisibilityType === nextProps.selectedVisibilityType &&
-    prevProps.isReadonly === nextProps.isReadonly
+    prevProps.isReadonly === nextProps.isReadonly &&
+    prevProps.mode === nextProps.mode
   );
 });

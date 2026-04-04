@@ -22,6 +22,7 @@ type MessagesProps = {
   isLoading?: boolean;
   selectedModelId: string;
   onEditMessage?: (message: ChatMessage) => void;
+  mode?: "chat" | "coder";
 };
 
 function PureMessages({
@@ -37,6 +38,7 @@ function PureMessages({
   isLoading,
   selectedModelId: _selectedModelId,
   onEditMessage,
+  mode = "chat",
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
