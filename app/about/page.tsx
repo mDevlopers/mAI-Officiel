@@ -1,101 +1,95 @@
-import { Copyright, Cpu, FileText, Info, Layers } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarClock,
+  Cpu,
+  FileText,
+  Sparkles,
+} from "lucide-react";
+
+const changelog = [
+  {
+    version: "0.1.2",
+    date: "2026-04-04",
+    items: [
+      "Ajout de Coder, Actualités (mAINews), Traduction et Paramètres.",
+      "Historique conversations : renommer, épingler, signaler, exporter.",
+      "Accès restreint pour Coder et Actualités.",
+    ],
+  },
+  {
+    version: "0.1.1",
+    date: "2026-03-20",
+    items: [
+      "Amélioration de la traduction multilingue.",
+      "Analyse lexicale et suggestions contextuelles.",
+    ],
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto p-4 md:p-8 space-y-8">
-      <div className="flex flex-col items-center justify-center space-y-4 py-8 mb-4 border-b border-border/50">
-        <div className="size-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-2">
-          <Info className="size-10 text-primary" />
+    <div className="liquid-glass mx-auto flex h-full w-full max-w-5xl flex-col gap-6 overflow-y-auto p-6 md:p-10">
+      <div className="rounded-2xl border border-border/50 bg-card/70 p-5">
+        <div className="flex items-center gap-3">
+          <BadgeCheck className="size-7 text-primary" />
+          <h1 className="text-3xl font-bold">À propos de mAI</h1>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">À Propos de mAI</h1>
-        <div className="flex items-center space-x-2 bg-muted/50 px-3 py-1 rounded-full">
-          <span className="text-sm font-medium text-muted-foreground">
-            Version
-          </span>
-          <span className="text-sm font-bold bg-background px-2 py-0.5 rounded-full border border-border shadow-sm">
-            v0.1.1
-          </span>
-        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Plateforme IA orientée productivité, conversation et automatisation.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* System Documentation */}
-        <div className="flex flex-col space-y-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center space-x-3 mb-2">
-            <FileText className="size-6 text-primary/80" />
-            <h2 className="text-2xl font-semibold">Documentation Système</h2>
-          </div>
-          <p className="text-muted-foreground leading-relaxed">
-            mAI (mon Assistant Intelligent) est une plateforme conversationnelle
-            avancée conçue pour faciliter l'interaction avec divers modèles
-            d'intelligence artificielle.
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="rounded-2xl border border-border/50 bg-card/70 p-5">
+          <p className="mb-2 flex items-center gap-2 font-semibold">
+            <Cpu className="size-4" /> Stack technique
           </p>
-          <p className="text-muted-foreground leading-relaxed">
-            La version{" "}
-            <strong className="text-foreground font-medium">0.1.1</strong>{" "}
-            introduit de nouvelles fonctionnalités d'expertise traductologique,
-            avec le support de plus de 100 langues, ainsi que des outils
-            intégrés d'analyse lexicale et de suggestions de synonymes.
-          </p>
-        </div>
-
-        {/* Technical Specs */}
-        <div className="flex flex-col space-y-4 bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <div className="flex items-center space-x-3 mb-2">
-            <Cpu className="size-6 text-primary/80" />
-            <h2 className="text-2xl font-semibold">Descriptifs Techniques</h2>
-          </div>
-          <ul className="space-y-3">
-            <li className="flex items-start space-x-3">
-              <Layers className="size-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <strong className="block text-foreground text-sm">
-                  Architecture
-                </strong>
-                <span className="text-sm text-muted-foreground">
-                  Next.js App Router (React Server Components)
-                </span>
-              </div>
-            </li>
-            <li className="flex items-start space-x-3">
-              <Layers className="size-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <strong className="block text-foreground text-sm">
-                  Intégration Modèles
-                </strong>
-                <span className="text-sm text-muted-foreground">
-                  Vercel AI SDK avec support multi-fournisseurs (OpenAI,
-                  Anthropic, Mistral, Llama, etc.)
-                </span>
-              </div>
-            </li>
-            <li className="flex items-start space-x-3">
-              <Layers className="size-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <strong className="block text-foreground text-sm">
-                  Base de données
-                </strong>
-                <span className="text-sm text-muted-foreground">
-                  Neon Serverless Postgres via Drizzle ORM
-                </span>
-              </div>
-            </li>
+          <ul className="space-y-1 text-sm text-muted-foreground">
+            <li>Next.js App Router</li>
+            <li>Vercel AI SDK</li>
+            <li>Drizzle ORM + Postgres</li>
           </ul>
-        </div>
+        </section>
+
+        <section className="rounded-2xl border border-border/50 bg-card/70 p-5">
+          <p className="mb-2 flex items-center gap-2 font-semibold">
+            <Sparkles className="size-4" /> Nouveautés
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Coder avancé, mAINews, accès restreint et outils de modération/
+            épinglage.
+          </p>
+        </section>
       </div>
 
-      {/* Footer / Copyright */}
-      <div className="mt-12 pt-8 border-t border-border/50 flex flex-col items-center justify-center space-y-2 pb-8">
-        <div className="flex items-center space-x-2 text-muted-foreground font-medium">
-          <Copyright className="size-4" />
-          <span>2026 All rights reserved</span>
+      <section className="rounded-2xl border border-border/50 bg-card/70 p-5">
+        <p className="mb-3 flex items-center gap-2 font-semibold">
+          <CalendarClock className="size-4" /> Changelog
+        </p>
+        <div className="space-y-3">
+          {changelog.map((entry) => (
+            <div
+              className="rounded-xl border border-border/40 bg-background/60 p-3"
+              key={entry.version}
+            >
+              <p className="font-medium">
+                v{entry.version} • {entry.date}
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">
+                {entry.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">mAI</span>
-          <span>|</span>
-          <span>Official AI App</span>
-        </div>
-      </div>
+      </section>
+
+      <section className="rounded-2xl border border-border/50 bg-card/70 p-5 text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 font-medium text-foreground">
+          <FileText className="size-4" /> Version active: 0.1.2
+        </p>
+      </section>
     </div>
   );
 }

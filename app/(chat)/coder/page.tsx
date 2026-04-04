@@ -33,7 +33,7 @@ export default function CoderPage() {
   const [prompt, setPrompt] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("preview");
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(true);
   const [plan, setPlan] = useState("");
   const [isPlanApproved, setIsPlanApproved] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -223,7 +223,7 @@ export default function CoderPage() {
         <h1 className="text-2xl font-bold">Coder</h1>
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+      <div className="hidden rounded-2xl border border-border/50 bg-card/70 p-4">
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <button
             className="flex h-7 items-center gap-2 rounded-full border border-border/40 bg-background/50 px-2.5 text-[11px] text-muted-foreground"
@@ -440,6 +440,31 @@ export default function CoderPage() {
       )}
 
       <div className="sticky bottom-0 left-0 mt-2 w-full max-w-xl rounded-2xl border border-border/50 bg-card/80 p-2 shadow-[var(--shadow-float)] backdrop-blur-xl">
+        <div className="mb-2 flex items-center gap-2">
+          <select
+            className="h-7 rounded-full border border-border/40 bg-background/50 px-2.5 text-[11px] text-muted-foreground"
+            onChange={(event) => setMode(event.target.value as CoderMode)}
+            value={mode}
+          >
+            {(Object.keys(modeDescriptions) as CoderMode[]).map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-7 rounded-full border border-border/40 bg-background/50 px-2.5 text-[11px] text-muted-foreground"
+            onChange={(event) => setSelectedModel(event.target.value)}
+            value={selectedModel}
+          >
+            {chatModels.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px] text-muted-foreground">{modeHint}</span>
+        </div>
         <div className="flex items-end gap-2">
           <textarea
             className="h-16 flex-1 resize-none rounded-xl border border-border/40 bg-background/70 p-2 text-sm outline-none"
