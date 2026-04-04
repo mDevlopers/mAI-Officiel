@@ -16,7 +16,6 @@ import {
   WrenchIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTheme } from "next-themes";
 import {
   type ChangeEvent,
@@ -52,6 +51,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   type ChatModel,
   chatModels,
@@ -569,7 +575,7 @@ function PureMultimodalInput({
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
-            <Select value={agentMode} onValueChange={setAgentMode}>
+            <Select onValueChange={setAgentMode} value={agentMode}>
               <SelectTrigger className="h-7 w-auto min-w-[130px] rounded-lg text-[12px] text-muted-foreground border-none bg-transparent hover:text-foreground">
                 <SelectValue placeholder="Mode" />
               </SelectTrigger>

@@ -118,7 +118,11 @@ export function SidebarUserNav({ user }: { user: User }) {
               Paramètres du profil
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <a href="/api/export" download className="w-full cursor-pointer text-[13px]">
+              <a
+                className="w-full cursor-pointer text-[13px]"
+                download
+                href="/api/export"
+              >
                 Exporter mes données
               </a>
             </DropdownMenuItem>

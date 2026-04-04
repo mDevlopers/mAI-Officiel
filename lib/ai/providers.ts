@@ -1,4 +1,6 @@
 import { customProvider, gateway } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOllama } from "ollama-ai-provider";
 import { isTestEnvironment } from "../constants";
 import { titleModel } from "./models";
 
@@ -14,9 +16,53 @@ export const myProvider = isTestEnvironment
     })()
   : null;
 
+// Création des instances OpenRouter (Triple Sécurité)
+const or1 = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY_1 });
+const or2 = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY_2 });
+const or3 = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY_3 });
+
+// Instance Ollama
+const ollamaProvider = createOllama({
+  headers: {
+    Authorization: `Bearer ${process.env.OLLAMA_API_TOKEN}`,
+  },
+});
+
 export function getLanguageModel(modelId: string) {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel(modelId);
+  }
+
+  if (isTestEnvironment) return gateway.languageModel(modelId);
+
+  // --- OPENROUTER FALLBACK ---
+  if (modelId.startsWith("openrouter/")) {
+    const cleanId = modelId.replace("openrouter/", "");
+
+    const fallbackFn = (() => {
+      try {
+        const ai = require("ai");
+        return ai.fallback || ai.experimental_fallback;
+      } catch (e) {
+        return undefined;
+      }
+    })();
+
+    if (fallbackFn) {
+        return fallbackFn([
+          or1(cleanId),
+          or2(cleanId),
+          or3(cleanId),
+        ]);
+    }
+
+    // fallback missing in this version
+    return or1(cleanId);
+  }
+
+  // --- OLLAMA ---
+  if (modelId.startsWith("ollama/")) {
+    return ollamaProvider(modelId.replace("ollama/", ""));
   }
 
   return gateway.languageModel(modelId);

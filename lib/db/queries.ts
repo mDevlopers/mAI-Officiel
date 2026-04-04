@@ -631,8 +631,7 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
   }
 }
 
-import { type Agent,
-  type Project, agent, project } from "./schema";
+import { type Agent, agent, type Project, project } from "./schema";
 
 export async function createAgent(
   data: Partial<Agent> & { userId: string; name: string }
@@ -673,10 +672,7 @@ export async function deleteAgent(id: string) {
   }
 }
 
-export async function updateAgent(
-  id: string,
-  data: Partial<Agent>
-) {
+export async function updateAgent(id: string, data: Partial<Agent>) {
   try {
     return await db
       .update(agent)

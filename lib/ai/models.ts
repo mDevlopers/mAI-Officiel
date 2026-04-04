@@ -4,7 +4,7 @@ export const titleModel = {
   id: "mistral/mistral-small",
   name: "Mistral Small",
   provider: "mistral",
-  description: "Fast model for title generation",
+  description: "Modèle rapide pour les titres",
   gatewayOrder: ["mistral"],
 };
 
@@ -24,107 +24,214 @@ export type ChatModel = {
 };
 
 export const chatModels: ChatModel[] = [
+  // --- MODELES ORIGINAUX (GATEWAY) ---
   {
     id: "deepseek/deepseek-v3.2",
     name: "DeepSeek V3.2",
     provider: "deepseek",
-    description: "Fast and capable model with tool use",
+    description: "Rapide et capable (Tools)",
     gatewayOrder: ["bedrock", "deepinfra"],
   },
   {
     id: "mistral/codestral",
     name: "Codestral",
     provider: "mistral",
-    description: "Code-focused model with tool use",
+    description: "Le spécialiste du code",
     gatewayOrder: ["mistral"],
   },
   {
     id: "mistral/mistral-small",
     name: "Mistral Small",
     provider: "mistral",
-    description: "Fast vision model with tool use",
+    description: "Vision et rapidité",
     gatewayOrder: ["mistral"],
   },
   {
     id: "moonshotai/kimi-k2-0905",
     name: "Kimi K2 0905",
     provider: "moonshotai",
-    description: "Fast model with tool use",
+    description: "Polyvalent et efficace",
     gatewayOrder: ["baseten", "fireworks"],
   },
   {
     id: "moonshotai/kimi-k2.5",
     name: "Kimi K2.5",
     provider: "moonshotai",
-    description: "Moonshot AI flagship model",
+    description: "Flagship Moonshot AI",
     gatewayOrder: ["fireworks", "bedrock"],
   },
   {
     id: "openai/gpt-oss-20b",
     name: "GPT OSS 20B",
     provider: "openai",
-    description: "Compact reasoning model",
-    gatewayOrder: ["groq", "bedrock"],
+    description: "Petit raisonnement",
     reasoningEffort: "low",
+    gatewayOrder: ["groq", "bedrock"],
   },
   {
     id: "openai/gpt-oss-120b",
     name: "GPT OSS 120B",
     provider: "openai",
-    description: "Open-source 120B parameter model",
-    gatewayOrder: ["fireworks", "bedrock"],
+    description: "Modèle Open-Source massif",
     reasoningEffort: "low",
+    gatewayOrder: ["fireworks", "bedrock"],
   },
   {
     id: "xai/grok-4.1-fast-non-reasoning",
     name: "Grok 4.1 Fast",
     provider: "xai",
-    description: "Fast non-reasoning model with tool use",
+    description: "Rapidité X",
     gatewayOrder: ["xai"],
+  },
+
+  // --- OPENROUTER GRATUITS & LOW-COST ---
+  {
+    id: "openrouter/stepfun/step-1-flash:free",
+    name: "Step 1 Flash (Free)",
+    provider: "openrouter",
+    description: "L'alternative Step 3.5 Flash",
+  },
+  {
+    id: "openrouter/liquid/lfm-40b:free",
+    name: "LFM 40B Trinity (Free)",
+    provider: "openrouter",
+    description: "Modèle Trinity / LFM 2.5",
+  },
+  {
+    id: "openrouter/zhipu/glm-4-9b-chat:free",
+    name: "GLM-4 9B (Free)",
+    provider: "openrouter",
+    description: "Le fleuron Zhipu AI",
+  },
+  {
+    id: "openrouter/meta-llama/llama-3.3-70b-instruct",
+    name: "Llama 3.3 70B",
+    provider: "openrouter",
+    description: "Performances GPT-4 ultra-cheap",
+  },
+  {
+    id: "openrouter/nvidia/llama-3.1-nemotron-70b-instruct",
+    name: "Nemotron 70B",
+    provider: "openrouter",
+    description: "Optimisé par NVIDIA",
+  },
+  {
+    id: "openrouter/google/gemini-2.0-flash-exp:free",
+    name: "Gemini 2.0 Flash (Free)",
+    provider: "openrouter",
+    description: "Vision ultra-rapide",
+  },
+
+  // --- OPENROUTER CHEAP PREMIUM ---
+  {
+    id: "openrouter/anthropic/claude-3.5-haiku",
+    name: "Claude 3.5 Haiku",
+    provider: "openrouter",
+    description: "L'intelligence à prix mini",
+  },
+  {
+    id: "openrouter/openai/gpt-4o-mini",
+    name: "GPT-4o Mini",
+    provider: "openrouter",
+    description: "Compact et surprenant",
+  },
+  {
+    id: "openrouter/deepseek/deepseek-chat",
+    name: "DeepSeek V3 (OR)",
+    provider: "openrouter",
+    description: "Le génie du rapport qualité/prix",
+  },
+
+  // --- OLLAMA (LOCAUX) ---
+  {
+    id: "ollama/llama3.1",
+    name: "Llama 3.1 (Ollama)",
+    provider: "ollama",
+    description: "Local et sécurisé",
+  },
+  {
+    id: "ollama/mistral-nemo",
+    name: "Mistral Nemo (Ollama)",
+    provider: "ollama",
+    description: "12B de puissance locale",
+  },
+  {
+    id: "ollama/deepseek-coder-v2",
+    name: "DeepSeek Coder V2",
+    provider: "ollama",
+    description: "Code expert local",
   },
 ];
 
 export async function getCapabilities(): Promise<
   Record<string, ModelCapabilities>
 > {
-  const results = await Promise.all(
-    chatModels.map(async (model) => {
-      try {
-        const res = await fetch(
-          `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
-          { next: { revalidate: 86_400 } }
-        );
-        if (!res.ok) {
-          return [model.id, { tools: false, vision: false, reasoning: false }];
-        }
-
-        const json = await res.json();
-        const endpoints = json.data?.endpoints ?? [];
-        const params = new Set(
-          endpoints.flatMap(
-            (e: { supported_parameters?: string[] }) =>
-              e.supported_parameters ?? []
-          )
-        );
-        const inputModalities = new Set(
-          json.data?.architecture?.input_modalities ?? []
-        );
-
-        return [
-          model.id,
-          {
-            tools: params.has("tools"),
-            vision: inputModalities.has("image"),
-            reasoning: params.has("reasoning"),
-          },
-        ];
-      } catch {
-        return [model.id, { tools: false, vision: false, reasoning: false }];
-      }
-    })
+  const customModelsCapabilities = Object.fromEntries(
+    chatModels
+      .filter((m) => m.provider === "openrouter" || m.provider === "ollama")
+      .map((m) => [
+        m.id,
+        {
+          tools: !m.id.includes(":free"),
+          vision:
+            m.id.includes("vision") ||
+            m.id.includes("flash") ||
+            m.id.includes("4o") ||
+            m.id.includes("mistral-small"),
+          reasoning: m.id.includes("oss") || m.id.includes("reasoning"),
+        },
+      ])
   );
 
-  return Object.fromEntries(results);
+  const gatewayModelsCapabilitiesArray = await Promise.all(
+    chatModels
+      .filter((m) => m.provider !== "openrouter" && m.provider !== "ollama")
+      .map(async (model) => {
+        try {
+          const res = await fetch(
+            `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
+            { next: { revalidate: 86_400 } }
+          );
+          if (!res.ok) {
+            return [
+              model.id,
+              { tools: false, vision: false, reasoning: false },
+            ] as const;
+          }
+
+          const json = await res.json();
+          const endpoints = json.data?.endpoints ?? [];
+          const params = new Set(
+            endpoints.flatMap(
+              (e: { supported_parameters?: string[] }) =>
+                e.supported_parameters ?? []
+            )
+          );
+          const inputModalities = new Set(
+            json.data?.architecture?.input_modalities ?? []
+          );
+
+          return [
+            model.id,
+            {
+              tools: params.has("tools"),
+              vision: inputModalities.has("image"),
+              reasoning: params.has("reasoning"),
+            },
+          ] as const;
+        } catch {
+          return [
+            model.id,
+            { tools: false, vision: false, reasoning: false },
+          ] as const;
+        }
+      })
+  );
+
+  return {
+    ...customModelsCapabilities,
+    ...Object.fromEntries(gatewayModelsCapabilitiesArray),
+  };
 }
 
 export const isDemo = process.env.IS_DEMO === "1";

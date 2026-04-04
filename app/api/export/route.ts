@@ -1,6 +1,6 @@
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { getChatsByUserId, getMessagesByChatId } from "@/lib/db/queries";
-import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       id: session.user.id,
       limit: 1000,
       startingAfter: null,
-      endingBefore: null
+      endingBefore: null,
     });
 
     const exportData = {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(json, {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="export_mCoder_${new Date().toISOString().split('T')[0]}.json"`,
+        "Content-Disposition": `attachment; filename="export_mCoder_${new Date().toISOString().split("T")[0]}.json"`,
       },
     });
   } catch (error) {
