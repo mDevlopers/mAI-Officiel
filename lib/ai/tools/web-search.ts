@@ -10,13 +10,13 @@ export const webSearch = tool({
     try {
       const apiKey = process.env.SERPAPI_API_KEY;
       if (!apiKey) {
-        return "Clé API SerpAPI non configurée.";
+        return JSON.stringify({ error: "Clé API SerpAPI non configurée." });
       }
 
       const response = await fetch(`https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${apiKey}&engine=google`);
 
       if (!response.ok) {
-        return `Erreur SerpAPI: ${response.statusText}`;
+        return JSON.stringify({ error: `Erreur SerpAPI: ${response.statusText}` });
       }
 
       const data = await response.json();
@@ -29,10 +29,10 @@ export const webSearch = tool({
         snippet: result.snippet,
       }));
 
-      return JSON.stringify(results);
+      return JSON.stringify({ results });
     } catch (error) {
       console.error("Web Search Tool Error:", error);
-      return "Échec de la recherche web.";
+      return JSON.stringify({ error: "Échec de la recherche web." });
     }
   },
 });
