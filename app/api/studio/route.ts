@@ -48,6 +48,13 @@ export async function POST(request: Request) {
         return Response.json({ error: "Modèle image non supporté" }, { status: 400 });
       }
 
+      if (body.action === "edit-image" && !body.image?.trim()) {
+        return Response.json(
+          { error: "Une image source est requise pour l'édition" },
+          { status: 400 }
+        );
+      }
+
       const result = await runCometImageModel(
         body.action,
         body.model,

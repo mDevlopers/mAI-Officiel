@@ -2,22 +2,14 @@
 
 import { ImagePlus, Sparkles, WandSparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  affordableImageModels,
+  affordableTextModels,
+} from "@/lib/ai/affordable-models";
 import { Button } from "@/components/ui/button";
 
-const textModels = [
-  { id: "gpt-5.4-nano", label: "GPT-5.4 Nano (CometAPI)" },
-  { id: "gpt-5.4-mini", label: "GPT-5.4 Mini (CometAPI)" },
-  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-  { id: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
-  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-];
-
-const imageModels = [
-  { id: "flux-2-max", label: "Flux 2 Max" },
-  { id: "kling-image", label: "Kling Image" },
-  { id: "flux-2-pro", label: "Flux 2 Pro" },
-  { id: "flux-2-flex", label: "Flux 2 Flex" },
-];
+const textModels = affordableTextModels;
+const imageModels = affordableImageModels;
 
 type StudioMode = "text" | "generate-image" | "edit-image";
 

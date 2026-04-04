@@ -1,3 +1,5 @@
+import { affordableTextModels } from "@/lib/ai/affordable-models";
+
 const COMET_API_BASE_URL =
   process.env.COMET_API_BASE_URL ?? "https://api.cometapi.com/v1";
 const GEMINI_API_BASE_URL =
@@ -10,11 +12,11 @@ export const cometImageModels = new Set([
   "flux-2-pro",
   "flux-2-flex",
 ]);
-export const geminiCheapModels = new Set([
-  "gemini-2.5-flash-lite",
-  "gemini-2.0-flash-lite",
-  "gemini-2.0-flash",
-]);
+export const geminiCheapModels = new Set(
+  affordableTextModels
+    .map((model) => model.id)
+    .filter((modelId) => modelId.startsWith("gemini-"))
+);
 
 const cometKeys = [process.env.COMET_API_KEY_1, process.env.COMET_API_KEY_2].filter(
   Boolean
