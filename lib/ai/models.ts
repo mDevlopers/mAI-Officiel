@@ -54,13 +54,6 @@ export const chatModels: ChatModel[] = [
     gatewayOrder: ["baseten", "fireworks"],
   },
   {
-    id: "moonshotai/kimi-k2.5",
-    name: "Kimi K2.5",
-    provider: "moonshotai",
-    description: "Flagship Moonshot AI",
-    gatewayOrder: ["fireworks", "bedrock"],
-  },
-  {
     id: "openai/gpt-oss-20b",
     name: "GPT OSS 20B",
     provider: "openai",
@@ -68,22 +61,6 @@ export const chatModels: ChatModel[] = [
     reasoningEffort: "low",
     gatewayOrder: ["groq", "bedrock"],
   },
-  {
-    id: "openai/gpt-oss-120b",
-    name: "GPT OSS 120B",
-    provider: "openai",
-    description: "Modèle Open-Source massif",
-    reasoningEffort: "low",
-    gatewayOrder: ["fireworks", "bedrock"],
-  },
-  {
-    id: "xai/grok-4.1-fast-non-reasoning",
-    name: "Grok 4.1 Fast",
-    provider: "xai",
-    description: "Rapidité X",
-    gatewayOrder: ["xai"],
-  },
-
 
   // --- COMETAPI + GEMINI (TEXTE GLOBAL) ---
   {
@@ -115,6 +92,34 @@ export const chatModels: ChatModel[] = [
     name: "Gemini 2.0 Flash",
     provider: "google",
     description: "Flash polyvalent",
+  },
+
+  // --- CEREBRAS LOW-COST ---
+  {
+    id: "cerebras/llama3.1-8b",
+    name: "Cerebras Llama 3.1 8B",
+    provider: "cerebras",
+    description: "Ultra économique et très rapide",
+  },
+  {
+    id: "cerebras/qwen-3-32b",
+    name: "Cerebras Qwen 3 32B",
+    provider: "cerebras",
+    description: "Bon raisonnement à coût maîtrisé",
+  },
+
+  // --- MISTRAL API LOW-COST ---
+  {
+    id: "mistral-api/ministral-3b-latest",
+    name: "Ministral 3B",
+    provider: "mistral",
+    description: "Le modèle Mistral le plus économique",
+  },
+  {
+    id: "mistral-api/ministral-8b-latest",
+    name: "Ministral 8B",
+    provider: "mistral",
+    description: "Rapide et abordable pour la prod",
   },
 
   // --- OPENROUTER GRATUITS & LOW-COST ---
@@ -157,18 +162,6 @@ export const chatModels: ChatModel[] = [
 
   // --- OPENROUTER CHEAP PREMIUM ---
   {
-    id: "openrouter/anthropic/claude-3.5-haiku",
-    name: "Claude 3.5 Haiku",
-    provider: "openrouter",
-    description: "L'intelligence à prix mini",
-  },
-  {
-    id: "openrouter/openai/gpt-4o-mini",
-    name: "GPT-4o Mini",
-    provider: "openrouter",
-    description: "Compact et surprenant",
-  },
-  {
     id: "openrouter/deepseek/deepseek-chat",
     name: "DeepSeek V3 (OR)",
     provider: "openrouter",
@@ -201,11 +194,14 @@ export async function getCapabilities(): Promise<
 > {
   const customModelsCapabilities = Object.fromEntries(
     chatModels
-      .filter((m) =>
-        m.provider === "openrouter" ||
-        m.provider === "ollama" ||
-        m.provider === "cometapi" ||
-        m.provider === "google"
+      .filter(
+        (m) =>
+          m.provider === "openrouter" ||
+          m.provider === "ollama" ||
+          m.provider === "cometapi" ||
+          m.provider === "google" ||
+          m.provider === "cerebras" ||
+          m.id.startsWith("mistral-api/")
       )
       .map((m) => [
         m.id,
@@ -229,7 +225,9 @@ export async function getCapabilities(): Promise<
           m.provider !== "openrouter" &&
           m.provider !== "ollama" &&
           m.provider !== "cometapi" &&
-          m.provider !== "google"
+          m.provider !== "google" &&
+          m.provider !== "cerebras" &&
+          !m.id.startsWith("mistral-api/")
       )
       .map(async (model) => {
         try {
