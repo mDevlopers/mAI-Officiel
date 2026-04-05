@@ -86,6 +86,7 @@ export const document = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id),
+    projectId: uuid("projectId").references(() => project.id),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id, table.createdAt] }),
@@ -170,6 +171,7 @@ export const project = pgTable("Project", {
   instructions: text("instructions"),
   memory: text("memory"), // plain text knowledge/sources
   files: json("files").default([]), // uploaded files metadata
+  agentIds: json("agentIds").$type<string[]>().default([]), // selected mAI ids
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

@@ -108,7 +108,7 @@ export default function NewsPage() {
     [report]
   );
 
-    const downloadReport = async (format: "txt" | "md" | "pdf" | "docx") => {
+  const downloadReport = async (format: "txt" | "md" | "pdf" | "docx") => {
     if (!report) return;
 
     const filename = `rapport-actualites.${format}`;
