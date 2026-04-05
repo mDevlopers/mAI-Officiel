@@ -11,9 +11,20 @@ import {
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
-import { useWindowSize } from "usehooks-ts";
+import type { ComponentType } from "react";
 
-const EXTENSIONS = [
+type Extension = {
+  href: string;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  description: string;
+  badge?: string;
+  badgeColor?: string;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
+const EXTENSIONS: Extension[] = [
   {
     href: "/news",
     icon: Newspaper,
@@ -68,15 +79,14 @@ const EXTENSIONS = [
     label: "Color",
     description:
       "Génération de palettes de couleurs harmonieuses et tendances pour vos projets de design. L'inspiration à portée de clic.",
-    badge: "Accès Anticipé",
+    badge: "Accès anticipé",
     badgeColor: "bg-blue-500/90",
+    disabled: true,
+    disabledReason: "Bientôt disponible",
   },
 ];
 
 export default function ExtensionsPage() {
-  const { width } = useWindowSize();
-  const isMobile = width < 768;
-
   return (
     <div className="flex flex-col h-full overflow-y-auto w-full p-4 md:p-8 pt-8">
       <div className="max-w-5xl mx-auto w-full">
@@ -95,41 +105,65 @@ export default function ExtensionsPage() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {EXTENSIONS.map((ext) => (
-            <Link
-              className="group relative flex flex-col p-6 rounded-2xl border border-border/50 bg-card/50 hover:bg-card/80 transition-all duration-300 hover:shadow-md overflow-hidden"
-              href={ext.href}
-              key={ext.href}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {EXTENSIONS.map((ext) => {
+            const cardContent = (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-              <div className="relative flex items-start justify-between mb-4">
-                <div className="p-3 bg-background rounded-xl border border-border/50 shadow-sm group-hover:scale-110 group-hover:text-primary transition-all duration-300">
-                  <ext.icon className="size-6" />
+                <div className="relative flex items-start justify-between mb-4">
+                  <div className="p-3 bg-background rounded-xl border border-border/50 shadow-sm group-hover:scale-110 group-hover:text-primary transition-all duration-300">
+                    <ext.icon className="size-6" />
+                  </div>
+                  {ext.badge && (
+                    <span
+                      className={`px-2.5 py-1 text-[10px] font-medium text-white rounded-full ${ext.badgeColor} shadow-sm`}
+                    >
+                      {ext.badge}
+                    </span>
+                  )}
                 </div>
-                {ext.badge && (
-                  <span
-                    className={`px-2.5 py-1 text-[10px] font-medium text-white rounded-full ${ext.badgeColor} shadow-sm`}
-                  >
-                    {ext.badge}
-                  </span>
-                )}
-              </div>
 
-              <div className="relative">
-                <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
-                  {ext.label}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 h-[60px]">
-                  {ext.description}
-                </p>
-              </div>
+                <div className="relative">
+                  <h3 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">
+                    {ext.label}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 h-[60px]">
+                    {ext.description}
+                  </p>
+                </div>
 
-              <div className="mt-6 flex items-center text-sm font-medium text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                Ouvrir l'extension <span className="ml-1 text-[16px]">→</span>
-              </div>
-            </Link>
-          ))}
+                <div className="mt-6 flex items-center text-sm font-medium text-primary opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                  {ext.disabled ? ext.disabledReason ?? "Indisponible" : "Ouvrir l'extension"}
+                  <span className="ml-1 text-[16px]">→</span>
+                </div>
+              </>
+            );
+
+            const baseClassName =
+              "group relative flex flex-col p-6 rounded-2xl border border-border/50 bg-card/50 transition-all duration-300 overflow-hidden";
+
+            if (ext.disabled) {
+              return (
+                <div
+                  aria-disabled="true"
+                  className={`${baseClassName} opacity-65 cursor-not-allowed backdrop-blur-md`}
+                  key={ext.href}
+                >
+                  {cardContent}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                className={`${baseClassName} hover:bg-card/80 hover:shadow-md`}
+                href={ext.href}
+                key={ext.href}
+              >
+                {cardContent}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
