@@ -3,7 +3,12 @@ import { affordableTextModels } from "@/lib/ai/affordable-models";
 const COMET_API_BASE_URL =
   process.env.COMET_API_BASE_URL ?? "https://api.cometapi.com/v1";
 const GEMINI_API_BASE_URL =
-  process.env.GEMINI_API_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta";
+  process.env.GEMINI_API_BASE_URL ??
+  "https://generativelanguage.googleapis.com/v1beta";
+const CEREBRAS_API_BASE_URL =
+  process.env.CEREBRAS_API_BASE_URL ?? "https://api.cerebras.ai/v1";
+const MISTRAL_API_BASE_URL =
+  process.env.MISTRAL_API_BASE_URL ?? "https://api.mistral.ai/v1";
 
 export const cometTextModels = new Set(["gpt-5.4-nano", "gpt-5.4-mini"]);
 export const cometImageModels = new Set([
@@ -18,14 +23,30 @@ export const geminiCheapModels = new Set(
     .filter((modelId) => modelId.startsWith("gemini-"))
 );
 
-const cometKeys = [process.env.COMET_API_KEY_1, process.env.COMET_API_KEY_2].filter(
-  Boolean
-) as string[];
+const cerebrasModelMapping: Record<string, string> = {
+  "cerebras/llama3.1-8b": "llama3.1-8b",
+  "cerebras/qwen-3-32b": "qwen-3-32b",
+};
+
+const mistralModelMapping: Record<string, string> = {
+  "mistral-api/ministral-3b-latest": "ministral-3b-latest",
+  "mistral-api/ministral-8b-latest": "ministral-8b-latest",
+};
+
+export const cerebrasCheapModels = new Set(Object.keys(cerebrasModelMapping));
+export const mistralCheapModels = new Set(Object.keys(mistralModelMapping));
+
+const cometKeys = [
+  process.env.COMET_API_KEY_1,
+  process.env.COMET_API_KEY_2,
+].filter(Boolean) as string[];
 const geminiKeys = [
   process.env.GEMINI_API_KEY_1,
   process.env.GEMINI_API_KEY_2,
   process.env.GEMINI_API_KEY_3,
 ].filter(Boolean) as string[];
+const cerebrasKeys = [process.env.CEREBRAS_API_KEY].filter(Boolean) as string[];
+const mistralKeys = [process.env.MISTRAL_API_KEY].filter(Boolean) as string[];
 
 async function withFallback<T>(
   calls: Array<() => Promise<T>>,
@@ -54,7 +75,27 @@ function extractTextFromGemini(data: any): string {
     .trim();
 }
 
-function extractImagePayload(data: any): { imageUrl?: string; imageBase64?: string } {
+function extractTextFromChatCompletion(data: any): string {
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (typeof content === "string") {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((item) => (typeof item?.text === "string" ? item.text : ""))
+      .join("\n")
+      .trim();
+  }
+
+  return (data?.output_text ?? "").trim();
+}
+
+function extractImagePayload(data: any): {
+  imageUrl?: string;
+  imageBase64?: string;
+} {
   const firstData = data?.data?.[0];
 
   if (typeof firstData?.url === "string") {
@@ -77,10 +118,15 @@ function extractImagePayload(data: any): { imageUrl?: string; imageBase64?: stri
 }
 
 export function isExternalTextModel(modelId: string): boolean {
-  return cometTextModels.has(modelId) || geminiCheapModels.has(modelId);
+  return (
+    cometTextModels.has(modelId) ||
+    geminiCheapModels.has(modelId) ||
+    cerebrasCheapModels.has(modelId) ||
+    mistralCheapModels.has(modelId)
+  );
 }
 
-export async function runExternalTextModel(
+export function runExternalTextModel(
   modelId: string,
   prompt: string
 ): Promise<{ provider: string; text: string }> {
@@ -104,12 +150,13 @@ export async function runExternalTextModel(
       });
 
       if (!response.ok) {
-        throw new Error(`CometAPI clé ${index + 1} a échoué (${response.status})`);
+        throw new Error(
+          `CometAPI clé ${index + 1} a échoué (${response.status})`
+        );
       }
 
       const data = await response.json();
-      const text =
-        data?.choices?.[0]?.message?.content ?? data?.output_text ?? "";
+      const text = extractTextFromChatCompletion(data);
 
       if (!text) {
         throw new Error(`CometAPI clé ${index + 1} a renvoyé une réponse vide`);
@@ -143,7 +190,9 @@ export async function runExternalTextModel(
       );
 
       if (!response.ok) {
-        throw new Error(`Gemini clé ${index + 1} a échoué (${response.status})`);
+        throw new Error(
+          `Gemini clé ${index + 1} a échoué (${response.status})`
+        );
       }
 
       const data = await response.json();
@@ -159,10 +208,95 @@ export async function runExternalTextModel(
     return withFallback(geminiCalls, "Échec fallback Gemini");
   }
 
+  if (cerebrasCheapModels.has(modelId)) {
+    if (cerebrasKeys.length === 0) {
+      throw new Error("Aucune clé Cerebras configurée");
+    }
+
+    const providerModelId = cerebrasModelMapping[modelId];
+
+    const cerebrasCalls = cerebrasKeys.map((apiKey, index) => async () => {
+      const response = await fetch(
+        `${CEREBRAS_API_BASE_URL}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: providerModelId,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.4,
+            max_completion_tokens: 1200,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Cerebras clé ${index + 1} a échoué (${response.status})`
+        );
+      }
+
+      const data = await response.json();
+      const text = extractTextFromChatCompletion(data);
+
+      if (!text) {
+        throw new Error(`Cerebras clé ${index + 1} a renvoyé une réponse vide`);
+      }
+
+      return { provider: `cerebras-${index + 1}`, text };
+    });
+
+    return withFallback(cerebrasCalls, "Échec fallback Cerebras");
+  }
+
+  if (mistralCheapModels.has(modelId)) {
+    if (mistralKeys.length === 0) {
+      throw new Error("Aucune clé Mistral configurée");
+    }
+
+    const providerModelId = mistralModelMapping[modelId];
+
+    const mistralCalls = mistralKeys.map((apiKey, index) => async () => {
+      const response = await fetch(`${MISTRAL_API_BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: providerModelId,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.4,
+          max_tokens: 1200,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Mistral clé ${index + 1} a échoué (${response.status})`
+        );
+      }
+
+      const data = await response.json();
+      const text = extractTextFromChatCompletion(data);
+
+      if (!text) {
+        throw new Error(`Mistral clé ${index + 1} a renvoyé une réponse vide`);
+      }
+
+      return { provider: `mistral-${index + 1}`, text };
+    });
+
+    return withFallback(mistralCalls, "Échec fallback Mistral");
+  }
+
   throw new Error("Modèle externe texte non supporté");
 }
 
-export async function runCometImageModel(
+export function runCometImageModel(
   action: "generate-image" | "edit-image",
   model: string,
   prompt: string,
@@ -197,7 +331,9 @@ export async function runCometImageModel(
     });
 
     if (!response.ok) {
-      throw new Error(`CometAPI image clé ${index + 1} a échoué (${response.status})`);
+      throw new Error(
+        `CometAPI image clé ${index + 1} a échoué (${response.status})`
+      );
     }
 
     const data = await response.json();
