@@ -3,6 +3,7 @@
 import { Download, Newspaper, SendHorizonal, UploadCloud } from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAvailableModels } from "@/hooks/use-available-models";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import {
   canConsumeUsage,
@@ -15,6 +16,7 @@ type Result = { link: string; snippet: string; source: string; title: string };
 type ReportHistory = { createdAt: string; query: string; report: string };
 
 export default function NewsPage() {
+  const { models: availableModels } = useAvailableModels();
   const { currentPlanDefinition, isHydrated } = useSubscriptionPlan();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -24,6 +26,7 @@ export default function NewsPage() {
   const [history, setHistory] = useState<ReportHistory[]>([]);
   const [accessCode, setAccessCode] = useState("");
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("");
   const [searchesToday, setSearchesToday] = useState(0);
   const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
 
@@ -44,6 +47,13 @@ export default function NewsPage() {
     setSearchesToday(getUsageCount("news", "day"));
   }, [isHydrated]);
 
+  useEffect(() => {
+    if (selectedModel || availableModels.length === 0) {
+      return;
+    }
+    setSelectedModel(availableModels[0].id);
+  }, [availableModels, selectedModel]);
+
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -55,6 +65,10 @@ export default function NewsPage() {
 
   const handleSearch = async () => {
     if (!query.trim()) {
+      return;
+    }
+    if (!selectedModel) {
+      setQuotaMessage("Sélectionnez un modèle pour lancer la recherche.");
       return;
     }
 
@@ -71,7 +85,11 @@ export default function NewsPage() {
       const response = await fetch("/api/news/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileContext: externalContext, query }),
+        body: JSON.stringify({
+          fileContext: externalContext,
+          modelId: selectedModel,
+          query,
+        }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -163,6 +181,17 @@ export default function NewsPage() {
           >
             {isLoading ? "Recherche..." : "Rechercher"}
           </Button>
+          <select
+            className="h-11 rounded-xl border border-border bg-background/60 px-3 text-sm"
+            onChange={(event) => setSelectedModel(event.target.value)}
+            value={selectedModel}
+          >
+            {availableModels.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </select>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3">
             <UploadCloud className="size-4" /> Importer un fichier
             <input className="hidden" onChange={handleImportFile} type="file" />

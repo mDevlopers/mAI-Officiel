@@ -17,6 +17,7 @@ import { PlanUpgradeCTA } from "@/components/chat/plan-upgrade-cta";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAvailableModels } from "@/hooks/use-available-models";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { planDefinitions } from "@/lib/subscription";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
@@ -24,12 +25,6 @@ import { cn } from "@/lib/utils";
 
 const planOrder = ["free", "plus", "pro", "max"] as const;
 const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
-const schedulerModels = [
-  "gpt-4.1",
-  "gpt-4o-mini",
-  "o4-mini",
-  "claude-3.7",
-] as const;
 const schedulerFrequencies = [
   "quotidienne",
   "hebdomadaire",
@@ -41,7 +36,7 @@ type ScheduledTask = {
   createdAt: string;
   frequency: (typeof schedulerFrequencies)[number];
   id: string;
-  model: (typeof schedulerModels)[number];
+  model: string;
   nextRunAt: string;
   title: string;
 };
@@ -84,6 +79,7 @@ function formatDateTimeLocalInput(now = new Date()): string {
 
 export default function SettingsPage() {
   const { data } = useSession();
+  const { models: availableModels } = useAvailableModels();
   const {
     activateByCode,
     currentPlanDefinition,
@@ -102,12 +98,12 @@ export default function SettingsPage() {
   const [tasksHydrated, setTasksHydrated] = useState(false);
   const [taskForm, setTaskForm] = useState<{
     frequency: ScheduledTask["frequency"];
-    model: ScheduledTask["model"];
+    model: string;
     nextRunAt: string;
     title: string;
   }>({
     frequency: "quotidienne",
-    model: "gpt-4.1",
+    model: "",
     nextRunAt: "",
     title: "",
   });
@@ -117,6 +113,14 @@ export default function SettingsPage() {
     []
   );
   const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
+
+  useEffect(() => {
+    if (taskForm.model || availableModels.length === 0) {
+      return;
+    }
+
+    setTaskForm((prev) => ({ ...prev, model: availableModels[0].id }));
+  }, [availableModels, taskForm.model]);
 
   useEffect(() => {
     try {
@@ -183,6 +187,10 @@ export default function SettingsPage() {
 
     if (!taskForm.nextRunAt) {
       setTaskError("Choisissez la date du prochain déclenchement.");
+      return;
+    }
+    if (!taskForm.model) {
+      setTaskError("Choisissez un modèle pour la tâche automatique.");
       return;
     }
 
@@ -559,14 +567,14 @@ export default function SettingsPage() {
             onChange={(event) =>
               setTaskForm((prev) => ({
                 ...prev,
-                model: event.target.value as ScheduledTask["model"],
+                model: event.target.value,
               }))
             }
             value={taskForm.model}
           >
-            {schedulerModels.map((model) => (
-              <option key={model} value={model}>
-                {model}
+            {availableModels.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
               </option>
             ))}
           </select>

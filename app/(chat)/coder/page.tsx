@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { chatModels } from "@/lib/ai/models";
+import { useAvailableModels } from "@/hooks/use-available-models";
 
 type CoderMode = "Planification" | "Investigation" | "Exécution";
 type WorkspaceTab = "preview" | "terminal" | "messages";
@@ -29,8 +29,9 @@ function getFolder(path: string) {
 }
 
 export default function CoderPage() {
+  const { models: availableModels } = useAvailableModels();
   const [mode, setMode] = useState<CoderMode>("Exécution");
-  const [selectedModel, setSelectedModel] = useState(chatModels[0]?.id ?? "");
+  const [selectedModel, setSelectedModel] = useState("");
   const [prompt, setPrompt] = useState("");
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("preview");
   const [plan, setPlan] = useState("");
@@ -55,6 +56,13 @@ export default function CoderPage() {
       .then((res) => res.json())
       .then((payload) => setIsUnlocked(payload.unlocked === true));
   }, []);
+
+  useEffect(() => {
+    if (selectedModel || availableModels.length === 0) {
+      return;
+    }
+    setSelectedModel(availableModels[0].id);
+  }, [availableModels, selectedModel]);
 
   const selectedFile = files.find((file) => file.path === selectedFilePath);
 
@@ -89,6 +97,10 @@ export default function CoderPage() {
   const launchTask = async () => {
     if (!prompt.trim()) {
       setLogs(["Veuillez décrire une tâche avant de lancer."]);
+      return;
+    }
+    if (!selectedModel) {
+      setLogs(["Sélectionnez un modèle avant de lancer la tâche."]);
       return;
     }
 
@@ -370,7 +382,7 @@ export default function CoderPage() {
             onChange={(event) => setSelectedModel(event.target.value)}
             value={selectedModel}
           >
-            {chatModels.map((model) => (
+            {availableModels.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.name}
               </option>

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { query, fileContext } = (await request.json()) as {
+    const { query, fileContext, modelId } = (await request.json()) as {
       fileContext?: string;
+      modelId?: string;
       query?: string;
     };
 
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
+      modelId: modelId?.trim() || null,
       organicResults,
       report,
     });
