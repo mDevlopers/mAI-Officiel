@@ -6,8 +6,10 @@ import {
   FolderKanbanIcon,
   HeartPulse,
   Languages,
+  LibraryBig,
   Newspaper,
   PenSquareIcon,
+  SearchIcon,
   Sparkles,
   TrashIcon,
 } from "lucide-react";
@@ -53,6 +55,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const handleDeleteAll = () => {
     setShowDeleteAllDialog(false);
@@ -74,15 +78,34 @@ export function AppSidebar({ user }: { user: User | undefined }) {
         <SidebarHeader className="pb-0 pt-3">
           <SidebarMenu>
             <SidebarMenuItem className="flex flex-row items-center justify-between">
-              <SidebarMenuButton
-                asChild
-                className="size-8 !px-0 items-center justify-center"
-                tooltip="MAI"
-              >
-                <Link href="/" onClick={() => setOpenMobile(false)}>
-                  <BrandStarLogoIcon size={20} />
-                </Link>
-              </SidebarMenuButton>
+              <div className="flex w-full items-center gap-2 px-1">
+                <SidebarMenuButton
+                  asChild
+                  className="size-8 !px-0 items-center justify-center"
+                  tooltip="MAI"
+                >
+                  <Link href="/" onClick={() => setOpenMobile(false)}>
+                    <BrandStarLogoIcon size={20} />
+                  </Link>
+                </SidebarMenuButton>
+                <label
+                  className="flex h-8 flex-1 items-center gap-1.5 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/35 px-2 backdrop-blur-xl group-data-[collapsible=icon]:hidden"
+                  htmlFor="global-sidebar-search"
+                >
+                  <SearchIcon className="size-3.5 text-sidebar-foreground/60" />
+                  <input
+                    autoComplete="off"
+                    className="w-full bg-transparent text-[12px] text-sidebar-foreground placeholder:text-sidebar-foreground/55 focus:outline-none"
+                    id="global-sidebar-search"
+                    onChange={(event) =>
+                      setGlobalSearchQuery(event.target.value)
+                    }
+                    placeholder="Recherche globale..."
+                    type="search"
+                    value={globalSearchQuery}
+                  />
+                </label>
+              </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
@@ -138,6 +161,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     icon: Sparkles,
                     label: "Studio",
                   },
+                  {
+                    href: "/library",
+                    icon: LibraryBig,
+                    label: "Bibliothèque",
+                  },
                 ].map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -165,6 +193,34 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuItem>
                 ))}
 
+                {normalizedGlobalQuery.length > 0 &&
+                  [
+                    { href: "/library", label: "Bibliothèque" },
+                    { href: "/studio", label: "Studio" },
+                    { href: "/news", label: "Actualités" },
+                    { href: "/translation", label: "Traduction" },
+                  ]
+                    .filter((item) =>
+                      item.label.toLowerCase().includes(normalizedGlobalQuery)
+                    )
+                    .map((item) => (
+                      <SidebarMenuItem key={`quick-${item.href}`}>
+                        <SidebarMenuButton
+                          asChild
+                          className="h-8 rounded-lg border border-dashed border-sidebar-border/70 text-[12px] text-sidebar-foreground/75"
+                          tooltip={item.label}
+                        >
+                          <Link
+                            href={item.href}
+                            onClick={() => setOpenMobile(false)}
+                          >
+                            <SearchIcon className="size-3.5" />
+                            <span>Aller vers {item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+
                 {user && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
@@ -180,7 +236,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarHistory user={user} />
+          <SidebarHistory globalSearchQuery={globalSearchQuery} user={user} />
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
           {user && <SidebarUserNav user={user} />}

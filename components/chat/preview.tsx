@@ -1,5 +1,6 @@
 "use client";
 
+import { Ghost } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,11 +9,17 @@ import { greetingPrompts, suggestions } from "@/lib/constants";
 export function Preview() {
   const router = useRouter();
   const [greetingText, setGreetingText] = useState<string>(greetingPrompts[0]);
+  const [isGhostModeEnabled, setIsGhostModeEnabled] = useState(false);
 
   useEffect(() => {
     // Génération pseudo-aléatoire côté client uniquement (build-safe).
     const randomIndex = Math.floor(Math.random() * greetingPrompts.length);
     setGreetingText(greetingPrompts[randomIndex] ?? greetingPrompts[0]);
+  }, []);
+
+  useEffect(() => {
+    const persistedValue = localStorage.getItem("mai.ghost-mode") === "true";
+    setIsGhostModeEnabled(persistedValue);
   }, []);
 
   const handleAction = (query?: string) => {
@@ -31,6 +38,22 @@ export function Preview() {
           width={20}
         />
         <span className="text-[13px] text-muted-foreground">mAI</span>
+        <button
+          className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
+            isGhostModeEnabled
+              ? "border-purple-500/40 bg-purple-500/20 text-purple-200"
+              : "border-border/40 bg-card/40 text-muted-foreground"
+          }`}
+          onClick={() => {
+            const nextValue = !isGhostModeEnabled;
+            setIsGhostModeEnabled(nextValue);
+            localStorage.setItem("mai.ghost-mode", String(nextValue));
+          }}
+          type="button"
+        >
+          <Ghost className="size-3.5" />
+          {isGhostModeEnabled ? "Mode Fantôme actif" : "Mode Fantôme"}
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 px-8">

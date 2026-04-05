@@ -2,10 +2,9 @@
 
 import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { motion } from "framer-motion";
-import { SearchIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import { useLocalStorage } from "usehooks-ts";
@@ -113,7 +112,13 @@ export function getChatHistoryPaginationKey(
   return `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history?ending_before=${firstChatFromPage.id}&limit=${PAGE_SIZE}`;
 }
 
-export function SidebarHistory({ user }: { user: User | undefined }) {
+export function SidebarHistory({
+  user,
+  globalSearchQuery = "",
+}: {
+  user: User | undefined;
+  globalSearchQuery?: string;
+}) {
   const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const id = pathname?.startsWith("/chat/") ? pathname.split("/")[2] : null;
@@ -133,10 +138,13 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [pinnedChatIds, setPinnedChatIds] = useLocalStorage<string[]>(
     "mai.pinned.chats",
     []
+  );
+  const searchQuery = useMemo(
+    () => globalSearchQuery.trim().toLowerCase(),
+    [globalSearchQuery]
   );
 
   const hasReachedEnd = paginatedChatHistories
@@ -283,41 +291,23 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           Historique
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <div className="mb-2 px-2">
-            <label className="sr-only" htmlFor="history-search-input">
-              Rechercher dans les discussions
-            </label>
-            <div className="flex items-center gap-2 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/30 px-2.5 py-1.5 backdrop-blur-xl">
-              <SearchIcon className="size-3.5 text-sidebar-foreground/60" />
-              <input
-                autoComplete="off"
-                className="w-full bg-transparent text-[12px] text-sidebar-foreground placeholder:text-sidebar-foreground/50 focus:outline-none"
-                id="history-search-input"
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Rechercher un titre, un terme ou un ID..."
-                type="search"
-                value={searchQuery}
-              />
-            </div>
-            {searchQuery.trim().length > 0 && (
-              <p className="mt-1 px-0.5 text-[10px] text-sidebar-foreground/60">
-                Recherche active : indexation locale dans l&apos;historique.
-              </p>
-            )}
-          </div>
+          {searchQuery.length > 0 && (
+            <p className="mb-2 px-2 text-[10px] text-sidebar-foreground/60">
+              Recherche globale active : discussions filtrées localement.
+            </p>
+          )}
           <SidebarMenu>
             {paginatedChatHistories &&
               (() => {
                 const chatsFromHistory = paginatedChatHistories.flatMap(
                   (paginatedChatHistory) => paginatedChatHistory.chats
                 );
-                const normalizedSearch = searchQuery.trim().toLowerCase();
                 const indexedChats =
-                  normalizedSearch.length > 0
+                  searchQuery.length > 0
                     ? chatsFromHistory.filter((chat) => {
                         const searchableText =
                           `${chat.title} ${chat.id}`.toLowerCase();
-                        return searchableText.includes(normalizedSearch);
+                        return searchableText.includes(searchQuery);
                       })
                     : chatsFromHistory;
 
