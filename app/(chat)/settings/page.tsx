@@ -8,6 +8,7 @@ import {
   KeyRound,
   PlusCircle,
   Settings2,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -111,6 +112,9 @@ export default function SettingsPage() {
     nextRunAt: "",
     title: "",
   });
+  const [chatBarSize, setChatBarSize] = useState<
+    "compact" | "standard" | "large"
+  >("compact");
 
   const displayedPlans = useMemo(
     () => planOrder.map((planKey) => planDefinitions[planKey]),
@@ -139,6 +143,17 @@ export default function SettingsPage() {
         "Impossible de charger les tâches automatiques sauvegardées."
       );
       setTasksHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedChatBarSize = window.localStorage.getItem("mai.chatbar.size");
+    if (
+      storedChatBarSize === "compact" ||
+      storedChatBarSize === "standard" ||
+      storedChatBarSize === "large"
+    ) {
+      setChatBarSize(storedChatBarSize);
     }
   }, []);
 
@@ -208,6 +223,11 @@ export default function SettingsPage() {
 
   const handleDeleteTask = (taskId: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  };
+
+  const handleChatBarSizeChange = (size: "compact" | "standard" | "large") => {
+    setChatBarSize(size);
+    window.localStorage.setItem("mai.chatbar.size", size);
   };
 
   const creditMetrics = useMemo<CreditMetric[]>(() => {
@@ -346,6 +366,37 @@ export default function SettingsPage() {
               Exporter mes données
             </a>
           </Button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <SlidersHorizontal className="size-4 text-primary" />
+          Ergonomie de la barre de dialogue
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Définissez la hauteur par défaut de la barre de saisie. Le mode
+          compact est désormais recommandé pour une interface plus dense.
+        </p>
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          {[
+            { label: "Compacte", value: "compact" as const },
+            { label: "Standard", value: "standard" as const },
+            { label: "Confort", value: "large" as const },
+          ].map((option) => (
+            <Button
+              className={cn(
+                "justify-start rounded-xl border border-border/50 bg-background/40",
+                chatBarSize === option.value &&
+                  "border-primary/40 bg-primary/10 text-primary"
+              )}
+              key={option.value}
+              onClick={() => handleChatBarSizeChange(option.value)}
+              variant="ghost"
+            >
+              {option.label}
+            </Button>
+          ))}
         </div>
       </section>
 

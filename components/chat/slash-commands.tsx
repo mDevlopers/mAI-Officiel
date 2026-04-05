@@ -23,43 +23,43 @@ export type SlashCommand = {
 export const slashCommands: SlashCommand[] = [
   {
     name: "new",
-    description: "Start a new chat",
+    description: "Créer une nouvelle discussion",
     icon: <PenSquareIcon className="size-3.5" />,
     action: "new",
   },
   {
     name: "clear",
-    description: "Clear current chat",
+    description: "Effacer la discussion courante",
     icon: <Trash2Icon className="size-3.5" />,
     action: "clear",
   },
   {
     name: "rename",
-    description: "Rename current chat",
+    description: "Renommer la discussion courante",
     icon: <PenLineIcon className="size-3.5" />,
     action: "rename",
   },
   {
     name: "model",
-    description: "Change the AI model",
+    description: "Changer de modèle IA",
     icon: <ListIcon className="size-3.5" />,
     action: "model",
   },
   {
     name: "theme",
-    description: "Toggle dark/light mode",
+    description: "Basculer clair/sombre",
     icon: <PaletteIcon className="size-3.5" />,
     action: "theme",
   },
   {
     name: "delete",
-    description: "Delete current chat",
+    description: "Supprimer la discussion courante",
     icon: <XIcon className="size-3.5" />,
     action: "delete",
   },
   {
     name: "purge",
-    description: "Delete all chats",
+    description: "Supprimer toutes les discussions",
     icon: <BombIcon className="size-3.5" />,
     action: "purge",
   },
@@ -100,7 +100,7 @@ export function SlashCommandMenu({
       ref={menuRef}
     >
       <div className="px-4 py-2.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/40">
-        Commands
+        Commandes
       </div>
       <div className="max-h-64 overflow-y-auto pb-1 no-scrollbar">
         {filtered.map((cmd, index) => (

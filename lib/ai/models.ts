@@ -34,7 +34,7 @@ export const chatModels: ChatModel[] = [
   },
   {
     id: "mistral/codestral",
-    name: "Codestral",
+    name: "Mistral Codestral",
     provider: "mistral",
     description: "Le spécialiste du code",
     gatewayOrder: ["mistral"],
