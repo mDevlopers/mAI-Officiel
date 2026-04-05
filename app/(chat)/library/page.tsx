@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  Download,
   FileImage,
+  FileType,
   FileText,
   Pencil,
   Pin,
@@ -12,7 +14,14 @@ import {
   UploadCloud,
 } from "lucide-react";
 import Image from "next/image";
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +33,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { formatQuotaReachedMessage } from "@/lib/subscription";
 
@@ -34,19 +50,32 @@ type LibraryAsset = {
   id: string;
   name: string;
   type: LibraryAssetType;
+  mimeType: string;
   source: LibraryAssetSource;
   createdAt: string;
   pinned: boolean;
   url: string;
+  objectUrl?: string;
 };
 
 const STORAGE_KEY = "mai.library.assets";
+const ACCEPTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
+  "image/png",
+  "image/jpeg",
+]);
+const ACCEPTED_FILE_EXTENSIONS = [".pdf", ".txt", ".md"];
+const FILE_INPUT_ACCEPT = ".pdf,.txt,.md,image/png,image/jpeg";
+const MAX_TEXT_PREVIEW_LENGTH = 12_000;
 
 const initialAssets: LibraryAsset[] = [
   {
     id: "sample-image-1",
     name: "Inspiration studio.png",
     type: "image",
+    mimeType: "image/png",
     source: "mai-library",
     createdAt: new Date().toISOString(),
     pinned: true,
@@ -56,6 +85,7 @@ const initialAssets: LibraryAsset[] = [
     id: "sample-doc-1",
     name: "Plan produit Q2.txt",
     type: "document",
+    mimeType: "text/plain",
     source: "mai-library",
     createdAt: new Date().toISOString(),
     pinned: false,
@@ -73,10 +103,13 @@ function isLibraryAsset(value: unknown): value is LibraryAsset {
     typeof candidate.id === "string" &&
     typeof candidate.name === "string" &&
     (candidate.type === "image" || candidate.type === "document") &&
+    typeof candidate.mimeType === "string" &&
     (candidate.source === "device" || candidate.source === "mai-library") &&
     typeof candidate.createdAt === "string" &&
     typeof candidate.pinned === "boolean" &&
-    typeof candidate.url === "string"
+    typeof candidate.url === "string" &&
+    (typeof candidate.objectUrl === "undefined" ||
+      typeof candidate.objectUrl === "string")
   );
 }
 
@@ -104,6 +137,12 @@ function migrateStoredAssets(rawValue: string): LibraryAsset[] | null {
         id: typeof legacy.id === "string" ? legacy.id : crypto.randomUUID(),
         name: legacy.name,
         type: legacy.type === "image" ? "image" : "document",
+        mimeType:
+          typeof legacy.mimeType === "string"
+            ? legacy.mimeType
+            : legacy.type === "image"
+              ? "image/png"
+              : "text/plain",
         source: legacy.source === "mai-library" ? "mai-library" : "device",
         createdAt:
           typeof legacy.createdAt === "string"
@@ -111,6 +150,7 @@ function migrateStoredAssets(rawValue: string): LibraryAsset[] | null {
             : new Date().toISOString(),
         pinned: Boolean(legacy.pinned),
         url: typeof legacy.url === "string" ? legacy.url : "",
+        objectUrl: undefined,
       };
     })
     .filter((asset): asset is LibraryAsset => Boolean(asset));
@@ -127,7 +167,36 @@ export default function LibraryPage() {
   const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
   const [renamingAssetId, setRenamingAssetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [previewAssetId, setPreviewAssetId] = useState<string | null>(null);
+  const [textPreview, setTextPreview] = useState("");
+  const [textPreviewStatus, setTextPreviewStatus] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const activeObjectUrlsRef = useRef<Set<string>>(new Set());
   const maxStorage = currentPlanDefinition.limits.libraryMaxFiles;
+
+  const getAssetPreviewUrl = useCallback(
+    (asset: LibraryAsset) => asset.objectUrl ?? asset.url,
+    []
+  );
+  const previewAsset = useMemo(
+    () => assets.find((asset) => asset.id === previewAssetId) ?? null,
+    [assets, previewAssetId]
+  );
+
+  const triggerDownload = useCallback((asset: LibraryAsset) => {
+    const previewUrl = asset.objectUrl ?? asset.url;
+    if (!previewUrl) {
+      return;
+    }
+    const anchor = document.createElement("a");
+    anchor.href = previewUrl;
+    anchor.download = asset.name;
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  }, []);
 
   useEffect(() => {
     try {
@@ -151,8 +220,98 @@ export default function LibraryPage() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+    const persistableAssets = assets.map(({ objectUrl, ...asset }) => ({
+      ...asset,
+      // Les object URLs blob:* sont runtime-only, on ne les persiste pas.
+      url: asset.url.startsWith("blob:") ? "" : asset.url,
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistableAssets));
   }, [assets]);
+
+  useEffect(() => {
+    const currentUrls = new Set(
+      assets
+        .map((asset) => asset.objectUrl)
+        .filter((url): url is string => typeof url === "string")
+    );
+
+    for (const trackedUrl of activeObjectUrlsRef.current) {
+      if (!currentUrls.has(trackedUrl)) {
+        URL.revokeObjectURL(trackedUrl);
+        activeObjectUrlsRef.current.delete(trackedUrl);
+      }
+    }
+
+    for (const currentUrl of currentUrls) {
+      activeObjectUrlsRef.current.add(currentUrl);
+    }
+  }, [assets]);
+
+  useEffect(() => {
+    return () => {
+      for (const trackedUrl of activeObjectUrlsRef.current) {
+        URL.revokeObjectURL(trackedUrl);
+      }
+      activeObjectUrlsRef.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (previewAssetId && !assets.some((asset) => asset.id === previewAssetId)) {
+      setPreviewAssetId(null);
+    }
+  }, [assets, previewAssetId]);
+
+  useEffect(() => {
+    if (!previewAsset) {
+      setTextPreview("");
+      setTextPreviewStatus("idle");
+      return;
+    }
+
+    const previewUrl = getAssetPreviewUrl(previewAsset);
+    if (!previewUrl) {
+      setTextPreview("");
+      setTextPreviewStatus("error");
+      return;
+    }
+
+    triggerDownload(previewAsset);
+
+    if (!previewAsset.mimeType.startsWith("text/")) {
+      setTextPreview("");
+      setTextPreviewStatus("idle");
+      return;
+    }
+
+    let isCancelled = false;
+    setTextPreviewStatus("loading");
+    fetch(previewUrl)
+      .then((response) => response.text())
+      .then((content) => {
+        if (isCancelled) {
+          return;
+        }
+        const normalizedContent = content.trim();
+        const truncated =
+          normalizedContent.length > MAX_TEXT_PREVIEW_LENGTH
+            ? `${normalizedContent.slice(0, MAX_TEXT_PREVIEW_LENGTH)}\n\n… Aperçu tronqué`
+            : normalizedContent;
+        setTextPreview(truncated);
+        setTextPreviewStatus("ready");
+      })
+      .catch(() => {
+        if (isCancelled) {
+          return;
+        }
+        setTextPreview("");
+        setTextPreviewStatus("error");
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [previewAsset, getAssetPreviewUrl, triggerDownload]);
 
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -169,6 +328,14 @@ export default function LibraryPage() {
     );
   }, [assets, searchTerm]);
 
+  const isFileTypeAllowed = (file: File) => {
+    const normalizedName = file.name.toLowerCase();
+    const hasAllowedExtension = ACCEPTED_FILE_EXTENSIONS.some((extension) =>
+      normalizedName.endsWith(extension)
+    );
+    return ACCEPTED_MIME_TYPES.has(file.type) || hasAllowedExtension;
+  };
+
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -182,17 +349,36 @@ export default function LibraryPage() {
       return;
     }
 
-    const url = file.type.startsWith("image/") ? URL.createObjectURL(file) : "";
+    if (!isFileTypeAllowed(file)) {
+      alert(
+        "Format non supporté. Formats autorisés : PDF, TXT, MD, PNG, JPEG."
+      );
+      event.target.value = "";
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const detectedMimeType =
+      file.type ||
+      (file.name.toLowerCase().endsWith(".pdf")
+        ? "application/pdf"
+        : file.name.toLowerCase().endsWith(".md")
+          ? "text/markdown"
+          : file.name.toLowerCase().endsWith(".txt")
+            ? "text/plain"
+            : "application/octet-stream");
 
     setAssets((current) => [
       {
         id: crypto.randomUUID(),
         name: file.name,
-        type: file.type.startsWith("image/") ? "image" : "document",
+        type: detectedMimeType.startsWith("image/") ? "image" : "document",
+        mimeType: detectedMimeType,
         source: importSource,
         createdAt: new Date().toISOString(),
         pinned: false,
-        url,
+        url: "",
+        objectUrl,
       },
       ...current,
     ]);
@@ -263,7 +449,12 @@ export default function LibraryPage() {
           </select>
           <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-border/60 px-3 text-xs hover:bg-muted/40">
             <UploadCloud className="size-4" /> Importer
-            <input className="hidden" onChange={handleImport} type="file" />
+            <input
+              accept={FILE_INPUT_ACCEPT}
+              className="hidden"
+              onChange={handleImport}
+              type="file"
+            />
           </label>
         </div>
       </header>
@@ -316,42 +507,41 @@ export default function LibraryPage() {
                 </button>
               </div>
 
-              <div
+              <button
                 className="cursor-pointer group relative overflow-hidden rounded-xl border border-border/50 bg-background"
-                onClick={() => {
-                  if (asset.url) {
-                    // Open in viewer
-                    window.open(asset.url, "_blank");
-                    // Download local
-                    const a = document.createElement("a");
-                    a.href = asset.url;
-                    a.download = asset.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  }
-                }}
+                onClick={() => setPreviewAssetId(asset.id)}
+                type="button"
               >
-                {asset.url ? (
+                {asset.type === "image" && getAssetPreviewUrl(asset) ? (
                   <Image
                     alt={asset.name}
                     className="h-36 w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     height={144}
-                    src={asset.url}
-                    unoptimized={asset.url.startsWith("blob:")}
+                    src={getAssetPreviewUrl(asset)}
+                    unoptimized={getAssetPreviewUrl(asset).startsWith("blob:")}
                     width={320}
                   />
+                ) : asset.mimeType === "application/pdf" ? (
+                  <div className="flex h-36 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <FileType className="size-8" />
+                    Aperçu PDF
+                  </div>
+                ) : asset.mimeType.startsWith("text/") ? (
+                  <div className="flex h-36 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <FileText className="size-8" />
+                    Aperçu texte
+                  </div>
                 ) : (
                   <div className="flex h-36 items-center justify-center border-dashed border-border/50 text-xs text-muted-foreground">
-                    Cliquer pour télécharger
+                    Ouvrir l’aperçu
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded-md">
-                    Ouvrir & Télécharger
+                    Ouvrir l’aperçu
                   </span>
                 </div>
-              </div>
+              </button>
 
               {renamingAssetId === asset.id ? (
                 <div className="space-y-2">
@@ -419,6 +609,93 @@ export default function LibraryPage() {
           accidentelles.
         </p>
       </section>
+
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewAssetId(null);
+          }
+        }}
+        open={Boolean(previewAsset)}
+      >
+        <DialogContent className="liquid-glass max-w-4xl border border-border/60 bg-background/55 backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle>{previewAsset?.name ?? "Aperçu du fichier"}</DialogTitle>
+            <DialogDescription>
+              Prévisualisation sécurisée avant téléchargement.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewAsset && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-border/60 bg-background/50 p-3">
+                {previewAsset.type === "image" &&
+                getAssetPreviewUrl(previewAsset) ? (
+                  <Image
+                    alt={previewAsset.name}
+                    className="max-h-[65vh] w-full rounded-xl object-contain"
+                    height={720}
+                    src={getAssetPreviewUrl(previewAsset)}
+                    unoptimized={getAssetPreviewUrl(previewAsset).startsWith(
+                      "blob:"
+                    )}
+                    width={1280}
+                  />
+                ) : previewAsset.mimeType === "application/pdf" &&
+                  getAssetPreviewUrl(previewAsset) ? (
+                  <div className="h-[65vh] overflow-hidden rounded-xl border border-border/60">
+                    <object
+                      aria-label={`Aperçu PDF de ${previewAsset.name}`}
+                      className="h-full w-full"
+                      data={getAssetPreviewUrl(previewAsset)}
+                      type="application/pdf"
+                    >
+                      <iframe
+                        className="h-full w-full"
+                        src={getAssetPreviewUrl(previewAsset)}
+                        title={`Fallback PDF ${previewAsset.name}`}
+                      />
+                    </object>
+                  </div>
+                ) : previewAsset.mimeType.startsWith("text/") ? (
+                  <div className="h-[65vh] overflow-auto rounded-xl border border-border/60 bg-background/70 p-4">
+                    {textPreviewStatus === "loading" && (
+                      <p className="text-sm text-muted-foreground">
+                        Chargement du contenu...
+                      </p>
+                    )}
+                    {textPreviewStatus === "error" && (
+                      <p className="text-sm text-red-500">
+                        Impossible de charger ce fichier texte.
+                      </p>
+                    )}
+                    {textPreviewStatus === "ready" && (
+                      <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed">
+                        {textPreview || "Fichier vide."}
+                      </pre>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex h-[65vh] items-center justify-center rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground">
+                    Ce format ne peut pas être prévisualisé ici.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  onClick={() => triggerDownload(previewAsset)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Download className="mr-1 size-4" />
+                  Télécharger
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         onOpenChange={(open) => {
