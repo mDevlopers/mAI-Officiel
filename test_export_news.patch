@@ -1,0 +1,102 @@
+--- app/(chat)/news/page.tsx
++++ app/(chat)/news/page.tsx
+@@ -7,6 +7,8 @@
+   canConsumeUsage,
+   consumeUsage,
+   getUsageCount,
+ } from "@/lib/usage-limits";
++import jsPDF from "jspdf";
++import { Document, Packer, Paragraph, TextRun } from "docx";
+
+ type Result = { link: string; snippet: string; source: string; title: string };
+@@ -107,6 +109,61 @@
+     [report]
+   );
+
++  const downloadReport = async (format: "txt" | "md" | "pdf" | "docx") => {
++    if (!report) return;
++
++    const filename = `rapport-actualites.${format}`;
++
++    if (format === "txt" || format === "md") {
++      const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
++      const url = URL.createObjectURL(blob);
++      const a = document.createElement("a");
++      a.href = url;
++      a.download = filename;
++      a.click();
++      URL.revokeObjectURL(url);
++    } else if (format === "pdf") {
++      const doc = new jsPDF();
++      const splitText = doc.splitTextToSize(report, 180);
++      let y = 10;
++      for (let i = 0; i < splitText.length; i++) {
++        if (y > 280) {
++          doc.addPage();
++          y = 10;
++        }
++        doc.text(splitText[i], 10, y);
++        y += 7;
++      }
++      doc.save(filename);
++    } else if (format === "docx") {
++      const doc = new Document({
++        sections: [
++          {
++            properties: {},
++            children: report.split("\n").map(
++              (line) =>
++                new Paragraph({
++                  children: [new TextRun(line)],
++                })
++            ),
++          },
++        ],
++      });
++      Packer.toBlob(doc).then((blob) => {
++        const url = URL.createObjectURL(blob);
++        const a = document.createElement("a");
++        a.href = url;
++        a.download = filename;
++        a.click();
++        URL.revokeObjectURL(url);
++      });
++    }
++  };
++
+   if (!isUnlocked) {
+     return (
+       <div className="liquid-glass flex h-full w-full items-center justify-center p-6">
+@@ -219,19 +276,21 @@
+           <div className="mb-2 flex items-center justify-between">
+             <h2 className="font-semibold">Rapport de synthèse</h2>
+             <div className="flex gap-2">
+-              <Button
+-                onClick={() => {
+-                  const url = URL.createObjectURL(reportAsBlob);
+-                  const a = document.createElement("a");
+-                  a.href = url;
+-                  a.download = "rapport-actualites.txt";
+-                  a.click();
+-                  URL.revokeObjectURL(url);
+-                }}
+-                size="sm"
+-                variant="outline"
+-              >
+-                <Download className="mr-1 size-4" />
+-                Télécharger
+-              </Button>
++              <div className="relative group">
++                <Button size="sm" variant="outline" className="gap-2" disabled={!report}>
++                  <Download className="size-4" />
++                  Télécharger
++                </Button>
++                <div className="absolute right-0 top-full mt-1 hidden w-32 flex-col rounded-lg border border-border bg-card p-1 shadow-lg group-hover:flex">
++                  <button onClick={() => downloadReport("txt")} className="rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted">Format TXT</button>
++                  <button onClick={() => downloadReport("md")} className="rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted">Format Markdown</button>
++                  <button onClick={() => downloadReport("pdf")} className="rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted">Format PDF</button>
++                  <button onClick={() => downloadReport("docx")} className="rounded-md px-2 py-1.5 text-left text-xs hover:bg-muted">Format DOCX</button>
++                </div>
++              </div>
+               <Button size="sm" variant="outline">
+                 <SendHorizonal className="mr-1 size-4" />

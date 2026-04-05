@@ -3,8 +3,8 @@
 import {
   Bell,
   Brain,
-  Camera,
   CalendarClock,
+  Camera,
   Database,
   FileText,
   Gauge,
@@ -14,7 +14,6 @@ import {
   Settings2,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Trash2,
   UserCircle2,
 } from "lucide-react";
@@ -198,7 +197,9 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    const savedProfile = window.localStorage.getItem(PROFILE_SETTINGS_STORAGE_KEY);
+    const savedProfile = window.localStorage.getItem(
+      PROFILE_SETTINGS_STORAGE_KEY
+    );
     if (!savedProfile) {
       setProfileName(defaultProfileSettings.displayName);
       setProfileLogoDataUrl(defaultProfileSettings.avatarDataUrl);
@@ -236,7 +237,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    const savedProfile = window.localStorage.getItem(PROFILE_SETTINGS_STORAGE_KEY);
+    const savedProfile = window.localStorage.getItem(
+      PROFILE_SETTINGS_STORAGE_KEY
+    );
     try {
       const parsed = savedProfile
         ? (JSON.parse(savedProfile) as Record<string, unknown>)
@@ -271,7 +274,8 @@ export default function SettingsPage() {
           typeof parsed.projectIconColor === "string"
             ? parsed.projectIconColor
             : "#60a5fa",
-        projectTitle: typeof parsed.projectTitle === "string" ? parsed.projectTitle : "",
+        projectTitle:
+          typeof parsed.projectTitle === "string" ? parsed.projectTitle : "",
       };
       window.localStorage.setItem(
         PROFILE_SETTINGS_STORAGE_KEY,
@@ -622,14 +626,11 @@ export default function SettingsPage() {
           {isHydrated && plan !== "max" && (
             <div className="mt-4 flex justify-center">
               <Button asChild className="rounded-full" variant="outline">
-                <a href="/">
-                  Obtenir FORFAIT SUPÉRIEUR
-                </a>
+                <a href="/">Obtenir FORFAIT SUPÉRIEUR</a>
               </Button>
             </div>
           )}
         </div>
-
       </section>
 
       <section
@@ -724,7 +725,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="profile-name-input">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="profile-name-input"
+            >
               Nom de profil
             </label>
             <Input
@@ -735,14 +739,18 @@ export default function SettingsPage() {
               value={profileName}
             />
             <p className="text-xs text-muted-foreground">
-              Ce nom est utilisé dans les en-têtes et interactions personnalisées.
+              Ce nom est utilisé dans les en-têtes et interactions
+              personnalisées.
             </p>
           </div>
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="ai-call-name">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="ai-call-name"
+            >
               Nom (comment l&apos;IA doit vous appeler)
             </label>
             <Input
@@ -753,7 +761,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="profession">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="profession"
+            >
               Profession
             </label>
             <Input
@@ -764,7 +775,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="response-style">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="response-style"
+            >
               Style de réponse
             </label>
             <select
@@ -792,7 +806,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-xs text-muted-foreground" htmlFor="personality">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="personality"
+            >
               Personnalité (champ libre)
             </label>
             <textarea
@@ -804,7 +821,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-xs text-muted-foreground" htmlFor="personal-context">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="personal-context"
+            >
               Informations personnelles (champ libre)
             </label>
             <textarea
@@ -816,7 +836,10 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-xs text-muted-foreground" htmlFor="ai-memory">
+            <label
+              className="text-xs text-muted-foreground"
+              htmlFor="ai-memory"
+            >
               Mémoire (ce que l&apos;IA doit retenir)
             </label>
             <textarea
@@ -889,7 +912,9 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        <h3 className="mt-6 text-base font-semibold">Activation Premium par code</h3>
+        <h3 className="mt-6 text-base font-semibold">
+          Activation Premium par code
+        </h3>
         <p className="mt-2 text-sm text-muted-foreground">
           Aucune transaction financière directe n&apos;est traitée. Les forfaits
           premium sont débloqués uniquement via un code officiel.

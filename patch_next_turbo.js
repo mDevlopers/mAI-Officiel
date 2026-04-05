@@ -1,4 +1,7 @@
-import type { NextConfig } from "next";
+const fs = require('fs');
+let code = fs.readFileSync('next.config.ts', 'utf8');
+
+const newConfig = `import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["jspdf"],
@@ -14,4 +17,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default nextConfig;`;
+
+fs.writeFileSync('next.config.ts', newConfig);
