@@ -1,7 +1,7 @@
-const fs = require('fs');
-let code = fs.readFileSync('next.config.ts', 'utf8');
+const fs = require("fs");
+let code = fs.readFileSync("next.config.ts", "utf8");
 code = code.replace(
-  'const nextConfig: NextConfig = {',
+  "const nextConfig: NextConfig = {",
   `const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -13,4 +13,4 @@ code = code.replace(
     return config;
   },`
 );
-fs.writeFileSync('next.config.ts', code);
+fs.writeFileSync("next.config.ts", code);

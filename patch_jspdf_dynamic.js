@@ -1,9 +1,6 @@
-const fs = require('fs');
-let code = fs.readFileSync('app/(chat)/news/page.tsx', 'utf8');
-code = code.replace(
-  'import { jsPDF } from "jspdf";',
-  ''
-);
+const fs = require("fs");
+let code = fs.readFileSync("app/(chat)/news/page.tsx", "utf8");
+code = code.replace('import { jsPDF } from "jspdf";', "");
 
 const downloadMethod = `  const downloadReport = async (format: "txt" | "md" | "pdf" | "docx") => {
     if (!report) return;
@@ -57,5 +54,8 @@ const downloadMethod = `  const downloadReport = async (format: "txt" | "md" | "
     }
   };`;
 
-code = code.replace(/const downloadReport = async \(format.+?\};\s*\n/s, downloadMethod + '\n');
-fs.writeFileSync('app/(chat)/news/page.tsx', code);
+code = code.replace(
+  /const downloadReport = async \(format.+?\};\s*\n/s,
+  downloadMethod + "\n"
+);
+fs.writeFileSync("app/(chat)/news/page.tsx", code);

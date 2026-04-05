@@ -1,5 +1,5 @@
-const fs = require('fs');
-let code = fs.readFileSync('next.config.ts', 'utf8');
+const fs = require("fs");
+const code = fs.readFileSync("next.config.ts", "utf8");
 
 const newConfig = `import type { NextConfig } from "next";
 
@@ -21,4 +21,4 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;`;
 
-fs.writeFileSync('next.config.ts', newConfig);
+fs.writeFileSync("next.config.ts", newConfig);

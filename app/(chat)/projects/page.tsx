@@ -6,6 +6,7 @@ import {
   PlusIcon,
   SettingsIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -179,8 +180,9 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project: any) => (
-              <div
-                className="group relative flex flex-col justify-between rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md"
+              <Link
+                className="group relative flex flex-col justify-between rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50"
+                href={`/projects/${project.id}`}
                 key={project.id}
               >
                 <div>
@@ -206,16 +208,21 @@ export default function ProjectsPage() {
                   <span className="text-xs text-muted-foreground">
                     Créé le {new Date(project.createdAt).toLocaleDateString()}
                   </span>
-                  <Button
-                    className="size-8"
-                    size="icon"
-                    title="Paramètres (Bientôt)"
-                    variant="ghost"
+                  <Link
+                    href={`/projects/${project.id}`}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <SettingsIcon className="size-4" />
-                  </Button>
+                    <Button
+                      className="size-8"
+                      size="icon"
+                      title="Paramètres"
+                      variant="ghost"
+                    >
+                      <SettingsIcon className="size-4" />
+                    </Button>
+                  </Link>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )

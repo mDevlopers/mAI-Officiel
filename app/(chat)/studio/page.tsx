@@ -7,6 +7,38 @@ import { affordableImageModels } from "@/lib/ai/affordable-models";
 
 const imageModels = affordableImageModels;
 
+const predefinedStyles = [
+  { id: "none", label: "Aucun", prompt: "" },
+  {
+    id: "gothic",
+    label: "Gothique",
+    prompt:
+      ", in dark gothic style, dramatic lighting, highly detailed, moody atmosphere",
+  },
+  {
+    id: "sunset",
+    label: "Coucher de soleil",
+    prompt: ", at sunset, golden hour lighting, warm colors, cinematic",
+  },
+  {
+    id: "cyberpunk",
+    label: "Cyberpunk",
+    prompt:
+      ", in neon cyberpunk style, futuristic city background, glowing lights, high contrast",
+  },
+  {
+    id: "watercolor",
+    label: "Aquarelle",
+    prompt: ", watercolor painting style, soft edges, pastel colors, artistic",
+  },
+  {
+    id: "anime",
+    label: "Anime",
+    prompt:
+      ", anime art style, studio ghibli inspired, vibrant colors, clear outlines",
+  },
+];
+
 type StudioMode = "generate-image" | "edit-image";
 
 export default function StudioPage() {
@@ -18,6 +50,7 @@ export default function StudioPage() {
   const [resultImage, setResultImage] = useState("");
   const [resultProvider, setResultProvider] = useState("");
   const [error, setError] = useState("");
+  const [selectedStyle, setSelectedStyle] = useState("none");
   const [importSource, setImportSource] = useState<"device" | "mai-library">(
     "device"
   );
@@ -44,6 +77,14 @@ export default function StudioPage() {
     if (!prompt.trim()) {
       setError("Veuillez saisir un prompt.");
       return;
+    }
+
+    let finalPrompt = prompt;
+    if (mode === "edit-image" && selectedStyle !== "none") {
+      const styleObj = predefinedStyles.find((s) => s.id === selectedStyle);
+      if (styleObj) {
+        finalPrompt += styleObj.prompt;
+      }
     }
 
     setIsLoading(true);
@@ -145,6 +186,26 @@ export default function StudioPage() {
 
           {mode === "edit-image" ? (
             <>
+              <label className="mt-4 mb-2 block text-xs font-medium text-muted-foreground">
+                Style de rendu (Optionnel)
+              </label>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {predefinedStyles.map((style) => (
+                  <button
+                    className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+                      selectedStyle === style.id
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border/40 bg-background/50 text-muted-foreground hover:bg-background/80"
+                    }`}
+                    key={style.id}
+                    onClick={() => setSelectedStyle(style.id)}
+                    type="button"
+                  >
+                    {style.label}
+                  </button>
+                ))}
+              </div>
+
               <label className="mt-4 mb-2 block text-xs font-medium text-muted-foreground">
                 Image source (import conseillé)
               </label>
