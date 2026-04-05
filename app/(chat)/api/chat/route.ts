@@ -80,7 +80,9 @@ export async function POST(request: Request) {
       selectedChatModel,
       selectedVisibilityType,
       contextualActions,
+      ghostMode,
     } = requestBody;
+    const isGhostMode = ghostMode === true;
 
     const [, session] = await Promise.all([
       checkBotId().catch(() => null),
@@ -121,7 +123,7 @@ export async function POST(request: Request) {
 
     const isToolApprovalFlow = Boolean(messages);
 
-    const chat = await getChatById({ id });
+    const chat = isGhostMode ? null : await getChatById({ id });
     let messagesFromDb: DBMessage[] = [];
     let titlePromise: Promise<string> | null = null;
 
@@ -130,7 +132,7 @@ export async function POST(request: Request) {
         return new ChatbotError("forbidden:chat").toResponse();
       }
       messagesFromDb = await getMessagesByChatId({ id });
-    } else if (message?.role === "user") {
+    } else if (message?.role === "user" && !isGhostMode) {
       await saveChat({
         id,
         userId: session.user.id,
@@ -187,7 +189,7 @@ export async function POST(request: Request) {
       country,
     };
 
-    if (message?.role === "user") {
+    if (message?.role === "user" && !isGhostMode) {
       await saveMessages({
         messages: [
           {
@@ -235,18 +237,20 @@ export async function POST(request: Request) {
       const assistantMessageId = generateUUID();
       const textPartId = generateUUID();
 
-      await saveMessages({
-        messages: [
-          {
-            id: assistantMessageId,
-            role: "assistant",
-            parts: [{ type: "text", text: externalResult.text }],
-            createdAt: new Date(),
-            attachments: [],
-            chatId: id,
-          },
-        ],
-      });
+      if (!isGhostMode) {
+        await saveMessages({
+          messages: [
+            {
+              id: assistantMessageId,
+              role: "assistant",
+              parts: [{ type: "text", text: externalResult.text }],
+              createdAt: new Date(),
+              attachments: [],
+              chatId: id,
+            },
+          ],
+        });
+      }
 
       const stream = createUIMessageStream({
         execute: async ({ writer }) => {
@@ -258,7 +262,7 @@ export async function POST(request: Request) {
           });
           writer.write({ type: "text-end", id: textPartId });
 
-          if (titlePromise) {
+          if (titlePromise && !isGhostMode) {
             const title = await titlePromise;
             writer.write({ type: "data-chat-title", data: title });
             await updateChatTitleById({ chatId: id, title });
@@ -344,7 +348,7 @@ export async function POST(request: Request) {
           result.toUIMessageStream({ sendReasoning: isReasoningModel })
         );
 
-        if (titlePromise) {
+        if (titlePromise && !isGhostMode) {
           const title = await titlePromise;
           dataStream.write({ type: "data-chat-title", data: title });
           updateChatTitleById({ chatId: id, title });
@@ -352,6 +356,10 @@ export async function POST(request: Request) {
       },
       generateId: generateUUID,
       onFinish: async ({ messages: finishedMessages }) => {
+        if (isGhostMode) {
+          return;
+        }
+
         if (isToolApprovalFlow) {
           for (const finishedMsg of finishedMessages) {
             const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);

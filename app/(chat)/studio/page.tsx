@@ -18,6 +18,9 @@ export default function StudioPage() {
   const [resultImage, setResultImage] = useState("");
   const [resultProvider, setResultProvider] = useState("");
   const [error, setError] = useState("");
+  const [importSource, setImportSource] = useState<"device" | "mai-library">(
+    "device"
+  );
 
   const currentModel = imageModel;
 
@@ -27,7 +30,8 @@ export default function StudioPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      const base64Value = typeof reader.result === "string" ? reader.result : "";
+      const base64Value =
+        typeof reader.result === "string" ? reader.result : "";
       setImageInput(base64Value);
     };
     reader.onerror = () => {
@@ -73,7 +77,9 @@ export default function StudioPage() {
         }
       }
     } catch (runError) {
-      setError(runError instanceof Error ? runError.message : "Erreur inconnue");
+      setError(
+        runError instanceof Error ? runError.message : "Erreur inconnue"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +101,9 @@ export default function StudioPage() {
           ].map((item) => (
             <button
               className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition ${
-                mode === item.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                mode === item.id
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
               }`}
               key={item.id}
               onClick={() => setMode(item.id as StudioMode)}
@@ -140,9 +148,23 @@ export default function StudioPage() {
               <label className="mt-4 mb-2 block text-xs font-medium text-muted-foreground">
                 Image source (import conseillé)
               </label>
+              <select
+                className="mb-2 h-9 w-full rounded-xl border border-border/40 bg-background/70 px-3 text-xs"
+                onChange={(event) =>
+                  setImportSource(
+                    event.target.value as "device" | "mai-library"
+                  )
+                }
+                value={importSource}
+              >
+                <option value="device">Source : appareil local</option>
+                <option value="mai-library">Source : Bibliothèque mAI</option>
+              </select>
               <label className="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-background/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-background/70">
                 <Upload className="size-3.5" />
-                Importer une image pour l'édition
+                {importSource === "device"
+                  ? "Importer une image locale"
+                  : "Sélection via Bibliothèque mAI"}
                 <input
                   accept="image/*"
                   className="hidden"
@@ -159,7 +181,11 @@ export default function StudioPage() {
             </>
           ) : null}
 
-          <Button className="mt-4 w-full" disabled={isLoading} onClick={runStudio}>
+          <Button
+            className="mt-4 w-full"
+            disabled={isLoading}
+            onClick={runStudio}
+          >
             {isLoading ? "Traitement..." : "Lancer dans Studio"}
           </Button>
           {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}

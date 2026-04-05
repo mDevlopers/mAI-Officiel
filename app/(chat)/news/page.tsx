@@ -26,6 +26,9 @@ export default function NewsPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [searchesToday, setSearchesToday] = useState(0);
   const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
+  const [importSource, setImportSource] = useState<"device" | "mai-library">(
+    "device"
+  );
 
   const dailyLimit = currentPlanDefinition.limits.newsSearchesPerDay;
   const remainingSearches = Math.max(dailyLimit - searchesToday, 0);
@@ -163,8 +166,21 @@ export default function NewsPage() {
           >
             {isLoading ? "Recherche..." : "Rechercher"}
           </Button>
+          <select
+            className="h-11 rounded-xl border border-border bg-background/60 px-3 text-xs"
+            onChange={(event) =>
+              setImportSource(event.target.value as "device" | "mai-library")
+            }
+            value={importSource}
+          >
+            <option value="device">Source : appareil local</option>
+            <option value="mai-library">Source : Bibliothèque mAI</option>
+          </select>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3">
-            <UploadCloud className="size-4" /> Importer un fichier
+            <UploadCloud className="size-4" />
+            {importSource === "device"
+              ? "Importer un fichier"
+              : "Choisir depuis mAI"}
             <input className="hidden" onChange={handleImportFile} type="file" />
           </label>
         </div>

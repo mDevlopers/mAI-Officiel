@@ -39,6 +39,8 @@ export const postRequestBodySchema = z.object({
       isLearningEnabled: z.boolean().optional(),
     })
     .optional(),
+  ghostMode: z.boolean().optional(),
+  uploadSource: z.enum(["device", "mai-library"]).optional(),
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;

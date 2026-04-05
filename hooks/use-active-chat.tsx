@@ -223,6 +223,10 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       sendMessage({
         role: "user" as const,
         parts: [{ type: "text", text: query }],
+        // @ts-expect-error - appended body for transport request
+        experimental_append_body: {
+          ghostMode: localStorage.getItem("mai.ghost-mode") === "true",
+        },
       });
     }
   }, [sendMessage, chatId]);

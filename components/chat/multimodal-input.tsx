@@ -7,8 +7,8 @@ import {
   ArrowUpIcon,
   BotIcon,
   BrainIcon,
-  FilePenLineIcon,
   EyeIcon,
+  FilePenLineIcon,
   GraduationCapIcon,
   LockIcon,
   Paperclip,
@@ -77,6 +77,8 @@ import {
 } from "./slash-commands";
 import { SuggestedActions } from "./suggested-actions";
 import type { VisibilityType } from "./visibility-selector";
+
+type UploadSource = "device" | "mai-library";
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -277,6 +279,10 @@ function PureMultimodalInput({
     "mai.chatbar.size",
     "compact"
   );
+  const [uploadSource, setUploadSource] = useLocalStorage<UploadSource>(
+    "mai.upload-source",
+    "device"
+  );
 
   const handleInsertTemplate = useCallback(
     (templateText: string) => {
@@ -320,6 +326,10 @@ function PureMultimodalInput({
       typeof window === "undefined"
         ? false
         : localStorage.getItem("mai-learning-enabled") === "true";
+    const isGhostModeEnabled =
+      typeof window === "undefined"
+        ? false
+        : localStorage.getItem("mai.ghost-mode") === "true";
 
     sendMessage({
       role: "user",
@@ -342,6 +352,8 @@ function PureMultimodalInput({
           isWebSearchEnabled,
           isLearningEnabled,
         },
+        ghostMode: isGhostModeEnabled,
+        uploadSource,
       },
     });
 
@@ -361,6 +373,7 @@ function PureMultimodalInput({
     setLocalStorageInput,
     width,
     chatId,
+    uploadSource,
   ]);
 
   const uploadFile = useCallback(async (file: File) => {
@@ -456,8 +469,8 @@ function PureMultimodalInput({
           ...curr,
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
-    } catch (_error) {
-      toast.error("Échec de l'envoi de l'image collée.");
+      } catch (_error) {
+        toast.error("Échec de l'envoi de l'image collée.");
       } finally {
         setUploadQueue([]);
       }
@@ -637,6 +650,17 @@ function PureMultimodalInput({
               onInsertTemplate={handleInsertTemplate}
               status={status}
             />
+            <select
+              className="h-7 rounded-full border border-border/40 bg-secondary/40 px-2 text-[10px] text-muted-foreground outline-none"
+              onChange={(event) =>
+                setUploadSource(event.target.value as UploadSource)
+              }
+              title="Source d'import"
+              value={uploadSource}
+            >
+              <option value="device">Local</option>
+              <option value="mai-library">Bibliothèque mAI</option>
+            </select>
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
@@ -819,7 +843,9 @@ function PureContextualActionsMenu({
         </Button>
 
         <div className="my-1 rounded-lg border border-border/50 bg-background/60 p-2">
-          <p className="text-[11px] font-medium text-muted-foreground">Quiz IA</p>
+          <p className="text-[11px] font-medium text-muted-foreground">
+            Quiz IA
+          </p>
           <input
             className="mt-2 h-8 w-full rounded-md border border-border/50 bg-background px-2 text-xs outline-none"
             onChange={(event) => setQuizTopic(event.target.value)}
@@ -834,7 +860,9 @@ function PureContextualActionsMenu({
               onChange={(event) => {
                 const parsedValue = Number.parseInt(event.target.value, 10);
                 setQuizQuestionCount(
-                  Number.isNaN(parsedValue) ? 5 : Math.min(20, Math.max(1, parsedValue))
+                  Number.isNaN(parsedValue)
+                    ? 5
+                    : Math.min(20, Math.max(1, parsedValue))
                 );
               }}
               type="number"
