@@ -11,6 +11,7 @@ import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
+import { generateTitleFromUserMessage } from "@/app/(chat)/actions";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import {
   isExternalTextModel,
@@ -47,7 +48,6 @@ import { ChatbotError } from "@/lib/errors";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
-import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
 export const maxDuration = 60;
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       selectedVisibilityType,
       contextualActions,
       ghostMode,
+      tags,
     } = requestBody;
     const isGhostMode = ghostMode === true;
 
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
+        tags: tags || [],
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }

@@ -650,17 +650,6 @@ function PureMultimodalInput({
               onInsertTemplate={handleInsertTemplate}
               status={status}
             />
-            <select
-              className="h-7 rounded-full border border-border/40 bg-secondary/40 px-2 text-[10px] text-muted-foreground outline-none"
-              onChange={(event) =>
-                setUploadSource(event.target.value as UploadSource)
-              }
-              title="Source d'import"
-              value={uploadSource}
-            >
-              <option value="device">Local</option>
-              <option value="mai-library">Bibliothèque mAI</option>
-            </select>
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
@@ -956,8 +945,8 @@ function PureModelSelectorCompact({
     { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
   );
 
-  const capabilities: Record<string, ModelCapabilities> | undefined =
-    modelsData?.capabilities ?? modelsData;
+
+  const capabilities: Record<string, ModelCapabilities> | undefined = modelsData?.capabilities ?? modelsData;
   const dynamicModels: ChatModel[] | undefined = modelsData?.models;
   const activeModels = dynamicModels ?? chatModels;
 
@@ -966,6 +955,30 @@ function PureModelSelectorCompact({
     activeModels.find((m: ChatModel) => m.id === DEFAULT_CHAT_MODEL) ??
     activeModels[0] ??
     chatModels[0];
+
+  const { data: agents } = useSWR("/api/agents", (url: string) => fetch(url).then(r => r.json()), { revalidateOnFocus: false, dedupingInterval: 3600000 });
+
+  const groupedModels = useMemo(() => {
+    const defaultOrder = ["mistral", "openai", "anthropic", "google", "meta"];
+    return activeModels.reduce((acc: Record<string, ChatModel[]>, model: ChatModel) => {
+      const provider = model.provider || "autres";
+      if (!acc[provider]) acc[provider] = [];
+      acc[provider].push(model);
+      return acc;
+    }, {});
+  }, [activeModels]);
+
+  const providerKeys = useMemo(() => {
+    const defaultOrder = ["mistral", "openai", "anthropic", "google", "meta"];
+    return Object.keys(groupedModels).sort((a, b) => {
+      const idxA = defaultOrder.indexOf(a);
+      const idxB = defaultOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [groupedModels]);
 
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
@@ -982,165 +995,64 @@ function PureModelSelectorCompact({
       <ModelSelectorContent>
         <ModelSelectorInput placeholder="Rechercher un modèle..." />
         <ModelSelectorList>
-          {(() => {
-            const curatedIds = new Set(chatModels.map((m) => m.id));
-            const allModels = dynamicModels
-              ? [
-                  ...chatModels,
-                  ...dynamicModels.filter((m) => !curatedIds.has(m.id)),
-                ]
-              : chatModels;
+          {agents && agents.length > 0 && (
+            <ModelSelectorGroup heading="Mes mAIs">
+              {agents.map((agent: any) => (
+                <ModelSelectorItem
+                  key={`agent-${agent.id}`}
+                  onSelect={() => {
+                    onModelChange?.(`agent-${agent.id}`);
+                    setOpen(false);
+                  }}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <ModelSelectorLogo provider="custom" />
+                    <ModelSelectorName>{agent.name}</ModelSelectorName>
+                  </div>
+                  {selectedModelId === `agent-${agent.id}` && <CheckCircle2 className="size-4" />}
+                </ModelSelectorItem>
+              ))}
+            </ModelSelectorGroup>
+          )}
 
-            const grouped: Record<
-              string,
-              { model: ChatModel; curated: boolean }[]
-            > = {};
-            for (const model of allModels) {
-              const key = curatedIds.has(model.id)
-                ? "_curated"
-                : model.provider;
-              if (!grouped[key]) {
-                grouped[key] = [];
-              }
-              grouped[key].push({ model, curated: curatedIds.has(model.id) });
-            }
+          {providerKeys.map((provider) => (
+            <ModelSelectorGroup
+              heading={provider.charAt(0).toUpperCase() + provider.slice(1)}
+              key={provider}
+            >
+              {groupedModels[provider].map((model: ChatModel) => {
+                const logoProvider = getModelLogoProvider(model);
+                const hasTools = capabilities?.[model.id]?.tools;
+                const hasReasoning = capabilities?.[model.id]?.reasoning;
+                const hasVision = capabilities?.[model.id]?.vision;
 
-            const customAgents = modelsData?.customAgents || [];
-
-            const sortedKeys = Object.keys(grouped).sort((a, b) => {
-              if (a === "_curated") {
-                return -1;
-              }
-              if (b === "_curated") {
-                return 1;
-              }
-              return a.localeCompare(b);
-            });
-
-            const providerNames: Record<string, string> = {
-              alibaba: "Alibaba",
-              anthropic: "Anthropic",
-              "arcee-ai": "Arcee AI",
-              bytedance: "ByteDance",
-              cohere: "Cohere",
-              deepseek: "DeepSeek",
-              google: "Google",
-              inception: "Inception",
-              kwaipilot: "Kwaipilot",
-              meituan: "Meituan",
-              meta: "Meta",
-              minimax: "MiniMax",
-              mistral: "Mistral",
-              moonshotai: "Moonshot",
-              morph: "Morph",
-              nvidia: "Nvidia",
-              openai: "OpenAI",
-              perplexity: "Perplexity",
-              "prime-intellect": "Prime Intellect",
-              xiaomi: "Xiaomi",
-              xai: "xAI",
-              zai: "Zai",
-            };
-
-            return (
-              <>
-                {customAgents.length > 0 && (
-                  <ModelSelectorGroup heading="Mes mAIs">
-                    {customAgents.map((agent: any) => (
-                      <ModelSelectorItem
-                        className={cn(
-                          "flex w-full",
-                          selectedModelId === `agent-${agent.id}` &&
-                            "bg-muted/50"
-                        )}
-                        key={`agent-${agent.id}`}
-                        onSelect={() => {
-                          onModelChange?.(`agent-${agent.id}`);
-                          setCookie("chat-model", `agent-${agent.id}`);
-                          setOpen(false);
-                          setTimeout(() => {
-                            document
-                              .querySelector<HTMLTextAreaElement>(
-                                "[data-testid='multimodal-input']"
-                              )
-                              ?.focus();
-                          }, 50);
-                        }}
-                        value={`agent-${agent.id}`}
-                      >
-                        {agent.image ? (
-                          <div
-                            className="mr-1 h-4 w-4 rounded-sm bg-cover bg-center"
-                            style={{ backgroundImage: `url(${agent.image})` }}
-                          />
-                        ) : (
-                          <BotIcon className="w-4 h-4 mr-1 text-primary" />
-                        )}
-                        <ModelSelectorName>{agent.name}</ModelSelectorName>
-                      </ModelSelectorItem>
-                    ))}
-                  </ModelSelectorGroup>
-                )}
-                {sortedKeys.map((key) => (
-                  <ModelSelectorGroup
-                    heading={
-                      key === "_curated"
-                        ? undefined
-                        : (providerNames[key] ?? key)
-                    }
-                    key={key}
+                return (
+                  <ModelSelectorItem
+                    key={model.id}
+                    onSelect={() => {
+                      onModelChange?.(model.id);
+                      setOpen(false);
+                    }}
+                    className="flex items-center justify-between"
                   >
-                    {grouped[key].map(({ model, curated }) => {
-                      const logoProvider = getModelLogoProvider(model);
-                      return (
-                        <ModelSelectorItem
-                          className={cn(
-                            "flex w-full",
-                            model.id === selectedModel.id && "bg-muted/50",
-                            !curated && "opacity-40 cursor-default"
-                          )}
-                          key={model.id}
-                          onSelect={() => {
-                            if (!curated) {
-                              return;
-                            }
-                            onModelChange?.(model.id);
-                            setCookie("chat-model", model.id);
-                            setOpen(false);
-                            setTimeout(() => {
-                              document
-                                .querySelector<HTMLTextAreaElement>(
-                                  "[data-testid='multimodal-input']"
-                                )
-                                ?.focus();
-                            }, 50);
-                          }}
-                          value={model.id}
-                        >
-                          <ModelSelectorLogo provider={logoProvider} />
-                          <ModelSelectorName>{model.name}</ModelSelectorName>
-                          <div className="ml-auto flex items-center gap-2 text-foreground/70">
-                            {capabilities?.[model.id]?.tools && (
-                              <WrenchIcon className="size-3.5" />
-                            )}
-                            {capabilities?.[model.id]?.vision && (
-                              <EyeIcon className="size-3.5" />
-                            )}
-                            {capabilities?.[model.id]?.reasoning && (
-                              <BrainIcon className="size-3.5" />
-                            )}
-                            {!curated && (
-                              <LockIcon className="size-3 text-muted-foreground/50" />
-                            )}
-                          </div>
-                        </ModelSelectorItem>
-                      );
-                    })}
-                  </ModelSelectorGroup>
-                ))}
-              </>
-            );
-          })()}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <ModelSelectorLogo provider={logoProvider} />
+                        <ModelSelectorName>{model.name}</ModelSelectorName>
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-muted-foreground opacity-50">
+                        {hasTools && <WrenchIcon className="size-3" />}
+                        {hasVision && <ImageIcon className="size-3" />}
+                        {hasReasoning && <BrainIcon className="size-3" />}
+                      </div>
+                    </div>
+                    {selectedModelId === model.id && <CheckCircle2 className="size-4" />}
+                  </ModelSelectorItem>
+                );
+              })}
+            </ModelSelectorGroup>
+          ))}
         </ModelSelectorList>
       </ModelSelectorContent>
     </ModelSelector>

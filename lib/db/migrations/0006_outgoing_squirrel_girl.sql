@@ -1,0 +1,2 @@
+ALTER TABLE "Project" ADD COLUMN "defaultModel" varchar DEFAULT 'moonshotai/kimi-k2-0905';--> statement-breakpoint
+ALTER TABLE "User" ADD COLUMN "defaultModel" varchar DEFAULT 'moonshotai/kimi-k2-0905';

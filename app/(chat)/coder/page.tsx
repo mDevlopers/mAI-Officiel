@@ -38,6 +38,17 @@ export default function CoderPage() {
   const [plan, setPlan] = useState("");
   const [isPlanApproved, setIsPlanApproved] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+
+  const [currentSuggestion, setCurrentSuggestion] = useState("");
+  useEffect(() => {
+    const suggestions = ["Créer un script de scraping", "Optimiser le composant Button", "Ajouter l'authentification", "Déboguer l'erreur CORS"];
+    setCurrentSuggestion(suggestions[Math.floor(Math.random() * suggestions.length)]);
+  }, []);
+
+  const handleSuggestionClick = () => {
+    setPrompt(currentSuggestion);
+  };
+
   const [isRunning, setIsRunning] = useState(false);
   const [files, setFiles] = useState<FileEntry[]>([
     {

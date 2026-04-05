@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { chatModels } from "@/lib/ai/models";
 
 const fetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -49,6 +50,10 @@ export default function ProjectSettingsPage({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+
+  const [defaultModel, setDefaultModel] = useState("");
+  const { data: agents } = useSWR("/api/agents", fetcher);
+
   useEffect(() => {
     if (project) {
       setName(project.name || "");
@@ -56,8 +61,14 @@ export default function ProjectSettingsPage({
       setInstructions(project.instructions || "");
       setMemory(project.memory || "");
       setAgentIds(project.agentIds || []);
+      setDefaultModel(project.defaultModel || "moonshotai/kimi-k2-0905");
     }
   }, [project]);
+
+  const handleUpdateDefaultModel = (e: any) => {
+    setDefaultModel(e.target.value);
+  };
+
 
   if (error) {
     return (
@@ -88,6 +99,7 @@ export default function ProjectSettingsPage({
           instructions,
           memory,
           agentIds,
+          defaultModel,
         }),
       });
 

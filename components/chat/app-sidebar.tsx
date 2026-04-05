@@ -52,7 +52,7 @@ import { BrandStarLogoIcon } from "./icons";
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, toggleSidebar } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
@@ -84,9 +84,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   className="size-8 !px-0 items-center justify-center"
                   tooltip="MAI"
                 >
-                  <Link href="/" onClick={() => setOpenMobile(false)}>
-                    <BrandStarLogoIcon size={20} />
-                  </Link>
+                  <div className="cursor-pointer" onClick={toggleSidebar}>
+                    <BrandStarLogoIcon
+                      className="cursor-pointer"
+                      onClick={toggleSidebar}
+                      size={28}
+                    />
+                  </div>
                 </SidebarMenuButton>
                 <label
                   className="flex h-8 flex-1 items-center gap-1.5 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/35 px-2 backdrop-blur-xl group-data-[collapsible=icon]:hidden"
@@ -188,7 +192,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                             Bêta
                           </span>
                         ) : null}
-                      </Link>
+                      </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -216,7 +220,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                           >
                             <SearchIcon className="size-3.5" />
                             <span>Aller vers {item.label}</span>
-                          </Link>
+                          </div>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}

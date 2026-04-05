@@ -1,32 +1,16 @@
-"use client";
+const fs = require("node:fs");
 
-import type { UseChatHelpers } from "@ai-sdk/react";
-import { motion } from "framer-motion";
-import { useMemo, useEffect, useState } from "react";
+const file = "components/chat/suggested-actions.tsx";
+let code = fs.readFileSync(file, "utf8");
+
+const importLines = `import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { memo } from "react";
-import { suggestions } from "@/lib/constants";
-import type { ChatMessage } from "@/lib/types";
-import { Suggestion } from "../ai-elements/suggestion";
-import type { VisibilityType } from "./visibility-selector";
+import { Button } from "@/components/ui/button";`;
 
-type SuggestedActionsProps = {
-  chatId: string;
-  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
-  selectedVisibilityType: VisibilityType;
-};
+code = code.replace('import { useMemo } from "react";', importLines);
 
-
-function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
-  const suggestedActions = useMemo(() => {
-    const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 4);
-  }, []);
-
-
-
+const renderLogic = `
   const [shortcuts, setShortcuts] = useState<{name: string, url: string, icon: string}[]>([]);
   useEffect(() => {
     fetch("/api/user/shortcuts").then(r => r.json()).then(data => {
@@ -58,7 +42,7 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 * index }}
-            key={`suggested-action-${suggestedAction}-${index}`}
+            key={\`suggested-action-\${suggestedAction}-\${index}\`}
             className={index > 1 ? "hidden sm:block" : "block"}
           >
             <Button
@@ -77,5 +61,8 @@ function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
     </div>
   );
 }
+`;
 
-);
+code = code.replace(/  return \([\s\S]*\}\n/g, renderLogic + '\n');
+
+fs.writeFileSync(file, code);

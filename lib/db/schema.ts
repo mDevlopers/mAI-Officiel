@@ -22,6 +22,9 @@ export const user = pgTable("User", {
   isAnonymous: boolean("isAnonymous").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  globalTags: json("globalTags").$type<{id: string, name: string, color: string}[]>().default([]),
+  defaultModel: varchar("defaultModel").default("moonshotai/kimi-k2-0905"),
+  shortcuts: json("shortcuts").$type<{name: string, url: string, icon: string}[]>().default([]),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -38,6 +41,7 @@ export const chat = pgTable("Chat", {
     .default("private"),
   agentId: uuid("agentId").references(() => agent.id),
   projectId: uuid("projectId").references(() => project.id),
+  tags: json("tags").$type<string[]>().default([]),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -172,6 +176,7 @@ export const project = pgTable("Project", {
   memory: text("memory"), // plain text knowledge/sources
   files: json("files").default([]), // uploaded files metadata
   agentIds: json("agentIds").$type<string[]>().default([]), // selected mAI ids
+  defaultModel: varchar("defaultModel").default("moonshotai/kimi-k2-0905"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
 });

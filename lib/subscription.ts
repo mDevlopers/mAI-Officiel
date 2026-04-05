@@ -37,6 +37,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       taskSchedules: 2,
       newsSearchesPerDay: 3,
       healthRequestsPerMonth: 5,
+      maxTags: 5,
     },
   },
   plus: {

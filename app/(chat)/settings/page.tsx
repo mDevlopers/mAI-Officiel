@@ -20,8 +20,11 @@ import {
 import { useSession } from "next-auth/react";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { chatModels } from "@/lib/ai/models";
+import useSWR from "swr";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { planDefinitions } from "@/lib/subscription";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
@@ -131,6 +134,74 @@ export default function SettingsPage() {
   } = useSubscriptionPlan();
 
   const [activationCode, setActivationCode] = useState("");
+
+  const maxTags = currentPlanDefinition.limits.maxTags || 5;
+
+
+  const [shortcuts, setShortcuts] = useState<{name: string, url: string, icon: string}[]>([]);
+  const [newScName, setNewScName] = useState("");
+  const [newScUrl, setNewScUrl] = useState("");
+  const [newScIcon, setNewScIcon] = useState("⭐");
+
+  useEffect(() => {
+    fetch("/api/user/shortcuts").then(r => r.json()).then(data => {
+      if(Array.isArray(data)) setShortcuts(data);
+    }).catch(console.error);
+  }, []);
+
+  const handleAddShortcut = async () => {
+    if(shortcuts.length >= 5 || !newScName.trim() || !newScUrl.trim()) return;
+    const sc = { name: newScName.trim(), url: newScUrl.trim(), icon: newScIcon };
+    const updated = [...shortcuts, sc];
+    setShortcuts(updated);
+    setNewScName(""); setNewScUrl(""); setNewScIcon("⭐");
+    await fetch("/api/user/shortcuts", { method: "POST", body: JSON.stringify({ shortcuts: updated }) });
+    toast.success("Raccourci ajouté !");
+  };
+
+  const handleRemoveShortcut = async (index: number) => {
+    const updated = shortcuts.filter((_, i) => i !== index);
+    setShortcuts(updated);
+    await fetch("/api/user/shortcuts", { method: "POST", body: JSON.stringify({ shortcuts: updated }) });
+  };
+
+  const [defaultModel, setDefaultModel] = useState("");
+  const { data: agents } = useSWR("/api/agents", url => fetch(url).then(r => r.json()));
+
+  useEffect(() => {
+    fetch("/api/user/default-model").then(r => r.json()).then(model => setDefaultModel(model)).catch(console.error);
+  }, []);
+
+  const handleUpdateDefaultModel = async (modelId: string) => {
+    setDefaultModel(modelId);
+    await fetch("/api/user/default-model", { method: "POST", body: JSON.stringify({ defaultModel: modelId }) });
+    toast.success("Modèle par défaut mis à jour");
+  };
+
+  const [globalTags, setGlobalTags] = useState<{id: string, name: string, color: string}[]>([]);
+  const [newTagName, setNewTagName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/user/tags").then(r => r.json()).then(data => {
+       if(Array.isArray(data)) setGlobalTags(data);
+    }).catch(console.error);
+  }, []);
+
+  const handleAddTag = async () => {
+    if(!newTagName.trim() || globalTags.length >= maxTags) return;
+    const newTag = { id: crypto.randomUUID(), name: newTagName.trim(), color: "#4f46e5" };
+    const updated = [...globalTags, newTag];
+    setGlobalTags(updated);
+    setNewTagName("");
+    await fetch("/api/user/tags", { method: "POST", body: JSON.stringify({ tags: updated }) });
+  };
+
+  const handleRemoveTag = async (id: string) => {
+    const updated = globalTags.filter(t => t.id !== id);
+    setGlobalTags(updated);
+    await fetch("/api/user/tags", { method: "POST", body: JSON.stringify({ tags: updated }) });
+  };
+
   const [activationMessage, setActivationMessage] = useState<{
     type: "error" | "success";
     text: string;

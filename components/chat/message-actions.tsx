@@ -1,4 +1,5 @@
 import equal from "fast-deep-equal";
+import { FlagIcon, PinIcon } from "lucide-react";
 import { memo } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
@@ -127,14 +128,14 @@ export function PureMessageActions({
             onClick={handlePinMessage}
             tooltip="Épingler"
           >
-            📌
+            <PinIcon className="size-4" />
           </Action>
           <Action
             className="size-7 text-muted-foreground/50 hover:text-foreground"
             onClick={handleReportMessage}
             tooltip="Signaler"
           >
-            🚩
+            <FlagIcon className="size-4" />
           </Action>
         </div>
       </Actions>
@@ -155,14 +156,14 @@ export function PureMessageActions({
         onClick={handlePinMessage}
         tooltip="Épingler"
       >
-        📌
+        <PinIcon className="size-4" />
       </Action>
       <Action
         className="text-muted-foreground/50 hover:text-foreground"
         onClick={handleReportMessage}
         tooltip="Signaler"
       >
-        🚩
+        <FlagIcon className="size-4" />
       </Action>
 
       <Action

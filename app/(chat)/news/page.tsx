@@ -32,6 +32,28 @@ export default function NewsPage() {
     "device"
   );
 
+  const [currentSuggestion, setCurrentSuggestion] = useState("");
+  useEffect(() => {
+    const suggestions = ["Résumé tech", "IA actualités", "Politique fr", "Économie", "Sports"];
+    setCurrentSuggestion(suggestions[Math.floor(Math.random() * suggestions.length)]);
+  }, []);
+
+  const handleSuggestionClick = () => {
+    setQuery(currentSuggestion);
+  };
+
+
+  const [currentSuggestion, setCurrentSuggestion] = useState("");
+  useEffect(() => {
+    const suggestions = ["Résumé tech", "IA actualités", "Politique fr", "Économie", "Sports"];
+    setCurrentSuggestion(suggestions[Math.floor(Math.random() * suggestions.length)]);
+  }, []);
+
+  const handleSuggestionClick = () => {
+    setQuery(currentSuggestion);
+  };
+
+
   const dailyLimit = currentPlanDefinition.limits.newsSearchesPerDay;
   const remainingSearches = Math.max(dailyLimit - searchesToday, 0);
 

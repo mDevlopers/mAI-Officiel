@@ -84,6 +84,7 @@ export async function saveChat({
   userId: string;
   title: string;
   visibility: VisibilityType;
+  tags?: string[];
 }) {
   try {
     return await db.insert(chat).values({
@@ -92,6 +93,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      tags: tags || [],
     });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save chat");
@@ -555,6 +557,14 @@ export async function updateChatTitleById({
 }) {
   try {
     return await db.update(chat).set({ title }).where(eq(chat.id, chatId));
+  } catch (error) {
+    return;
+  }
+}
+
+export async function updateChatTagsById({ chatId, tags }: { chatId: string; tags: string[] }) {
+  try {
+    return await db.update(chat).set({ tags }).where(eq(chat.id, chatId));
   } catch (_error) {
     return;
   }

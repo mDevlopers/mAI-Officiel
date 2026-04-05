@@ -23,6 +23,7 @@ import { toast } from "@/components/chat/toast";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { useEffect as useIsomorphicLayoutEffect } from "react";
 import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
 import type { ChatMessage } from "@/lib/types";
@@ -78,6 +79,14 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
+
+  useEffect(() => {
+    if (isNewChat) {
+      fetch("/api/user/default-model").then(r => r.json()).then(defaultModel => {
+        if(defaultModel) setCurrentModelId(defaultModel);
+      }).catch(console.error);
+    }
+  }, [isNewChat]);
 
   const [input, setInput] = useState("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);

@@ -41,6 +41,7 @@ export const postRequestBodySchema = z.object({
     .optional(),
   ghostMode: z.boolean().optional(),
   uploadSource: z.enum(["device", "mai-library"]).optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export type PostRequestBody = z.infer<typeof postRequestBodySchema>;
