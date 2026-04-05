@@ -54,12 +54,34 @@ export const chatModels: ChatModel[] = [
     gatewayOrder: ["baseten", "fireworks"],
   },
   {
+    id: "moonshotai/kimi-k2.5",
+    name: "Kimi K2.5",
+    provider: "moonshotai",
+    description: "Flagship Moonshot AI",
+    gatewayOrder: ["fireworks", "bedrock"],
+  },
+  {
     id: "openai/gpt-oss-20b",
     name: "GPT OSS 20B",
     provider: "openai",
     description: "Petit raisonnement",
     reasoningEffort: "low",
     gatewayOrder: ["groq", "bedrock"],
+  },
+  {
+    id: "openai/gpt-oss-120b",
+    name: "GPT OSS 120B",
+    provider: "openai",
+    description: "Modèle Open-Source massif",
+    reasoningEffort: "low",
+    gatewayOrder: ["fireworks", "bedrock"],
+  },
+  {
+    id: "xai/grok-4.1-fast-non-reasoning",
+    name: "Grok 4.1 Fast",
+    provider: "xai",
+    description: "Rapidité X",
+    gatewayOrder: ["xai"],
   },
 
   // --- COMETAPI + GEMINI (TEXTE GLOBAL) ---
@@ -162,6 +184,18 @@ export const chatModels: ChatModel[] = [
 
   // --- OPENROUTER CHEAP PREMIUM ---
   {
+    id: "openrouter/anthropic/claude-3.5-haiku",
+    name: "Claude 3.5 Haiku",
+    provider: "openrouter",
+    description: "L'intelligence à prix mini",
+  },
+  {
+    id: "openrouter/openai/gpt-4o-mini",
+    name: "GPT-4o Mini",
+    provider: "openrouter",
+    description: "Compact et surprenant",
+  },
+  {
     id: "openrouter/deepseek/deepseek-chat",
     name: "DeepSeek V3 (OR)",
     provider: "openrouter",
@@ -176,10 +210,22 @@ export const chatModels: ChatModel[] = [
     description: "Local et sécurisé",
   },
   {
+    id: "ollama/gemma2:9b",
+    name: "Gemma 2 9B (Ollama)",
+    provider: "ollama",
+    description: "Modèle Gemma local équilibré",
+  },
+  {
     id: "ollama/mistral-nemo",
     name: "Mistral Nemo (Ollama)",
     provider: "ollama",
     description: "12B de puissance locale",
+  },
+  {
+    id: "ollama/phi3.5",
+    name: "Phi 3.5 (Ollama)",
+    provider: "ollama",
+    description: "Petit modèle local efficace",
   },
   {
     id: "ollama/deepseek-coder-v2",
