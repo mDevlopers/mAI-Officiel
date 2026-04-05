@@ -98,7 +98,8 @@ export default function StudioPage() {
         body: JSON.stringify({
           action: mode,
           model: currentModel,
-          prompt,
+          // Le style est injecté côté client dans `finalPrompt` avant l'appel API.
+          prompt: finalPrompt,
           image: mode === "edit-image" ? imageInput : undefined,
         }),
       });
