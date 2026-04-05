@@ -29,42 +29,48 @@ export const chatModels: ChatModel[] = [
     id: "deepseek/deepseek-v3.2",
     name: "DeepSeek V3.2",
     provider: "deepseek",
-    description: "Rapide et capable (Tools)",
+    description:
+      "Modèle polyvalent, rapide et fiable pour les tâches générales avec outils.",
     gatewayOrder: ["bedrock", "deepinfra"],
   },
   {
     id: "mistral/codestral",
-    name: "Codestral",
+    name: "Mistral Codestral",
     provider: "mistral",
-    description: "Le spécialiste du code",
+    description:
+      "Spécialisé pour le code, le débogage et l'assistance au développement.",
     gatewayOrder: ["mistral"],
   },
   {
     id: "mistral/mistral-small",
     name: "Mistral Small",
     provider: "mistral",
-    description: "Vision et rapidité",
+    description:
+      "Équilibre entre rapidité, compréhension visuelle et qualité de réponse.",
     gatewayOrder: ["mistral"],
   },
   {
     id: "moonshotai/kimi-k2-0905",
     name: "Kimi K2 0905",
     provider: "moonshotai",
-    description: "Polyvalent et efficace",
+    description:
+      "Modèle généraliste efficace pour échanges longs et demandes variées.",
     gatewayOrder: ["baseten", "fireworks"],
   },
   {
     id: "moonshotai/kimi-k2.5",
     name: "Kimi K2.5",
     provider: "moonshotai",
-    description: "Flagship Moonshot AI",
+    description:
+      "Modèle premium Moonshot AI conçu pour la performance sur cas complexes.",
     gatewayOrder: ["fireworks", "bedrock"],
   },
   {
     id: "openai/gpt-oss-20b",
     name: "GPT OSS 20B",
     provider: "openai",
-    description: "Petit raisonnement",
+    description:
+      "Modèle compact orienté raisonnement léger, rapide et économique.",
     reasoningEffort: "low",
     gatewayOrder: ["groq", "bedrock"],
   },
@@ -72,7 +78,8 @@ export const chatModels: ChatModel[] = [
     id: "openai/gpt-oss-120b",
     name: "GPT OSS 120B",
     provider: "openai",
-    description: "Modèle Open-Source massif",
+    description:
+      "Grand modèle open-source pour tâches avancées et raisonnement structuré.",
     reasoningEffort: "low",
     gatewayOrder: ["fireworks", "bedrock"],
   },
@@ -80,7 +87,8 @@ export const chatModels: ChatModel[] = [
     id: "xai/grok-4.1-fast-non-reasoning",
     name: "Grok 4.1 Fast",
     provider: "xai",
-    description: "Rapidité X",
+    description:
+      "Version rapide de Grok pour réponses instantanées en contexte conversationnel.",
     gatewayOrder: ["xai"],
   },
 
@@ -89,31 +97,36 @@ export const chatModels: ChatModel[] = [
     id: "gpt-5.4-nano",
     name: "GPT-5.4 Nano",
     provider: "cometapi",
-    description: "CometAPI low-cost, rapide",
+    description:
+      "Option CometAPI très économique pour tâches simples et réponses courtes.",
   },
   {
     id: "gpt-5.4-mini",
     name: "GPT-5.4 Mini",
     provider: "cometapi",
-    description: "CometAPI équilibré",
+    description:
+      "Compromis équilibré entre coût, vitesse et qualité sur la majorité des usages.",
   },
   {
     id: "gemini-2.5-flash-lite",
     name: "Gemini 2.5 Flash Lite",
     provider: "google",
-    description: "Google AI Studio économique",
+    description:
+      "Version Google optimisée pour un excellent rapport qualité/prix en production.",
   },
   {
     id: "gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
     provider: "google",
-    description: "Rapide, plus qualitatif et toujours low-cost",
+    description:
+      "Variante Flash plus qualitative, toujours rapide et adaptée aux charges élevées.",
   },
   {
     id: "gemini-2.0-flash-lite",
     name: "Gemini 2.0 Flash Lite",
     provider: "google",
-    description: "Flash Lite ultra cheap",
+    description:
+      "Version très abordable pour automatisations fréquentes et prototypage rapide.",
   },
 
   // --- CEREBRAS LOW-COST ---
@@ -121,13 +134,15 @@ export const chatModels: ChatModel[] = [
     id: "cerebras/llama3.1-8b",
     name: "Cerebras Llama 3.1 8B",
     provider: "cerebras",
-    description: "Ultra économique et très rapide",
+    description:
+      "Modèle ultra-rapide à coût réduit pour traitements volumineux et répétitifs.",
   },
   {
     id: "cerebras/qwen-3-32b",
     name: "Cerebras Qwen 3 32B",
     provider: "cerebras",
-    description: "Bon raisonnement à coût maîtrisé",
+    description:
+      "Bon niveau de raisonnement tout en conservant un coût de fonctionnement maîtrisé.",
   },
 
   // --- MISTRAL API LOW-COST ---
@@ -135,13 +150,15 @@ export const chatModels: ChatModel[] = [
     id: "mistral-api/ministral-3b-latest",
     name: "Ministral 3B",
     provider: "mistral",
-    description: "Le modèle Mistral le plus économique",
+    description:
+      "Version Mistral minimaliste, idéale pour scénarios contraints en budget.",
   },
   {
     id: "mistral-api/ministral-8b-latest",
     name: "Ministral 8B",
     provider: "mistral",
-    description: "Rapide et abordable pour la prod",
+    description:
+      "Modèle abordable prêt pour la production avec de bonnes performances globales.",
   },
 
   // --- OPENROUTER GRATUITS & LOW-COST ---
@@ -149,37 +166,43 @@ export const chatModels: ChatModel[] = [
     id: "openrouter/stepfun/step-1-flash:free",
     name: "Step 1 Flash (Free)",
     provider: "openrouter",
-    description: "L'alternative Step 3.5 Flash",
+    description:
+      "Alternative gratuite orientée rapidité pour usage ponctuel et expérimentations.",
   },
   {
     id: "openrouter/liquid/lfm-40b:free",
     name: "LFM 40B Trinity (Free)",
     provider: "openrouter",
-    description: "Modèle Trinity / LFM 2.5",
+    description:
+      "Modèle LFM gratuit utile pour tests, itérations rapides et charges légères.",
   },
   {
     id: "openrouter/zhipu/glm-4-9b-chat:free",
     name: "GLM-4 9B (Free)",
     provider: "openrouter",
-    description: "Le fleuron Zhipu AI",
+    description:
+      "Modèle conversationnel gratuit de Zhipu pour cas standards et découverte.",
   },
   {
     id: "openrouter/meta-llama/llama-3.3-70b-instruct",
     name: "Llama 3.3 70B",
     provider: "openrouter",
-    description: "Performances GPT-4 ultra-cheap",
+    description:
+      "Bon niveau de performance générale à prix compétitif via OpenRouter.",
   },
   {
     id: "openrouter/nvidia/llama-3.1-nemotron-70b-instruct",
     name: "Nemotron 70B",
     provider: "openrouter",
-    description: "Optimisé par NVIDIA",
+    description:
+      "Variante optimisée NVIDIA pour workloads techniques et robustes.",
   },
   {
     id: "openrouter/google/gemini-2.0-flash-exp:free",
     name: "Gemini 2.0 Flash (Free)",
     provider: "openrouter",
-    description: "Vision ultra-rapide",
+    description:
+      "Version gratuite orientée vision et rapidité pour tâches multimodales simples.",
   },
 
   // --- OPENROUTER CHEAP PREMIUM ---
@@ -187,19 +210,22 @@ export const chatModels: ChatModel[] = [
     id: "openrouter/anthropic/claude-3.5-haiku",
     name: "Claude 3.5 Haiku",
     provider: "openrouter",
-    description: "L'intelligence à prix mini",
+    description:
+      "Modèle Claude compact avec bonne cohérence et coût réduit.",
   },
   {
     id: "openrouter/openai/gpt-4o-mini",
     name: "GPT-4o Mini",
     provider: "openrouter",
-    description: "Compact et surprenant",
+    description:
+      "Petit modèle polyvalent, performant pour assistants rapides en production.",
   },
   {
     id: "openrouter/deepseek/deepseek-chat",
     name: "DeepSeek V3 (OR)",
     provider: "openrouter",
-    description: "Le génie du rapport qualité/prix",
+    description:
+      "Excellent compromis qualité/prix pour usages variés via OpenRouter.",
   },
 
   // --- OLLAMA (LOCAUX) ---
@@ -207,31 +233,36 @@ export const chatModels: ChatModel[] = [
     id: "ollama/llama3.1",
     name: "Llama 3.1 (Ollama)",
     provider: "ollama",
-    description: "Local et sécurisé",
+    description:
+      "Exécution locale pour confidentialité renforcée et autonomie totale.",
   },
   {
     id: "ollama/gemma2:9b",
     name: "Gemma 2 9B (Ollama)",
     provider: "ollama",
-    description: "Modèle Gemma local équilibré",
+    description:
+      "Modèle local équilibré pour usages généralistes sans dépendance cloud.",
   },
   {
     id: "ollama/mistral-nemo",
     name: "Mistral Nemo (Ollama)",
     provider: "ollama",
-    description: "12B de puissance locale",
+    description:
+      "Modèle local robuste offrant un bon niveau de qualité en environnement privé.",
   },
   {
     id: "ollama/phi3.5",
     name: "Phi 3.5 (Ollama)",
     provider: "ollama",
-    description: "Petit modèle local efficace",
+    description:
+      "Petit modèle local efficace pour tâches rapides et ressources limitées.",
   },
   {
     id: "ollama/deepseek-coder-v2",
     name: "DeepSeek Coder V2",
     provider: "ollama",
-    description: "Code expert local",
+    description:
+      "Spécialisé code en local pour génération, refactorisation et corrections.",
   },
 ];
 

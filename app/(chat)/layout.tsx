@@ -3,7 +3,11 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/chat/app-sidebar";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { auth } from "../(auth)/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -23,7 +27,10 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen={!isCollapsed}>
       <AppSidebar user={session?.user} />
-      <SidebarInset>
+      <SidebarInset className="relative">
+        <div className="pointer-events-none sticky top-0 z-40 flex h-0 justify-start p-3">
+          <SidebarTrigger className="pointer-events-auto rounded-full border border-border/50 bg-card/75 shadow-sm backdrop-blur-xl" />
+        </div>
         <Toaster
           position="top-center"
           theme="system"

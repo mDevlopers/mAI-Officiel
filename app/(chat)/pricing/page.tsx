@@ -9,7 +9,7 @@ import {
   Sparkles,
   Wand2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,12 +60,6 @@ const highlightsByPlan: Record<PlanKey, string[]> = {
   ],
 };
 
-const planCodeHint: Record<Exclude<PlanKey, "free">, string> = {
-  plus: "MAIPLUS26",
-  pro: "MAIPRO26",
-  max: "MAIMAX26",
-};
-
 export default function PricingPage() {
   const {
     activateByCode,
@@ -82,6 +76,7 @@ export default function PricingPage() {
     text: string;
     type: "error" | "success";
   } | null>(null);
+  const activationSectionRef = useRef<HTMLElement | null>(null);
 
   const plans = useMemo(() => planOrder.map((key) => planDefinitions[key]), []);
 
@@ -115,7 +110,8 @@ export default function PricingPage() {
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           Comparez les forfaits, puis cliquez sur{" "}
-          <strong>Passer à mAI +</strong>, <strong>Passer à mAI Pro</strong> ou{" "}
+          <strong>Passer à mAI Plus</strong>,{" "}
+          <strong>Passer à mAI Pro</strong> ou{" "}
           <strong>Passer à mAI Max</strong> pour entrer votre code officiel.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -176,14 +172,20 @@ export default function PricingPage() {
                 ) : canUpgrade ? (
                   <Button
                     className="w-full"
-                    onClick={() =>
+                    onClick={() => {
+                      // Le clic "Passer à..." sélectionne le forfait et amène
+                      // directement l'utilisateur vers la zone d'activation.
                       setSelectedTargetPlan(
                         planItem.key as Exclude<PlanKey, "free">
-                      )
-                    }
+                      );
+                      activationSectionRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }}
                   >
                     {planItem.key === "plus"
-                      ? "Passer à mAI +"
+                      ? "Passer à mAI Plus"
                       : `Passer à ${planItem.label}`}
                   </Button>
                 ) : (
@@ -228,11 +230,14 @@ export default function PricingPage() {
         })}
       </section>
 
-      <section className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl">
+      <section
+        className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl"
+        ref={activationSectionRef}
+      >
         <h3 className="text-lg font-semibold">Activation par code officiel</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Forfait ciblé: <strong>mAI {selectedTargetPlan}</strong> • Code
-          attendu (exemple): <code>{planCodeHint[selectedTargetPlan]}</code>
+          Forfait ciblé: <strong>mAI {selectedTargetPlan}</strong>. Saisissez
+          votre code officiel reçu via les canaux mAI.
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">

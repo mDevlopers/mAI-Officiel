@@ -221,7 +221,7 @@ function PureMultimodalInput({
         setMessages(() => []);
         break;
       case "rename":
-        toast("Rename is available from the sidebar chat menu.");
+        toast("Le renommage est disponible depuis le menu latéral.");
         break;
       case "model": {
         const modelBtn = document.querySelector<HTMLButtonElement>(
@@ -234,30 +234,30 @@ function PureMultimodalInput({
         setTheme(resolvedTheme === "dark" ? "light" : "dark");
         break;
       case "delete":
-        toast("Delete this chat?", {
+        toast("Supprimer cette discussion ?", {
           action: {
-            label: "Delete",
+            label: "Supprimer",
             onClick: () => {
               fetch(
                 `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat?id=${chatId}`,
                 { method: "DELETE" }
               );
               router.push("/");
-              toast.success("Chat deleted");
+              toast.success("Discussion supprimée");
             },
           },
         });
         break;
       case "purge":
-        toast("Delete all chats?", {
+        toast("Supprimer toutes les discussions ?", {
           action: {
-            label: "Delete all",
+            label: "Tout supprimer",
             onClick: () => {
               fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/history`, {
                 method: "DELETE",
               });
               router.push("/");
-              toast.success("All chats deleted");
+              toast.success("Toutes les discussions ont été supprimées");
             },
           },
         });
@@ -272,6 +272,10 @@ function PureMultimodalInput({
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIndex, setSlashIndex] = useState(0);
+  const [chatBarSize] = useLocalStorage<"compact" | "standard" | "large">(
+    "mai.chatbar.size",
+    "compact"
+  );
 
   const submitForm = useCallback(() => {
     window.history.pushState(
@@ -362,7 +366,7 @@ function PureMultimodalInput({
       const { error } = await response.json();
       toast.error(error);
     } catch (_error) {
-      toast.error("Failed to upload file, please try again!");
+      toast.error("Échec de l'envoi du fichier, veuillez réessayer.");
     }
   }, []);
 
@@ -384,7 +388,7 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch (_error) {
-        toast.error("Failed to upload files");
+        toast.error("Échec de l'envoi des fichiers.");
       } finally {
         setUploadQueue([]);
       }
@@ -409,7 +413,7 @@ function PureMultimodalInput({
 
       event.preventDefault();
 
-      setUploadQueue((prev) => [...prev, "Pasted image"]);
+      setUploadQueue((prev) => [...prev, "Image collée"]);
 
       try {
         const uploadPromises = imageItems
@@ -429,8 +433,8 @@ function PureMultimodalInput({
           ...curr,
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
-      } catch (_error) {
-        toast.error("Failed to upload pasted image(s)");
+    } catch (_error) {
+      toast.error("Échec de l'envoi de l'image collée.");
       } finally {
         setUploadQueue([]);
       }
@@ -452,7 +456,7 @@ function PureMultimodalInput({
     <div className={cn("relative flex w-full flex-col gap-4", className)}>
       {editingMessage && onCancelEdit && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-          <span>Editing message</span>
+          <span>Modification du message</span>
           <button
             className="rounded px-1.5 py-0.5 text-muted-foreground/50 transition-colors hover:bg-muted hover:text-foreground"
             onMouseDown={(e) => {
@@ -461,7 +465,7 @@ function PureMultimodalInput({
             }}
             type="button"
           >
-            Cancel
+            Annuler
           </button>
         </div>
       )}
@@ -515,7 +519,7 @@ function PureMultimodalInput({
           if (status === "ready" || status === "error") {
             submitForm();
           } else {
-            toast.error("Please wait for the model to finish its response!");
+            toast.error("Veuillez attendre la fin de la réponse du modèle.");
           }
         }}
       >
@@ -553,7 +557,12 @@ function PureMultimodalInput({
           </div>
         )}
         <PromptInputTextarea
-          className="min-h-24 text-[13px] leading-relaxed px-4 pt-3.5 pb-1.5 placeholder:text-muted-foreground/35"
+          className={cn(
+            "text-[13px] leading-relaxed placeholder:text-muted-foreground/35",
+            chatBarSize === "compact" && "min-h-20 px-3.5 pt-2.5 pb-1.5",
+            chatBarSize === "standard" && "min-h-24 px-4 pt-3.5 pb-1.5",
+            chatBarSize === "large" && "min-h-28 px-4.5 pt-4 pb-2"
+          )}
           data-testid="multimodal-input"
           onChange={handleInput}
           onKeyDown={(e) => {
@@ -590,7 +599,9 @@ function PureMultimodalInput({
             }
           }}
           placeholder={
-            editingMessage ? "Edit your message..." : "Posez une question..."
+            editingMessage
+              ? "Modifiez votre message..."
+              : "Posez votre question..."
           }
           ref={textareaRef}
           value={input}
@@ -689,26 +700,44 @@ function PureContextualActionsMenu({
     "mai-learning-enabled",
     false
   );
+  const selectedActions: string[] = [];
+
+  if (isReasoningEnabled) {
+    selectedActions.push("Réflexion");
+  }
+  if (isWebSearchEnabled) {
+    selectedActions.push("Recherche");
+  }
+  if (isLearningEnabled) {
+    selectedActions.push("Apprentissage");
+  }
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger asChild>
-        <Button
-          className="h-7 w-7 rounded-full border border-border/40 p-1 transition-colors bg-secondary/50 hover:bg-secondary text-foreground flex items-center justify-center shadow-sm"
-          data-testid="context-actions-button"
-          disabled={status !== "ready"}
-          variant="ghost"
-        >
-          <PlusIcon size={16} />
-        </Button>
-      </PopoverTrigger>
+      <div className="flex items-center gap-1.5">
+        <PopoverTrigger asChild>
+          <Button
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-border/40 bg-secondary/50 p-1 text-foreground shadow-sm transition-colors hover:bg-secondary"
+            data-testid="context-actions-button"
+            disabled={status !== "ready"}
+            variant="ghost"
+          >
+            <PlusIcon size={16} />
+          </Button>
+        </PopoverTrigger>
+        {selectedActions.length > 0 && (
+          <div className="max-w-[180px] truncate rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            {selectedActions.join(" • ")}
+          </div>
+        )}
+      </div>
       <PopoverContent
         align="start"
-        className="w-64 p-2 shadow-lg rounded-xl flex flex-col gap-1"
+        className="flex w-64 flex-col gap-1 rounded-xl p-2 shadow-lg"
         sideOffset={8}
       >
         <Button
-          className="w-full justify-start font-normal flex items-center gap-2 h-9"
+          className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
           onClick={() => {
             setOpen(false);
             if (hasVision) {
@@ -727,7 +756,7 @@ function PureContextualActionsMenu({
 
         <Button
           className={cn(
-            "w-full justify-start font-normal flex items-center gap-2 h-9",
+            "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
             isReasoningEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
@@ -745,7 +774,7 @@ function PureContextualActionsMenu({
 
         <Button
           className={cn(
-            "w-full justify-start font-normal flex items-center gap-2 h-9",
+            "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
             isWebSearchEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
@@ -764,7 +793,7 @@ function PureContextualActionsMenu({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              className="w-full justify-between font-normal flex items-center gap-2 h-9 text-muted-foreground"
+              className="flex h-8 w-full items-center justify-between gap-2 text-xs font-normal text-muted-foreground"
               variant="ghost"
             >
               <div className="flex items-center gap-2">
@@ -783,7 +812,7 @@ function PureContextualActionsMenu({
           >
             <Button
               className={cn(
-                "w-full justify-start font-normal flex items-center gap-2 h-9",
+                "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
                 isLearningEnabled &&
                   "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
               )}
@@ -796,7 +825,7 @@ function PureContextualActionsMenu({
                 }
                 size={16}
               />
-              Apprendre & Etudier
+              Apprendre & Étudier
             </Button>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -845,7 +874,7 @@ function PureModelSelectorCompact({
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent>
-        <ModelSelectorInput placeholder="Search models..." />
+        <ModelSelectorInput placeholder="Rechercher un modèle..." />
         <ModelSelectorList>
           {(() => {
             const curatedIds = new Set(chatModels.map((m) => m.id));

@@ -88,7 +88,12 @@ export default function HealthPage() {
         <div className="flex items-center gap-3">
           <HeartPulse className="size-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">mAIHealth</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold tracking-tight">mAIHealth</h1>
+              <span className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+                Bêta
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
               Module de santé numérique pour l&apos;analyse préliminaire de
               documents médicaux.

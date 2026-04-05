@@ -3,11 +3,14 @@
 import {
   CalendarClock,
   CheckCircle2,
+  FileText,
   Gauge,
   Info,
   KeyRound,
+  Layers,
   PlusCircle,
   Settings2,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -53,6 +56,38 @@ type CreditMetric = {
   title: string;
   used: number;
 };
+
+const aboutChangelog = [
+  {
+    version: "0.1.9",
+    date: "2026-04-05",
+    items: [
+      "Interface institutionnelle en français uniquement.",
+      "Barre de dialogue compacte par défaut et redimensionnement dans Paramètres.",
+      "Menu (+) compact avec affichage de l'option active sur la barre de saisie.",
+      "Renommage de Codestral en Mistral Codestral.",
+    ],
+  },
+  {
+    version: "0.1.8",
+    date: "2026-04-05",
+    items: [
+      "Quotas mAINews et mAIHealth par forfait.",
+      "Affichage des compteurs de consommation dans les modules.",
+    ],
+  },
+];
+
+const officialTechnologies = [
+  "Next.js App Router",
+  "React 19",
+  "TypeScript",
+  "Tailwind CSS",
+  "Vercel AI SDK",
+  "Drizzle ORM",
+  "PostgreSQL",
+  "NextAuth.js",
+];
 
 function formatDateTime(date: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -111,6 +146,9 @@ export default function SettingsPage() {
     nextRunAt: "",
     title: "",
   });
+  const [chatBarSize, setChatBarSize] = useState<
+    "compact" | "standard" | "large"
+  >("compact");
 
   const displayedPlans = useMemo(
     () => planOrder.map((planKey) => planDefinitions[planKey]),
@@ -139,6 +177,17 @@ export default function SettingsPage() {
         "Impossible de charger les tâches automatiques sauvegardées."
       );
       setTasksHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedChatBarSize = window.localStorage.getItem("mai.chatbar.size");
+    if (
+      storedChatBarSize === "compact" ||
+      storedChatBarSize === "standard" ||
+      storedChatBarSize === "large"
+    ) {
+      setChatBarSize(storedChatBarSize);
     }
   }, []);
 
@@ -208,6 +257,11 @@ export default function SettingsPage() {
 
   const handleDeleteTask = (taskId: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  };
+
+  const handleChatBarSizeChange = (size: "compact" | "standard" | "large") => {
+    setChatBarSize(size);
+    window.localStorage.setItem("mai.chatbar.size", size);
   };
 
   const creditMetrics = useMemo<CreditMetric[]>(() => {
@@ -350,6 +404,37 @@ export default function SettingsPage() {
       </section>
 
       <section className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <SlidersHorizontal className="size-4 text-primary" />
+          Ergonomie de la barre de dialogue
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Définissez la hauteur par défaut de la barre de saisie. Le mode
+          compact est désormais recommandé pour une interface plus dense.
+        </p>
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
+          {[
+            { label: "Compacte", value: "compact" as const },
+            { label: "Standard", value: "standard" as const },
+            { label: "Confort", value: "large" as const },
+          ].map((option) => (
+            <Button
+              className={cn(
+                "justify-start rounded-xl border border-border/50 bg-background/40",
+                chatBarSize === option.value &&
+                  "border-primary/40 bg-primary/10 text-primary"
+              )}
+              key={option.value}
+              onClick={() => handleChatBarSizeChange(option.value)}
+              variant="ghost"
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl">
         <h2 className="text-lg font-semibold">Activation Premium par code</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Aucune transaction financière directe n&apos;est traitée. Les forfaits
@@ -362,7 +447,7 @@ export default function SettingsPage() {
             <Input
               className="pl-9"
               onChange={(event) => setActivationCode(event.target.value)}
-              placeholder="Entrez votre code officiel (ex: MAIPRO26)"
+              placeholder="Entrez votre code officiel"
               value={activationCode}
             />
           </div>
@@ -617,20 +702,61 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border/50 bg-card/70 p-4">
-        <h2 className="mb-2 flex items-center gap-2 text-base font-semibold">
+      <section
+        className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl"
+        id="about"
+      >
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
           <Info className="size-4" /> À propos
         </h2>
-        <div className="rounded-xl border border-border/40 bg-background/60 p-3 text-xs text-muted-foreground">
-          <p className="flex items-center gap-2 font-medium text-foreground">
-            <Sparkles className="size-3.5" /> mAI Plateforme
+        <p className="text-sm text-muted-foreground">
+          Répertoire officiel des versions et des technologies intégrées à la
+          plateforme mAI.
+        </p>
+
+        <div className="mt-4 rounded-2xl border border-border/50 bg-background/60 p-4">
+          <p className="mb-2 flex items-center gap-2 font-semibold">
+            <Layers className="size-4" /> Technologies officielles intégrées
           </p>
-          <p className="mt-1">
-            Version 0.1.8 — Planification récurrente des tâches, quotas de
-            tâches et régulation des flux mAINews/mAIHealth avec expérience
-            Liquid Glass.
-          </p>
+          <ul className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+            {officialTechnologies.map((technology) => (
+              <li
+                className="rounded-xl border border-border/40 bg-background/70 px-3 py-2"
+                key={technology}
+              >
+                {technology}
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <div className="mt-4 rounded-2xl border border-border/50 bg-background/60 p-4">
+          <p className="mb-2 flex items-center gap-2 font-semibold">
+            <CalendarClock className="size-4" /> Changelog
+          </p>
+          <div className="space-y-3">
+            {aboutChangelog.map((entry) => (
+              <div
+                className="rounded-xl border border-border/40 bg-background/70 p-3"
+                key={entry.version}
+              >
+                <p className="font-medium">
+                  v{entry.version} • {entry.date}
+                </p>
+                <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">
+                  {entry.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-4 flex items-center gap-2 rounded-xl border border-border/40 bg-background/60 p-3 text-xs text-muted-foreground">
+          <FileText className="size-3.5" />
+          Version active : 0.1.9 (interface Liquid Glass et modules unifiés).
+        </p>
       </section>
     </div>
   );

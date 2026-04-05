@@ -5,6 +5,7 @@ import {
   Code2,
   FolderKanbanIcon,
   HeartPulse,
+  Info,
   Languages,
   Newspaper,
   PenSquareIcon,
@@ -133,10 +134,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     label: "Traduction",
                   },
                   {
-                    href: "/health",
+                    href: "/Health",
                     icon: HeartPulse,
                     label: "mAIHealth",
+                    beta: true,
                   },
+                  { href: "/settings#about", icon: Info, label: "À propos" },
                   {
                     href: "/studio",
                     icon: Sparkles,
@@ -163,6 +166,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                         {item.restricted ? (
                           <span className="rounded-full bg-red-500/90 px-1.5 py-0.5 text-[9px] text-white">
                             Accès restreint
+                          </span>
+                        ) : item.beta ? (
+                          <span className="rounded-full bg-amber-500/90 px-1.5 py-0.5 text-[9px] text-white">
+                            Bêta
                           </span>
                         ) : null}
                       </Link>
