@@ -116,12 +116,6 @@ export const chatModels: ChatModel[] = [
     provider: "google",
     description: "Flash Lite ultra cheap",
   },
-  {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "google",
-    description: "Flash polyvalent",
-  },
 
   // --- OPENROUTER GRATUITS & LOW-COST ---
   {

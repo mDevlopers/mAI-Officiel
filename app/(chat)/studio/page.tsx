@@ -1,34 +1,40 @@
 "use client";
 
-import { ImagePlus, Sparkles, WandSparkles } from "lucide-react";
-import { useMemo, useState } from "react";
-import {
-  affordableImageModels,
-  affordableTextModels,
-} from "@/lib/ai/affordable-models";
+import { ImagePlus, Upload, WandSparkles } from "lucide-react";
+import { type ChangeEvent, useState } from "react";
+import { affordableImageModels } from "@/lib/ai/affordable-models";
 import { Button } from "@/components/ui/button";
 
-const textModels = affordableTextModels;
 const imageModels = affordableImageModels;
 
-type StudioMode = "text" | "generate-image" | "edit-image";
+type StudioMode = "generate-image" | "edit-image";
 
 export default function StudioPage() {
   const [mode, setMode] = useState<StudioMode>("generate-image");
   const [prompt, setPrompt] = useState("");
   const [imageInput, setImageInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [textModel, setTextModel] = useState(textModels[0]?.id ?? "");
   const [imageModel, setImageModel] = useState(imageModels[0]?.id ?? "");
-  const [resultText, setResultText] = useState("");
   const [resultImage, setResultImage] = useState("");
   const [resultProvider, setResultProvider] = useState("");
   const [error, setError] = useState("");
 
-  const currentModel = useMemo(
-    () => (mode === "text" ? textModel : imageModel),
-    [imageModel, mode, textModel]
-  );
+  const currentModel = imageModel;
+
+  const onImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Value = typeof reader.result === "string" ? reader.result : "";
+      setImageInput(base64Value);
+    };
+    reader.onerror = () => {
+      setError("Import impossible. Veuillez réessayer avec une autre image.");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const runStudio = async () => {
     if (!prompt.trim()) {
@@ -38,7 +44,6 @@ export default function StudioPage() {
 
     setIsLoading(true);
     setError("");
-    setResultText("");
     setResultImage("");
 
     try {
@@ -60,10 +65,6 @@ export default function StudioPage() {
 
       setResultProvider(payload.provider ?? "provider inconnu");
 
-      if (payload.type === "text") {
-        setResultText(payload.text ?? "Réponse vide");
-      }
-
       if (payload.type === "image") {
         if (payload.imageUrl) {
           setResultImage(payload.imageUrl);
@@ -84,14 +85,13 @@ export default function StudioPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Studio IA</h1>
           <p className="text-sm text-muted-foreground">
-            Génération et édition d'images via CometAPI + modèles texte low-cost.
+            Génération et édition d'images avec interface Liquid Glass.
           </p>
         </div>
         <div className="flex gap-2 rounded-2xl border border-border/60 bg-background/40 p-1 backdrop-blur-xl">
           {[
             { id: "generate-image", label: "Image", icon: ImagePlus },
             { id: "edit-image", label: "Édition", icon: WandSparkles },
-            { id: "text", label: "Texte", icon: Sparkles },
           ].map((item) => (
             <button
               className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition ${
@@ -115,14 +115,10 @@ export default function StudioPage() {
           </label>
           <select
             className="mb-4 h-10 w-full rounded-xl border border-border/40 bg-background/70 px-3 text-sm"
-            onChange={(event) =>
-              mode === "text"
-                ? setTextModel(event.target.value)
-                : setImageModel(event.target.value)
-            }
+            onChange={(event) => setImageModel(event.target.value)}
             value={currentModel}
           >
-            {(mode === "text" ? textModels : imageModels).map((model) => (
+            {imageModels.map((model) => (
               <option key={model.id} value={model.id}>
                 {model.label}
               </option>
@@ -142,12 +138,22 @@ export default function StudioPage() {
           {mode === "edit-image" ? (
             <>
               <label className="mt-4 mb-2 block text-xs font-medium text-muted-foreground">
-                URL ou base64 de l'image source
+                Image source (import conseillé)
+              </label>
+              <label className="mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-background/50 px-3 py-2 text-xs text-muted-foreground transition hover:bg-background/70">
+                <Upload className="size-3.5" />
+                Importer une image pour l'édition
+                <input
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onImageFileChange}
+                  type="file"
+                />
               </label>
               <textarea
                 className="min-h-24 w-full rounded-2xl border border-border/40 bg-background/70 p-3 text-sm"
                 onChange={(event) => setImageInput(event.target.value)}
-                placeholder="https://... ou data:image/..."
+                placeholder="https://... ou data:image/... (auto-rempli après import)"
                 value={imageInput}
               />
             </>
@@ -173,13 +179,7 @@ export default function StudioPage() {
             />
           ) : null}
 
-          {resultText ? (
-            <div className="mt-3 rounded-2xl border border-border/40 bg-background/50 p-3 text-sm whitespace-pre-wrap">
-              {resultText}
-            </div>
-          ) : null}
-
-          {!resultImage && !resultText ? (
+          {!resultImage ? (
             <p className="mt-6 text-sm text-muted-foreground">
               Le résultat s'affichera ici après exécution.
             </p>
