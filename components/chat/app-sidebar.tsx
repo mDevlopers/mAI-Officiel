@@ -211,14 +211,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <SidebarMenuButton
                       asChild
                       className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                      tooltip="Catalogue d'extensions"
+                      tooltip="Store d'extensions"
                     >
                       <Link
                         href="/extensions"
                         onClick={() => setOpenMobile(false)}
                       >
                         <PuzzleIcon className="size-4" />
-                        <span className="font-medium">Catalogue mAI</span>
+                        <span className="font-medium">Store</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -230,7 +230,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     { href: "/studio", label: "Studio" },
                     { href: "/news", label: "Actualités" },
                     { href: "/translation", label: "Traduction" },
-                    { href: "/extensions", label: "Extensions" },
+                    { href: "/extensions", label: "Store" },
                   ]
                     .filter((item) =>
                       item.label.toLowerCase().includes(normalizedGlobalQuery)
