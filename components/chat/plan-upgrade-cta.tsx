@@ -23,7 +23,12 @@ export function PlanUpgradeCTA({
     return null;
   }
 
-  const defaultLabel = currentPlan === "pro" ? "Obtenir Max" : "Obtenir Plus";
+  const defaultLabel =
+    currentPlan === "free"
+      ? "Obtenir Plus"
+      : currentPlan === "plus"
+        ? "Obtenir Pro"
+        : "Obtenir Max";
 
   return (
     <Button

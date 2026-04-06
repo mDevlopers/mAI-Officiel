@@ -74,7 +74,7 @@ export default function MealsPage() {
 
     if (!canConsumeUsage("meals", "day", dailyLimit)) {
       setQuotaMessage(
-        `Quota mAIRepas atteint (${dailyLimit}/jour). Passez au forfait supérieur ou réessayez demain.`
+        `Quota CookAI atteint (${dailyLimit}/jour). Passez au forfait supérieur ou réessayez demain.`
       );
       return;
     }
@@ -155,7 +155,7 @@ export default function MealsPage() {
     <div className="liquid-glass flex h-full w-full flex-col gap-5 overflow-y-auto p-6 md:p-10">
       <div className="flex items-center gap-3">
         <Utensils className="size-8 text-primary" />
-        <h1 className="text-3xl font-bold">Recettes & Repas (mAIRepas)</h1>
+        <h1 className="text-3xl font-bold">Recettes & Repas (CookAI)</h1>
       </div>
       <div className="flex flex-wrap gap-2">
         {randomBubbles.map((bubble) => (
@@ -172,7 +172,7 @@ export default function MealsPage() {
 
       <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
         <p className="mb-3 text-xs text-muted-foreground">
-          Quota mAIRepas : {searchesToday}/{dailyLimit} recherches
+          Quota CookAI : {searchesToday}/{dailyLimit} recherches
           aujourd&apos;hui ({remainingSearches} restante
           {remainingSearches > 1 ? "s" : ""}).
         </p>

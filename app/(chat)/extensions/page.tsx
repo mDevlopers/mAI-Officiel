@@ -155,7 +155,7 @@ export default function ExtensionsPage() {
           <div>
             <h1 className="text-3xl font-bold">Catalogue centralisé des mini-apps</h1>
             <p className="text-sm text-muted-foreground">
-              Retrouvez LearnUp, Shopper, Actualités, mAIRepas, mAIHealth,
+              Retrouvez LearnUp, Shopper, Actualités, CookAI, mAIHealth,
               Studio et vos autres extensions dans un hub unique, avec les modes
               Masquer, Favoris et Épingler, toujours en interface Liquid Glass.
             </p>

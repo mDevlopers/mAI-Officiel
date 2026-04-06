@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BrainCircuit,
-  Code2,
   FileSearch,
   Globe,
   HeartPulse,
@@ -69,16 +68,6 @@ export const extensionCatalog: StoreExtension[] = [
     premium: true,
   },
   {
-    id: "coder",
-    title: "Coder",
-    description:
-      "Mini-IDE assisté pour planifier, générer et itérer sur votre code avec l'IA.",
-    icon: Code2,
-    route: "/coder",
-    premium: true,
-    beta: true,
-  },
-  {
     id: "news",
     title: "Actualités",
     description:
@@ -106,10 +95,10 @@ export const extensionCatalog: StoreExtension[] = [
     beta: true,
   },
   {
-    id: "meals",
-    title: "mAIRepas",
+    id: "cookai",
+    title: "CookAI",
     description:
-      "Planifiez vos repas avec des idées adaptées à vos objectifs et vos contraintes alimentaires.",
+      "Planifiez vos repas avec des idées personnalisées selon vos objectifs, allergies et contraintes alimentaires.",
     icon: Salad,
     route: "/meals",
     beta: true,
