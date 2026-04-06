@@ -10,6 +10,7 @@ export type PlanLimits = {
   imagesPerWeek: number;
   taskSchedules: number;
   newsSearchesPerDay: number;
+  mealsSearchesPerDay: number;
   healthRequestsPerMonth: number;
 };
 
@@ -36,6 +37,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       imagesPerWeek: 2,
       taskSchedules: 2,
       newsSearchesPerDay: 3,
+      mealsSearchesPerDay: 3,
       healthRequestsPerMonth: 5,
     },
   },
@@ -52,6 +54,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       imagesPerWeek: 3,
       taskSchedules: 5,
       newsSearchesPerDay: 5,
+      mealsSearchesPerDay: 5,
       healthRequestsPerMonth: 10,
     },
   },
@@ -69,6 +72,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       imagesPerWeek: 4,
       taskSchedules: 10,
       newsSearchesPerDay: 10,
+      mealsSearchesPerDay: 10,
       healthRequestsPerMonth: 15,
     },
   },
@@ -85,6 +89,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       imagesPerWeek: 5,
       taskSchedules: 20,
       newsSearchesPerDay: 20,
+      mealsSearchesPerDay: 20,
       healthRequestsPerMonth: 25,
     },
   },
