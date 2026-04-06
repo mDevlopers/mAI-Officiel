@@ -29,14 +29,14 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
       <AppSidebar user={session?.user} />
       <SidebarInset className="relative">
         <div className="pointer-events-none sticky top-0 z-40 flex h-0 justify-start p-3">
-          <SidebarTrigger className="pointer-events-auto rounded-full border border-border/50 bg-card/75 shadow-sm backdrop-blur-xl" />
+          <SidebarTrigger className="liquid-panel pointer-events-auto rounded-full" />
         </div>
         <Toaster
           position="top-center"
           theme="system"
           toastOptions={{
             className:
-              "!bg-card !text-foreground !border-border/50 !shadow-[var(--shadow-float)]",
+              "liquid-panel !text-foreground !shadow-[var(--shadow-float)]",
           }}
         />
         {children}

@@ -41,7 +41,7 @@ function PureChatHeader({
     )?.label ?? "GPT";
 
   return (
-    <header className="liquid-glass sticky top-0 flex h-14 items-center gap-2 px-3">
+    <header className="liquid-glass sticky top-0 z-20 mx-2 mt-2 flex h-14 items-center gap-2 rounded-2xl px-3 md:mx-3">
       <Button
         className="md:hidden"
         onClick={toggleSidebar}

@@ -652,7 +652,7 @@ function PureMultimodalInput({
       </div>
 
       <PromptInput
-        className="[&>div]:rounded-2xl [&>div]:border [&>div]:border-border/30 [&>div]:bg-card/70 [&>div]:shadow-[var(--shadow-composer)] [&>div]:transition-shadow [&>div]:duration-300 [&>div]:focus-within:shadow-[var(--shadow-composer-focus)]"
+        className="[&>div]:liquid-panel [&>div]:rounded-[1.35rem] [&>div]:transition-shadow [&>div]:duration-300 [&>div]:focus-within:shadow-[var(--shadow-composer-focus)]"
         onSubmit={() => {
           if (input.startsWith("/")) {
             const query = input.slice(1).trim();
@@ -765,7 +765,7 @@ function PureMultimodalInput({
               setIsGeolocationEnabled={setIsGeolocationEnabled}
               status={status}
             />
-            <span className="h-7 rounded-full border border-border/40 bg-secondary/40 px-2 text-[10px] leading-7 text-muted-foreground">
+            <span className="h-7 rounded-full border border-border/35 bg-secondary/35 px-2 text-[10px] leading-7 text-muted-foreground">
               Source : Bibliothèque mAI
             </span>
             <ModelSelectorCompact
@@ -796,12 +796,15 @@ function PureMultimodalInput({
               <PromptInputSubmit
                 className={cn(
                   "h-7 w-7 rounded-xl transition-all duration-200",
-                  input.trim()
+                  input.trim() || attachments.length > 0
                     ? "bg-foreground text-background hover:opacity-85 active:scale-95"
                     : "bg-muted text-muted-foreground/25 cursor-not-allowed"
                 )}
                 data-testid="send-button"
-                disabled={!input.trim() || uploadQueue.length > 0}
+                disabled={
+                  (!input.trim() && attachments.length === 0) ||
+                  uploadQueue.length > 0
+                }
                 status={status}
                 variant="secondary"
               >
