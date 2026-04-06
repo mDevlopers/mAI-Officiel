@@ -337,6 +337,7 @@ export function SidebarHistory({
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isPinned={pinnedChatIds.includes(chat.id)}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
@@ -360,6 +361,7 @@ export function SidebarHistory({
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isPinned={pinnedChatIds.includes(chat.id)}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
@@ -383,6 +385,7 @@ export function SidebarHistory({
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isPinned={pinnedChatIds.includes(chat.id)}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
@@ -406,6 +409,7 @@ export function SidebarHistory({
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isPinned={pinnedChatIds.includes(chat.id)}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
@@ -429,6 +433,7 @@ export function SidebarHistory({
                           <ChatItem
                             chat={chat}
                             isActive={chat.id === id}
+                            isPinned={pinnedChatIds.includes(chat.id)}
                             key={chat.id}
                             onDelete={(chatId) => {
                               setDeleteId(chatId);
