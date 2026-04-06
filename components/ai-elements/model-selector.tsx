@@ -1,4 +1,3 @@
-import { StarIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
 import {
@@ -176,8 +175,26 @@ export const ModelSelectorLogo = ({
 }: ModelSelectorLogoProps) => {
   if (provider === "mai-star") {
     return (
-      <span className={className} style={props.style} title={props.title} role="img" aria-label="mai-star logo">
-        <StarIcon className="size-4 fill-foreground text-foreground" />
+      <span
+        aria-label="mAI star logo"
+        className={className}
+        role="img"
+        style={props.style}
+        title={props.title}
+      >
+        {/* Étoile noire dédiée aux modèles mAI (style plein pour une lisibilité nette dans le menu). */}
+        <svg
+          fill="none"
+          height="16"
+          viewBox="0 0 24 24"
+          width="16"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2.5L14.9 8.2L21.2 9.1L16.6 13.5L17.7 19.8L12 16.8L6.3 19.8L7.4 13.5L2.8 9.1L9.1 8.2L12 2.5Z"
+            fill="#000000"
+          />
+        </svg>
       </span>
     );
   }

@@ -258,7 +258,7 @@ export const chatModels: ChatModel[] = [
   },
   {
     id: "ollama/deepseek-coder-v2",
-    name: "DeepSeek Coder V2",
+    name: "DeepSeek Code V2",
     provider: "ollama",
     description:
       "Spécialisé code en local pour génération, refactorisation et corrections.",

@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest) {
     return new NextResponse(json, {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="export_mCoder_${new Date().toISOString().split("T")[0]}.json"`,
+        "Content-Disposition": `attachment; filename="export_mAI_${new Date().toISOString().split("T")[0]}.json"`,
       },
     });
   } catch (error) {

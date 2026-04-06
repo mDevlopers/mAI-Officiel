@@ -136,9 +136,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   },
                   { href: "/mais", icon: BotIcon, label: "Mes mAIs" },
                   {
-                    href: "/coder",
+                    href: "/extensions",
                     icon: Code2,
-                    label: "Coder",
+                    label: "Code",
                     restricted: true,
                     beta: true,
                   },

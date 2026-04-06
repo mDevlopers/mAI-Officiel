@@ -126,7 +126,16 @@ function getModelLogoProvider(
     return "llama";
   }
 
-  if (name.includes("m-5.")) {
+  const maiStarModelNames = new Set([
+    "m-5.8",
+    "m-5.8-mini",
+    "m-5.8-nano",
+    "m-5.7",
+    "m-5.7-mini",
+    "m-5.7-nano",
+  ]);
+
+  if (maiStarModelNames.has(model.name.toLowerCase())) {
     return "mai-star";
   }
 

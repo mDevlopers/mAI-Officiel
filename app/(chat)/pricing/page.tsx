@@ -48,7 +48,7 @@ const highlightsByPlan: Record<PlanKey, string[]> = {
   ],
   pro: [
     "Analyses avancées multi-outils",
-    "Capacités étendues pour Coder et Studio",
+    "Capacités étendues pour Code et Studio",
     "Volume de messages et fichiers élevé",
     "Exécution fluide pour équipes projet",
   ],
@@ -211,7 +211,7 @@ export default function PricingPage() {
                 </p>
                 <p className="flex items-center gap-1">
                   <Wand2 className="size-3.5" /> {planItem.limits.coderCredits}{" "}
-                  Coder
+                  Code
                 </p>
                 <p className="flex items-center gap-1">
                   <Image className="size-3.5" /> {planItem.limits.imagesPerWeek}

@@ -468,7 +468,7 @@ export default function SettingsPage() {
         key: "coder",
         limit: currentPlanDefinition.limits.coderCredits,
         period: "month",
-        title: "Crédits Coder",
+        title: "Crédits Code",
         used: 0,
       },
       {
@@ -622,7 +622,7 @@ export default function SettingsPage() {
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {isHydrated
-              ? `${currentPlanDefinition.limits.messagesPerHour} messages/h • ${currentPlanDefinition.limits.coderCredits} crédits Coder • ${currentPlanDefinition.limits.imagesPerWeek} images/semaine`
+              ? `${currentPlanDefinition.limits.messagesPerHour} messages/h • ${currentPlanDefinition.limits.coderCredits} crédits Code • ${currentPlanDefinition.limits.imagesPerWeek} images/semaine`
               : "Chargement du forfait..."}
           </p>
 

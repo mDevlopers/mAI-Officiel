@@ -33,16 +33,6 @@ const extensionCatalog = [
     premium: false,
   },
   {
-    id: "coder",
-    title: "Coder",
-    description:
-      "Mini-IDE avec workflow de planification, édition de fichiers et génération assistée côté mAI.",
-    icon: "💻",
-    route: "/coder",
-    premium: true,
-    beta: true,
-  },
-  {
     id: "health",
     title: "Health",
     description:
