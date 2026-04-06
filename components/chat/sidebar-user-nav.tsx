@@ -16,6 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { guestRegex } from "@/lib/constants";
 import { LoaderIcon } from "./icons";
@@ -23,11 +24,17 @@ import { toast } from "./toast";
 
 export function SidebarUserNav({ user }: { user: User }) {
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { data, status } = useSession();
   const { setTheme, resolvedTheme } = useTheme();
 
   const isGuest = guestRegex.test(data?.user?.email ?? user.email ?? "");
   const displayName = user.email?.split("@")[0] || "Utilisateur";
+  const closeMobileSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -76,7 +83,10 @@ export function SidebarUserNav({ user }: { user: User }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer text-[13px]"
-              onSelect={() => router.push("/settings")}
+              onSelect={() => {
+                closeMobileSidebar();
+                router.push("/settings");
+              }}
             >
               Paramètres
             </DropdownMenuItem>
@@ -85,6 +95,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 className="w-full cursor-pointer text-[13px]"
                 download
                 href="/api/export"
+                onClick={closeMobileSidebar}
               >
                 Exporter mes données
               </a>
@@ -104,8 +115,10 @@ export function SidebarUserNav({ user }: { user: User }) {
                   }
 
                   if (isGuest) {
+                    closeMobileSidebar();
                     router.push("/login");
                   } else {
+                    closeMobileSidebar();
                     signOut({ redirectTo: "/" });
                   }
                 }}

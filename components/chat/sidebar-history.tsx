@@ -314,10 +314,15 @@ export function SidebarHistory({
                 const sortedChats = [...indexedChats].sort((a, b) => {
                   const aPinned = pinnedChatIds.includes(a.id);
                   const bPinned = pinnedChatIds.includes(b.id);
-                  if (aPinned === bPinned) {
-                    return 0;
+
+                  if (aPinned !== bPinned) {
+                    return aPinned ? -1 : 1;
                   }
-                  return aPinned ? -1 : 1;
+
+                  return (
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                  );
                 });
                 const groupedChats = groupChatsByDate(sortedChats);
 

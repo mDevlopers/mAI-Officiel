@@ -47,11 +47,16 @@ import { BrandStarLogoIcon } from "./icons";
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
-  const { setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
+  const closeMobileSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const handleDeleteAll = async () => {
     setShowDeleteAllDialog(false);
@@ -90,7 +95,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   className="size-8 !px-0 items-center justify-center"
                   tooltip="MAI"
                 >
-                  <Link href="/" onClick={() => setOpenMobile(false)}>
+                  <Link href="/" onClick={closeMobileSidebar}>
                     <BrandStarLogoIcon size={20} />
                   </Link>
                 </SidebarMenuButton>
@@ -123,7 +128,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   <SidebarMenuButton
                     className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     onClick={() => {
-                      setOpenMobile(false);
+                      closeMobileSidebar();
                       router.push("/");
                     }}
                     tooltip="Nouvelle discussion"
@@ -148,7 +153,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     >
                       <Link
                         href={item.href}
-                        onClick={() => setOpenMobile(false)}
+                        onClick={closeMobileSidebar}
                       >
                         <item.icon className="size-4" />
                         <span className="font-medium">{item.label}</span>
@@ -163,7 +168,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
                     tooltip="Extensions"
                   >
-                    <Link href="/extensions" onClick={() => setOpenMobile(false)}>
+                    <Link href="/extensions" onClick={closeMobileSidebar}>
                       <PuzzleIcon className="size-4" />
                       <span className="font-medium">Extensions</span>
                     </Link>
@@ -188,7 +193,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                         >
                           <Link
                             href={item.href}
-                            onClick={() => setOpenMobile(false)}
+                            onClick={closeMobileSidebar}
                           >
                             <SearchIcon className="size-3.5" />
                             <span>Aller vers {item.label}</span>

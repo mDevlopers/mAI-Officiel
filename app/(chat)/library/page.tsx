@@ -108,6 +108,17 @@ export default function LibraryPage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
   }, [assets]);
 
+  useEffect(() => {
+    // Nettoie les URLs temporaires créées côté client pour éviter les fuites mémoire.
+    return () => {
+      assets.forEach((asset) => {
+        if (asset.url.startsWith("blob:")) {
+          URL.revokeObjectURL(asset.url);
+        }
+      });
+    };
+  }, [assets]);
+
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     const base = [...assets].sort(
@@ -180,9 +191,15 @@ export default function LibraryPage() {
       return;
     }
 
-    setAssets((current) =>
-      current.filter((asset) => asset.id !== assetToDelete)
-    );
+    setAssets((current) => {
+      const asset = current.find((candidate) => candidate.id === assetToDelete);
+
+      if (asset?.url.startsWith("blob:")) {
+        URL.revokeObjectURL(asset.url);
+      }
+
+      return current.filter((candidate) => candidate.id !== assetToDelete);
+    });
     setAssetToDelete(null);
   };
 
@@ -228,12 +245,24 @@ export default function LibraryPage() {
       </header>
 
       <section className="rounded-2xl border border-border/60 bg-card/65 p-4 backdrop-blur-xl">
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2">
+        <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>Recherche instantanée</span>
+          {searchTerm.trim() ? (
+            <button
+              className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[11px] transition-colors hover:border-primary/40 hover:text-foreground"
+              onClick={() => setSearchTerm("")}
+              type="button"
+            >
+              Effacer
+            </button>
+          ) : null}
+        </div>
+        <div className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
           <Search className="size-4 text-muted-foreground" />
           <input
             className="w-full bg-transparent text-sm focus:outline-none"
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Rechercher un média, un type ou une source..."
+            placeholder="Nom, type (image/document) ou source…"
             type="search"
             value={searchTerm}
           />

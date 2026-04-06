@@ -542,7 +542,7 @@ export default function SettingsPage() {
         <Settings2 className="size-8 text-primary" />
         <h1 className="text-3xl font-bold">Paramètres</h1>
         <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-xs text-muted-foreground">
-          v0.5.7
+          v0.5.8
         </span>
       </div>
 
@@ -571,26 +571,25 @@ export default function SettingsPage() {
 
       <section className="liquid-glass rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background/60 to-card/70 p-5">
         <h2 className="text-lg font-semibold">
-          v0.5.7 · Unification &amp; Super-Extensions
+          v0.5.8 · Optimisation Mobile &amp; Recherche
         </h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>
-            <strong>Nouveau système de crédits unifié :</strong> les crédits
-            sont partagés sur tout l&apos;écosystème mAI (Free: 20/semaine,
-            mAI+: 35/semaine, Pro: 50/semaine, mAIMax: 75/semaine).
+            <strong>Optimisation mobile :</strong> la barre latérale a été
+            ajustée pour une navigation plus ergonomique sur petit écran.
           </li>
           <li>
-            <strong>mAINews:</strong> flux ultra-personnalisé par centres
-            d&apos;intérêt et nouveau mode Lecture Rapide (audio/texte).
+            <strong>Amélioration de la recherche :</strong> la page de
+            recherche bénéficie d&apos;une expérience plus fluide, avec un
+            accès plus rapide aux filtres et aux résultats.
           </li>
           <li>
-            <strong>Projets &amp; BrainStorming:</strong> vue Timeline, jalons
-            avec progression, mind maps automatiques et mode Idée Flash.
+            <strong>Auto-close mobile :</strong> la barre latérale se referme
+            automatiquement après un clic sur un lien de page sur mobile.
           </li>
           <li>
-            <strong>Presets &amp; modules:</strong> nouveaux presets
-            spécialisés, optimisations UI de CookAI/LearnUp et corrections de
-            bugs transverses.
+            <strong>Maintenance :</strong> correctifs de stabilité et corrections
+            de bugs transverses.
           </li>
         </ul>
       </section>
