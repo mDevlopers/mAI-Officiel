@@ -2,8 +2,8 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion } from "framer-motion";
-import { memo } from "react";
-import { suggestions } from "@/lib/constants";
+import { memo, useEffect, useState } from "react";
+import { pickRandomSuggestions, suggestionPool } from "@/lib/suggestion-pool";
 import type { ChatMessage } from "@/lib/types";
 import { Suggestion } from "../ai-elements/suggestion";
 import type { VisibilityType } from "./visibility-selector";
@@ -15,7 +15,13 @@ type SuggestedActionsProps = {
 };
 
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
-  const suggestedActions = suggestions;
+  const [suggestedActions, setSuggestedActions] = useState<string[]>(() =>
+    suggestionPool.slice(0, 4)
+  );
+
+  useEffect(() => {
+    setSuggestedActions(pickRandomSuggestions(4));
+  }, []);
 
   return (
     <div

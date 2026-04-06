@@ -92,7 +92,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               <div className="flex w-full items-center gap-2 px-1">
                 <SidebarMenuButton
                   asChild
-                  className="group/logo relative h-8 min-w-8 justify-start rounded-lg border border-sidebar-border/60 bg-sidebar-accent/15 px-1.5 transition-colors hover:bg-sidebar-accent/35"
+                  className="group/logo relative h-7 min-w-7 justify-start rounded-lg border border-sidebar-border/60 bg-sidebar-accent/15 px-1 transition-colors hover:bg-sidebar-accent/35"
                   tooltip="MAI"
                 >
                   <Link
@@ -100,14 +100,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     href="/"
                     onClick={closeMobileSidebar}
                   >
-                    <BrandStarLogoIcon size={20} />
+                    <BrandStarLogoIcon size={16} />
                     <span className="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 rounded-md border border-sidebar-border/70 bg-sidebar/90 p-0.5 opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100 group-focus-visible/logo:opacity-100">
                       <PenSquareIcon className="size-3 text-sidebar-foreground/80" />
                     </span>
                   </Link>
                 </SidebarMenuButton>
                 <label
-                  className="flex h-8 flex-1 items-center gap-1.5 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/35 px-2 backdrop-blur-xl group-data-[collapsible=icon]:hidden"
+                  className="flex h-9 flex-1 items-center gap-1.5 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/35 px-2.5 backdrop-blur-xl group-data-[collapsible=icon]:hidden"
                   htmlFor="global-sidebar-search"
                 >
                   <SearchIcon className="size-3.5 text-sidebar-foreground/60" />
@@ -150,7 +150,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     icon: FolderKanbanIcon,
                     label: "Projets",
                   },
-                  { href: "/mais", icon: BotIcon, label: "Mes mAIs" },
+                  { href: "/mais", icon: BotIcon, label: "mAIs" },
                 ].map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
@@ -182,7 +182,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 {normalizedGlobalQuery.length > 0 &&
                   [
                     { href: "/projects", label: "Projets" },
-                    { href: "/mais", label: "Mes mAIs" },
+                    { href: "/mais", label: "mAIs" },
                     { href: "/extensions", label: "Extensions" },
                   ]
                     .filter((item) =>

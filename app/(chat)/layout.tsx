@@ -28,8 +28,8 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={!isCollapsed}>
       <AppSidebar user={session?.user} />
       <SidebarInset className="relative">
-        <div className="pointer-events-none sticky top-0 z-40 flex h-0 justify-start p-3">
-          <SidebarTrigger className="liquid-panel pointer-events-auto rounded-full" />
+        <div className="pointer-events-none fixed top-3 left-3 z-40 flex h-0 justify-start">
+          <SidebarTrigger className="pointer-events-auto rounded-full border border-sidebar-border/45 bg-transparent text-sidebar-foreground shadow-none backdrop-blur-0 hover:bg-transparent" />
         </div>
         <Toaster
           position="top-center"

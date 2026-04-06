@@ -18,10 +18,3 @@ export const greetingPrompts = [
   "par quoi commençons-nous aujourd'hui ?",
   "quelle idée voulez-vous explorer maintenant ?",
 ] as const;
-
-export const suggestions = [
-  "Rédige un plan projet pour lancer une nouvelle fonctionnalité IA.",
-  "Crée un résumé des actions à faire cette semaine avec priorités.",
-  "Aide-moi à structurer une base de connaissances pour mon équipe.",
-  "Propose 5 idées de contenu pour présenter mon produit en français.",
-];
