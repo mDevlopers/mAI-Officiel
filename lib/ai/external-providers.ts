@@ -75,6 +75,20 @@ function extractTextFromGemini(data: any): string {
     .trim();
 }
 
+function extractGeminiError(data: any): string | null {
+  const directMessage = data?.error?.message;
+  if (typeof directMessage === "string" && directMessage.trim().length > 0) {
+    return directMessage.trim();
+  }
+
+  const blockReason = data?.promptFeedback?.blockReason;
+  if (typeof blockReason === "string" && blockReason.trim().length > 0) {
+    return `Requête bloquée par Gemini (${blockReason.trim()})`;
+  }
+
+  return null;
+}
+
 function extractTextFromChatCompletion(data: any): string {
   const content = data?.choices?.[0]?.message?.content;
 
@@ -183,7 +197,7 @@ export function runExternalTextModel(
 
     const geminiCalls = geminiKeys.map((apiKey, index) => async () => {
       const response = await fetch(
-        `${GEMINI_API_BASE_URL}/models/${modelId}:generateContent?key=${apiKey}`,
+        `${GEMINI_API_BASE_URL}/models/${encodeURIComponent(modelId)}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -200,17 +214,22 @@ export function runExternalTextModel(
         }
       );
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
+        const providerMessage = extractGeminiError(data);
         throw new Error(
-          `Gemini clé ${index + 1} a échoué (${response.status})`
+          `Gemini clé ${index + 1} a échoué (${response.status})${providerMessage ? `: ${providerMessage}` : ""}`
         );
       }
 
-      const data = await response.json();
       const text = extractTextFromGemini(data);
 
       if (!text) {
-        throw new Error(`Gemini clé ${index + 1} a renvoyé une réponse vide`);
+        const providerMessage = extractGeminiError(data);
+        throw new Error(
+          `Gemini clé ${index + 1} a renvoyé une réponse vide${providerMessage ? `: ${providerMessage}` : ""}`
+        );
       }
 
       return { provider: `gemini-${index + 1}`, text };
