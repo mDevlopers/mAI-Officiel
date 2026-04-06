@@ -92,11 +92,18 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               <div className="flex w-full items-center gap-2 px-1">
                 <SidebarMenuButton
                   asChild
-                  className="size-8 !px-0 items-center justify-center"
+                  className="group/logo relative h-8 min-w-8 justify-start rounded-lg border border-sidebar-border/60 bg-sidebar-accent/15 px-1.5 transition-colors hover:bg-sidebar-accent/35"
                   tooltip="MAI"
                 >
-                  <Link href="/" onClick={closeMobileSidebar}>
+                  <Link
+                    className="relative flex w-full items-center"
+                    href="/"
+                    onClick={closeMobileSidebar}
+                  >
                     <BrandStarLogoIcon size={20} />
+                    <span className="pointer-events-none absolute top-1/2 right-1 -translate-y-1/2 rounded-md border border-sidebar-border/70 bg-sidebar/90 p-0.5 opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100 group-focus-visible/logo:opacity-100">
+                      <PenSquareIcon className="size-3 text-sidebar-foreground/80" />
+                    </span>
                   </Link>
                 </SidebarMenuButton>
                 <label
@@ -151,10 +158,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
                       tooltip={item.label}
                     >
-                      <Link
-                        href={item.href}
-                        onClick={closeMobileSidebar}
-                      >
+                      <Link href={item.href} onClick={closeMobileSidebar}>
                         <item.icon className="size-4" />
                         <span className="font-medium">{item.label}</span>
                       </Link>
@@ -191,10 +195,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                           className="h-8 rounded-lg border border-dashed border-sidebar-border/70 text-[12px] text-sidebar-foreground/75"
                           tooltip={item.label}
                         >
-                          <Link
-                            href={item.href}
-                            onClick={closeMobileSidebar}
-                          >
+                          <Link href={item.href} onClick={closeMobileSidebar}>
                             <SearchIcon className="size-3.5" />
                             <span>Aller vers {item.label}</span>
                           </Link>

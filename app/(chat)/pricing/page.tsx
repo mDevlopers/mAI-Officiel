@@ -83,6 +83,36 @@ export default function PricingPage() {
   const activationSectionRef = useRef<HTMLElement | null>(null);
 
   const plans = useMemo(() => planOrder.map((key) => planDefinitions[key]), []);
+  const comparativeRows = [
+    {
+      label: "Messages / heure",
+      getValue: (key: PlanKey) =>
+        `${planDefinitions[key].limits.messagesPerHour}`,
+    },
+    {
+      label: "Crédits extensions / semaine",
+      getValue: (key: PlanKey) =>
+        `${planDefinitions[key].limits.unifiedCreditsPerWeek}`,
+    },
+    {
+      label: "Images / semaine",
+      getValue: (key: PlanKey) =>
+        `${planDefinitions[key].limits.imagesPerWeek}`,
+    },
+    {
+      label: "Entrées mémoire",
+      getValue: (key: PlanKey) => `${planDefinitions[key].limits.memoryUnits}`,
+    },
+    {
+      label: "Fichiers / jour",
+      getValue: (key: PlanKey) => `${planDefinitions[key].limits.filesPerDay}`,
+    },
+    {
+      label: "Tâches planifiées",
+      getValue: (key: PlanKey) =>
+        `${planDefinitions[key].limits.taskSchedules}`,
+    },
+  ] as const;
 
   const handleActivate = async () => {
     const nextPlan = await activateByCode(activationCode);
@@ -109,7 +139,7 @@ export default function PricingPage() {
           <BadgeCheck className="size-7 text-primary" />
           <h1 className="text-3xl font-bold">Comparer les forfaits mAI</h1>
           <Badge className="rounded-full bg-primary/90 text-white hover:bg-primary/90">
-            v0.5.8
+            v0.6.5
           </Badge>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -124,6 +154,46 @@ export default function PricingPage() {
           </strong>
         </p>
       </header>
+
+      <section className="liquid-glass rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl">
+        <h2 className="text-base font-semibold">Vue comparative rapide</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tableau synthétique pour comparer les capacités clés en un coup
+          d&apos;œil.
+        </p>
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border/60">
+          <table className="min-w-full text-sm">
+            <thead className="bg-background/70 text-left">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Capacité</th>
+                {planOrder.map((planKey) => (
+                  <th
+                    className="px-4 py-3 font-semibold"
+                    key={`head-${planKey}`}
+                  >
+                    {planDefinitions[planKey].label.replace("mAI ", "")}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {comparativeRows.map((row) => (
+                <tr className="border-t border-border/50" key={row.label}>
+                  <td className="px-4 py-3 text-foreground">{row.label}</td>
+                  {planOrder.map((planKey) => (
+                    <td
+                      className="px-4 py-3 text-muted-foreground"
+                      key={`${row.label}-${planKey}`}
+                    >
+                      {row.getValue(planKey)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         {plans.map((planItem) => {

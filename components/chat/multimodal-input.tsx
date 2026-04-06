@@ -72,7 +72,7 @@ import {
   PromptInputTools,
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
-import { StopIcon } from "./icons";
+import { ModelSeriesStarIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import {
   type SlashCommand,
@@ -142,6 +142,11 @@ function getModelLogoProvider(
     return "llama";
   }
   return model.provider;
+}
+
+function isMSeriesHighlighted(modelName: string): boolean {
+  const normalizedName = modelName.toLowerCase();
+  return normalizedName.includes("m-5.7") || normalizedName.includes("m-5.8");
 }
 
 function PureMultimodalInput({
@@ -1326,52 +1331,66 @@ function PureModelSelectorCompact({
                     }
                     key={key}
                   >
-                    {grouped[key].map(({ model, curated }) => {
-                      const logoProvider = getModelLogoProvider(model);
-                      return (
-                        <ModelSelectorItem
-                          className={cn(
-                            "flex w-full",
-                            model.id === selectedModel.id && "bg-muted/50",
-                            !curated && "opacity-40 cursor-default"
-                          )}
-                          key={model.id}
-                          onSelect={() => {
-                            if (!curated) {
-                              return;
-                            }
-                            onModelChange?.(model.id);
-                            setCookie("chat-model", model.id);
-                            setOpen(false);
-                            setTimeout(() => {
-                              document
-                                .querySelector<HTMLTextAreaElement>(
-                                  "[data-testid='multimodal-input']"
-                                )
-                                ?.focus();
-                            }, 50);
-                          }}
-                          value={model.id}
-                        >
-                          <ModelSelectorLogo provider={logoProvider} />
-                          <ModelSelectorName>{model.name}</ModelSelectorName>
-                          <div className="ml-auto flex items-center gap-2 text-foreground/70">
-                            {capabilities?.[model.id]?.tools && (
-                              <WrenchIcon className="size-3.5" />
+                    {[...grouped[key]]
+                      .sort((left, right) =>
+                        left.model.name.localeCompare(right.model.name, "fr", {
+                          sensitivity: "base",
+                        })
+                      )
+                      .map(({ model, curated }) => {
+                        const logoProvider = getModelLogoProvider(model);
+                        return (
+                          <ModelSelectorItem
+                            className={cn(
+                              "flex w-full",
+                              model.id === selectedModel.id && "bg-muted/50",
+                              !curated && "opacity-40 cursor-default"
                             )}
-                            {capabilities?.[model.id]?.vision && (
-                              <EyeIcon className="size-3.5" />
-                            )}
-                            {capabilities?.[model.id]?.reasoning && (
-                              <BrainIcon className="size-3.5" />
-                            )}
-                            {!curated && (
-                              <LockIcon className="size-3 text-muted-foreground/50" />
-                            )}
-                          </div>
-                        </ModelSelectorItem>
-                      );
-                    })}
+                            key={model.id}
+                            onSelect={() => {
+                              if (!curated) {
+                                return;
+                              }
+                              onModelChange?.(model.id);
+                              setCookie("chat-model", model.id);
+                              setOpen(false);
+                              setTimeout(() => {
+                                document
+                                  .querySelector<HTMLTextAreaElement>(
+                                    "[data-testid='multimodal-input']"
+                                  )
+                                  ?.focus();
+                              }, 50);
+                            }}
+                            value={model.id}
+                          >
+                            <ModelSelectorLogo provider={logoProvider} />
+                            <ModelSelectorName>{model.name}</ModelSelectorName>
+                            <div className="ml-auto flex items-center gap-2 text-foreground/70">
+                              {isMSeriesHighlighted(model.name) && (
+                                <span
+                                  className="inline-flex items-center text-foreground"
+                                  title="Série m-5.7 / m-5.8"
+                                >
+                                  <ModelSeriesStarIcon size={13} />
+                                </span>
+                              )}
+                              {capabilities?.[model.id]?.tools && (
+                                <WrenchIcon className="size-3.5" />
+                              )}
+                              {capabilities?.[model.id]?.vision && (
+                                <EyeIcon className="size-3.5" />
+                              )}
+                              {capabilities?.[model.id]?.reasoning && (
+                                <BrainIcon className="size-3.5" />
+                              )}
+                              {!curated && (
+                                <LockIcon className="size-3 text-muted-foreground/50" />
+                              )}
+                            </div>
+                          </ModelSelectorItem>
+                        );
+                      })}
                   </ModelSelectorGroup>
                 ))}
               </>
