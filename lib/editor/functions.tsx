@@ -4,6 +4,7 @@ import { defaultMarkdownSerializer } from "prosemirror-markdown";
 import { DOMParser, type Node } from "prosemirror-model";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
 import { renderToString } from "react-dom/server";
+import DOMPurify from "dompurify";
 
 import { MessageResponse } from "@/components/ai-elements/message";
 
@@ -16,7 +17,7 @@ export const buildDocumentFromContent = (content: string) => {
     <MessageResponse>{content}</MessageResponse>
   );
   const tempContainer = document.createElement("div");
-  tempContainer.innerHTML = stringFromMarkdown;
+  tempContainer.innerHTML = DOMPurify.sanitize(stringFromMarkdown);
   return parser.parse(tempContainer);
 };
 

@@ -15,7 +15,9 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "export PLAYWRIGHT=True && pnpm exec playwright test",
+    "lint": "ultracite check",
+    "security:scan": "pnpm audit"
   },
   "dependencies": {
     "@ai-sdk/provider": "^3.0.3",
@@ -47,6 +49,7 @@
     "codemirror": "^6.0.1",
     "date-fns": "^4.1.0",
     "diff-match-patch": "^1.0.5",
+    "dompurify": "^3.3.3",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.34.0",
     "fast-deep-equal": "^3.1.3",

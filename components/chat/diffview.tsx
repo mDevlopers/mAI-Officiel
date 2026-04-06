@@ -11,6 +11,7 @@ import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { useEffect, useRef } from "react";
 import { renderToString } from "react-dom/server";
+import DOMPurify from "dompurify";
 
 import { MessageResponse } from "@/components/ai-elements/message";
 import { DiffType, diffEditor } from "@/lib/editor/diff";
@@ -67,10 +68,10 @@ export const DiffView = ({ oldContent, newContent }: DiffEditorProps) => {
       );
 
       const oldContainer = document.createElement("div");
-      oldContainer.innerHTML = oldHtmlContent;
+      oldContainer.innerHTML = DOMPurify.sanitize(oldHtmlContent);
 
       const newContainer = document.createElement("div");
-      newContainer.innerHTML = newHtmlContent;
+      newContainer.innerHTML = DOMPurify.sanitize(newHtmlContent);
 
       const oldDoc = parser.parse(oldContainer);
       const newDoc = parser.parse(newContainer);
