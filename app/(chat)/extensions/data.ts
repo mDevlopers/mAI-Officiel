@@ -6,6 +6,7 @@ import {
   Globe,
   HeartPulse,
   LibraryBig,
+  Salad,
   Newspaper,
   PenLine,
   ShieldCheck,
@@ -100,6 +101,15 @@ export const extensionCatalog: StoreExtension[] = [
       "Pré-analyse de documents santé avec alertes de prudence et points de vigilance.",
     icon: HeartPulse,
     route: "/Health",
+    beta: true,
+  },
+  {
+    id: "meals",
+    title: "mAIRepas",
+    description:
+      "Planifiez des repas et obtenez des recettes adaptées à vos objectifs et préférences.",
+    icon: Salad,
+    route: "/meals",
     beta: true,
   },
   {

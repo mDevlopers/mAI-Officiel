@@ -13,10 +13,11 @@ export default function ExtensionsPage() {
         <div className="flex items-center gap-3">
           <PuzzleIcon className="size-8 text-foreground" />
           <div>
-            <h1 className="text-3xl font-bold">Mini-Store : Extensions</h1>
+            <h1 className="text-3xl font-bold">Catalogue : Extension</h1>
             <p className="text-sm text-muted-foreground">
-              Toutes vos extensions sont centralisées ici (hors Projets et Mes
-              mAIs) avec un design Liquid Glass.
+              Actualités, mAIRepas, mAIHealth, Studio et toutes les autres
+              extensions sont centralisées ici (hors Projets et Mes mAIs) avec
+              un design Liquid Glass.
             </p>
           </div>
         </div>

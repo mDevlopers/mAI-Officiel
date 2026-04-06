@@ -15,8 +15,7 @@ type HomeShortcut = {
 };
 
 const defaultShortcuts: HomeShortcut[] = [
-  { id: "studio", label: "Studio d'images", href: "/studio" },
-  { id: "news", label: "Actualités", href: "/news" },
+  { id: "extensions", label: "Catalogue Extension", href: "/extensions" },
   { id: "coder", label: "Coder", href: "/coder" },
   { id: "library", label: "Bibliothèque", href: "/library" },
   { id: "settings", label: "Réglages", href: "/settings" },
