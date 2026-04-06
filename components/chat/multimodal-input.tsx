@@ -5,6 +5,9 @@ import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import {
   ArrowUpIcon,
+  MapPin,
+  MicIcon,
+  Square,
   BotIcon,
   BrainIcon,
   EyeIcon,
@@ -284,6 +287,81 @@ function PureMultimodalInput({
     "mai-library"
   );
 
+  const [isGeolocationEnabled, setIsGeolocationEnabled] = useLocalStorage(
+    "mai.geolocation-enabled",
+    false
+  );
+  const [geolocationPos, setGeolocationPos] = useState<{latitude: number; longitude: number} | null>(null);
+
+  useEffect(() => {
+    if (isGeolocationEnabled && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGeolocationPos({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        },
+        (err) => {
+          console.error("Erreur géolocalisation:", err);
+          setIsGeolocationEnabled(false);
+        }
+      );
+    } else if (!isGeolocationEnabled) {
+      setGeolocationPos(null);
+    }
+  }, [isGeolocationEnabled, setIsGeolocationEnabled]);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  const handleToggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob);
+
+        try {
+          const response = await fetch("/api/speech-to-text", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          if (data.transcript) {
+            setInput((prev) => prev ? `${prev} ${data.transcript}` : data.transcript);
+          }
+        } catch (error) {
+          console.error("Transcription failed", error);
+        }
+
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error accessing microphone", error);
+    }
+  };
+
   const handleInsertTemplate = useCallback(
     (templateText: string) => {
       const normalizedTemplate = templateText.trim();
@@ -352,6 +430,7 @@ function PureMultimodalInput({
           isWebSearchEnabled,
           isLearningEnabled,
         },
+        clientGeolocation: geolocationPos,
         ghostMode: isGhostModeEnabled,
         uploadSource,
       },
@@ -662,7 +741,19 @@ function PureMultimodalInput({
           {status === "submitted" ? (
             <StopButton setMessages={setMessages} stop={stop} />
           ) : (
-            <PromptInputSubmit
+            <div className="flex items-center gap-1">
+              <Button
+                className="h-7 w-7 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleToggleRecording();
+                }}
+                title="Dictée vocale"
+                variant={isRecording ? "destructive" : "ghost"}
+              >
+                {isRecording ? <Square className="size-4" /> : <MicIcon className="size-4 text-muted-foreground hover:text-foreground" />}
+              </Button>
+              <PromptInputSubmit
               className={cn(
                 "h-7 w-7 rounded-xl transition-all duration-200",
                 input.trim()
@@ -676,6 +767,7 @@ function PureMultimodalInput({
             >
               <ArrowUpIcon className="size-4" />
             </PromptInputSubmit>
+            </div>
           )}
         </PromptInputFooter>
       </PromptInput>
@@ -917,7 +1009,22 @@ function PureContextualActionsMenu({
               onClick={() => setIsLearningEnabled(!isLearningEnabled)}
               variant="ghost"
             >
-              <GraduationCapIcon
+              <Button
+              className={cn(
+                "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
+                isGeolocationEnabled &&
+                  "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+              )}
+              onClick={() => setIsGeolocationEnabled?.(!isGeolocationEnabled)}
+              variant="ghost"
+            >
+              <MapPin
+                className={isGeolocationEnabled ? "text-primary" : "text-muted-foreground"}
+                size={16}
+              />
+              Géolocalisation
+            </Button>
+            <GraduationCapIcon
                 className={
                   isLearningEnabled ? "text-primary" : "text-muted-foreground"
                 }

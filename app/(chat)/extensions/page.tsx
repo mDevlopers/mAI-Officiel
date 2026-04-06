@@ -12,6 +12,16 @@ const extensionCatalog = [
     icon: "🗞️",
     route: "/news",
     premium: true,
+    beta: true,
+  },
+  {
+    id: "meals",
+    title: "mAIRepas",
+    description:
+      "Trouvez des recettes fraîches et inspirantes adaptées à vos envies grâce à la recherche web.",
+    icon: "🍽️",
+    route: "/meals",
+    premium: false,
   },
   {
     id: "coder",
@@ -21,6 +31,7 @@ const extensionCatalog = [
     icon: "💻",
     route: "/coder",
     premium: true,
+    beta: true,
   },
   {
     id: "health",
@@ -90,6 +101,11 @@ export default function ExtensionsPage() {
                 <span>{extension.icon}</span>
                 <h2 className="font-bold text-lg">{extension.title}</h2>
               </div>
+              {extension.beta && (
+                <span className="mr-2 inline-flex items-center gap-1 rounded-full border border-blue-400/40 bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                  Bêta
+                </span>
+              )}
               {extension.premium ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">
                   <Star className="size-3" /> Premium
