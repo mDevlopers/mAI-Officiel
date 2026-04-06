@@ -1,4 +1,4 @@
-const fs = require("fs");
+const fs = require("node:fs");
 const file = "lib/db/queries.ts";
 let content = fs.readFileSync(file, "utf8");
 

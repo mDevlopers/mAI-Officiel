@@ -47,6 +47,9 @@ export const VersionFooter = ({
       transition={{ duration: 0.2 }}
     >
       <div className="flex items-center gap-3">
+        <span className="text-xs font-medium text-muted-foreground mr-2">
+          Version 0.5.0
+        </span>
         <div className="flex items-center gap-1">
           <button
             className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"

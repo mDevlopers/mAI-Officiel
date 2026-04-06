@@ -1,10 +1,10 @@
-const fs = require("fs");
+const fs = require("node:fs");
 const file = "lib/db/queries.ts";
 let content = fs.readFileSync(file, "utf8");
 
 // The type checking error: Generic type 'Pick' requires 2 type argument(s).
 // Looking at the error it seems updateAgent has been modified incorrectly or has a malformed type.
-const brokenType = `  data: Partial<
+const _brokenType = `  data: Partial<
     Pick<
       Agent,
       Project,
@@ -12,7 +12,7 @@ const brokenType = `  data: Partial<
     >
   >`;
 
-const fixedType = "  data: Partial<Agent>";
+const _fixedType = "  data: Partial<Agent>";
 
 if (content.includes("Pick<")) {
   // we need to fix the updateAgent signature

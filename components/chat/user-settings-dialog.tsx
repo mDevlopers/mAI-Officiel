@@ -299,7 +299,7 @@ export function UserSettingsDialog({
             <BadgeCheck className="size-4 text-blue-500" />
             Paramètres complets
             <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              v0.1.2
+              v0.5.0
             </span>
           </DialogTitle>
           <DialogDescription>
@@ -490,6 +490,17 @@ export function UserSettingsDialog({
                 placeholder="Ex: Style professionnel, concis, orienté plan d'action"
                 value={stylisticDirectives}
               />
+            </section>
+
+            <section className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
+              <h3 className="text-sm font-semibold">Sécurité & Données</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Vos données, y compris les profils, les contextes personnels et
+                les directives stylistiques, sont traitées localement et
+                stockées de manière sécurisée dans votre navigateur. Aucune
+                donnée n'est envoyée à des serveurs tiers à des fins
+                d'entraînement ou d'analyse.
+              </p>
             </section>
           </div>
         </div>
