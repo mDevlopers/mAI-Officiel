@@ -149,10 +149,11 @@ export default function ExtensionsPage() {
         <div className="flex items-center gap-3">
           <PuzzleIcon className="size-8 text-foreground" />
           <div>
-            <h1 className="text-3xl font-bold">Mini-Store : Extensions</h1>
+            <h1 className="text-3xl font-bold">Catalogue centralisé des mini-apps</h1>
             <p className="text-sm text-muted-foreground">
-              Gérez vos extensions avec les modes Masquer, Favoris et Épingler,
-              dans une interface Liquid Glass.
+              Retrouvez Actualités, mAIRepas, mAIHealth, Studio et vos autres
+              extensions dans un hub unique, avec les modes Masquer, Favoris et
+              Épingler, toujours en interface Liquid Glass.
             </p>
           </div>
         </div>

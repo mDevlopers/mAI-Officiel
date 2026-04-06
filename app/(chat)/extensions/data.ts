@@ -8,6 +8,7 @@ import {
   LibraryBig,
   Newspaper,
   PenLine,
+  Salad,
   ShieldCheck,
   Sparkles,
   Store,
@@ -100,6 +101,15 @@ export const extensionCatalog: StoreExtension[] = [
       "Pré-analyse de documents santé avec alertes de prudence et points de vigilance.",
     icon: HeartPulse,
     route: "/Health",
+    beta: true,
+  },
+  {
+    id: "meals",
+    title: "mAIRepas",
+    description:
+      "Planifiez vos repas avec des idées adaptées à vos objectifs et vos contraintes alimentaires.",
+    icon: Salad,
+    route: "/meals",
     beta: true,
   },
   {

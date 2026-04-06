@@ -15,12 +15,13 @@ type HomeShortcut = {
 };
 
 const defaultShortcuts: HomeShortcut[] = [
-  { id: "studio", label: "Studio d'images", href: "/studio" },
-  { id: "news", label: "Actualités", href: "/news" },
+  { id: "extensions", label: "Catalogue Extension", href: "/extensions" },
   { id: "coder", label: "Coder", href: "/coder" },
   { id: "library", label: "Bibliothèque", href: "/library" },
   { id: "settings", label: "Réglages", href: "/settings" },
 ];
+
+const shortcutById = new Map(defaultShortcuts.map((shortcut) => [shortcut.id, shortcut]));
 
 export const Greeting = () => {
   const [greetingText, setGreetingText] = useState<string>(greetingPrompts[0]);
@@ -50,7 +51,12 @@ export const Greeting = () => {
       }
       const parsed = JSON.parse(rawShortcuts) as HomeShortcut[];
       if (Array.isArray(parsed) && parsed.length > 0) {
-        setShortcuts(parsed.slice(0, 5));
+        const sanitized = parsed
+          .map((shortcut) => shortcutById.get(shortcut.id))
+          .filter((shortcut): shortcut is HomeShortcut => Boolean(shortcut));
+
+        const nextShortcuts = sanitized.length > 0 ? sanitized : defaultShortcuts;
+        setShortcuts(nextShortcuts.slice(0, 5));
       }
     } catch {
       setShortcuts(defaultShortcuts);
