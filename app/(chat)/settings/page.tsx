@@ -2,7 +2,6 @@
 
 import {
   Bell,
-  Brain,
   CalendarClock,
   Camera,
   Clock3,
@@ -10,8 +9,8 @@ import {
   FileText,
   Gauge,
   KeyRound,
-  Lock,
   ListPlus,
+  Lock,
   Mail,
   MessageCircle,
   PencilLine,
@@ -40,9 +39,9 @@ const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
-const APP_VERSION = "0.6.4";
+const APP_VERSION = "0.6.5";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
-const ABSOLUTE_MAX_MEMORY_ENTRIES = 50;
+const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
   "gpt-4.1",
   "gpt-4o-mini",
@@ -193,15 +192,15 @@ function formatDateTimeLocalInput(now = new Date()): string {
 
 function getMemoryEntriesLimitForPlan(planKey: string): number {
   if (planKey === "free") {
-    return 10;
+    return 50;
   }
   if (planKey === "plus") {
-    return 20;
+    return 75;
   }
   if (planKey === "pro") {
-    return 35;
+    return 100;
   }
-  return ABSOLUTE_MAX_MEMORY_ENTRIES;
+  return 200;
 }
 
 function sanitizeMemoryEntries(input: unknown): string[] {
@@ -271,7 +270,7 @@ export default function SettingsPage() {
     useState<MemorySortMode>("manual");
   const manualMemoryOrderRef = useRef<string[]>([]);
   const [aiName, setAiName] = useState("mAI");
-  const [activeSettingsSection, setActiveSettingsSection] = useState("modeles");
+  const [activeSettingsSection, setActiveSettingsSection] = useState("compte");
   const [notifications, setNotifications] = useState({
     projectUpdates: true,
     responseReady: true,
@@ -518,7 +517,9 @@ export default function SettingsPage() {
     }
 
     try {
-      const parsed = JSON.parse(rawParentalSettings) as Partial<ParentalSettings>;
+      const parsed = JSON.parse(
+        rawParentalSettings
+      ) as Partial<ParentalSettings>;
       const parsedExtensions =
         (parsed.extensions as Partial<Record<ExtensionKey, boolean>>) ?? {};
       setParentalSettings({
@@ -853,7 +854,6 @@ export default function SettingsPage() {
   }, [creditMetrics]);
 
   const settingsSections = [
-    { href: "#modeles", key: "modeles", label: "Modèles" },
     { href: "#compte", key: "compte", label: "Compte" },
     { href: "#notifications", key: "notifications", label: "Notifications" },
     {
@@ -874,7 +874,8 @@ export default function SettingsPage() {
     parentalSettings.enabled &&
     parentalSettings.dailyLimitMinutes > 0 &&
     parentalSettings.usageMinutes >= parentalSettings.dailyLimitMinutes;
-  const isDataAccessRestricted = isAdvancedAccessRestricted || isUsageLimitReached;
+  const isDataAccessRestricted =
+    isAdvancedAccessRestricted || isUsageLimitReached;
 
   const handleSetLockCode = () => {
     const normalizedNewCode = newLockCode.trim();
@@ -990,8 +991,8 @@ export default function SettingsPage() {
             local pour déverrouiller temporairement les paramètres avancés.
           </li>
           <li>
-            <strong>Administration :</strong> gestion du temps d&apos;utilisation
-            quotidien et blocage sélectif des extensions.
+            <strong>Administration :</strong> gestion du temps
+            d&apos;utilisation quotidien et blocage sélectif des extensions.
           </li>
           <li>
             <strong>Correctif :</strong> la restriction d&apos;accès n&apos;est
@@ -999,34 +1000,6 @@ export default function SettingsPage() {
             parental et au quota d&apos;usage.
           </li>
         </ul>
-      </section>
-
-      <section
-        className="rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl"
-        id="modeles"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Brain className="size-4 text-primary" />
-          Modèles
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Les modèles sont optimisés selon vos usages : conversation, code,
-          recherche, génération de documents et workflows outils.
-        </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {[
-            "GPT / Claude : polyvalence, raisonnement et qualité rédactionnelle.",
-            "Modèles rapides : latence basse pour échanges courts.",
-            "Modèles spécialisés : code, agents et automatisation.",
-          ].map((modelHint) => (
-            <div
-              className="rounded-xl border border-border/50 bg-background/60 p-3 text-sm text-muted-foreground"
-              key={modelHint}
-            >
-              {modelHint}
-            </div>
-          ))}
-        </div>
       </section>
 
       <section
@@ -1390,8 +1363,8 @@ export default function SettingsPage() {
           Contrôle parental
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Définissez un code de verrouillage, contrôlez le temps d&apos;utilisation
-          et limitez les options avancées.
+          Définissez un code de verrouillage, contrôlez le temps
+          d&apos;utilisation et limitez les options avancées.
         </p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -1414,7 +1387,11 @@ export default function SettingsPage() {
                 type="password"
                 value={confirmLockCode}
               />
-              <Button onClick={handleSetLockCode} type="button" variant="outline">
+              <Button
+                onClick={handleSetLockCode}
+                type="button"
+                variant="outline"
+              >
                 <Lock className="mr-2 size-4" />
                 Enregistrer le code
               </Button>
@@ -1596,8 +1573,8 @@ export default function SettingsPage() {
         )}
         {isAdvancedAccessRestricted && (
           <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            Accès restreint : entrez le code parental dans la section
-            "Contrôle parental" pour autoriser temporairement ces actions.
+            Accès restreint : entrez le code parental dans la section "Contrôle
+            parental" pour autoriser temporairement ces actions.
           </p>
         )}
         <div className="mt-4 grid gap-2 md:grid-cols-3">

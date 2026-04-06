@@ -298,6 +298,30 @@ export const BrandStarLogoIcon = ({ size = 28 }: { size?: number }) => {
   );
 };
 
+export const ModelSeriesStarIcon = ({ size = 14 }: { size?: number }) => {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height={size}
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <path
+        d="M12 2.6c2.6 3.9 3.4 4.7 7.4 7.4-4 2.7-4.8 3.5-7.4 7.4-2.6-3.9-3.4-4.7-7.4-7.4 4-2.7 4.8-3.5 7.4-7.4Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M12 7.5c1.5 2.2 1.8 2.5 4 4.1-2.2 1.6-2.5 2-4 4.1-1.5-2.1-1.8-2.5-4-4.1 2.2-1.6 2.5-1.9 4-4.1Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 export const LoaderIcon = ({ size = 16 }: { size?: number }) => {
   return (
     <svg
