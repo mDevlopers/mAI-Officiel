@@ -46,10 +46,13 @@ import {
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -770,9 +773,6 @@ function PureMultimodalInput({
               setIsGeolocationEnabled={setIsGeolocationEnabled}
               status={status}
             />
-            <span className="h-7 rounded-full border border-border/35 bg-secondary/35 px-2 text-[10px] leading-7 text-muted-foreground">
-              Source : Bibliothèque mAI
-            </span>
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
@@ -886,6 +886,8 @@ function PureContextualActionsMenu({
     "mai-learning-enabled",
     false
   );
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
+  const [quizDifficulty, setQuizDifficulty] = useState("moyen");
   const [reasoningLevel, setReasoningLevel] = useLocalStorage<ReflectionLevel>(
     "mai-reasoning-level",
     "moderate"
@@ -909,6 +911,9 @@ function PureContextualActionsMenu({
   }
   if (isLearningEnabled) {
     selectedActions.push("Apprentissage");
+  }
+  if (isGeolocationEnabled) {
+    selectedActions.push("Position");
   }
 
   const canUseDeepReflection = plan === "pro" || plan === "max";
@@ -1064,119 +1069,135 @@ function PureContextualActionsMenu({
           Recherche approfondie
         </Button>
 
-        <div className="my-1 rounded-lg border border-border/50 bg-background/60 p-2">
-          <p className="text-[11px] font-medium text-muted-foreground">
-            Quiz IA
-          </p>
-          <input
-            className="mt-2 h-8 w-full rounded-md border border-border/50 bg-background px-2 text-xs outline-none"
-            onChange={(event) => setQuizTopic(event.target.value)}
-            placeholder="Thème du quiz"
-            value={quizTopic}
-          />
-          <div className="mt-2 flex items-center gap-2">
-            <input
-              className="h-8 w-16 rounded-md border border-border/50 bg-background px-2 text-xs outline-none"
-              max={20}
-              min={1}
-              onChange={(event) => {
-                const parsedValue = Number.parseInt(event.target.value, 10);
-                setQuizQuestionCount(
-                  Number.isNaN(parsedValue)
-                    ? 5
-                    : Math.min(20, Math.max(1, parsedValue))
-                );
-              }}
-              type="number"
-              value={quizQuestionCount}
-            />
-            <Button
-              className="h-8 flex-1 text-xs"
-              onClick={() => {
-                onInsertTemplate(
-                  `Crée un quiz interactif sur le thème « ${quizTopic.trim() || "culture générale"} » avec ${quizQuestionCount} questions. Pour chaque question, propose 4 choix, indique la bonne réponse, puis ajoute une explication courte.`
-                );
-                setOpen(false);
-              }}
-              variant="secondary"
-            >
-              Générer Quiz
-            </Button>
-          </div>
-        </div>
+        <Button
+          className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
+          onClick={() => {
+            setIsQuizDialogOpen(true);
+            setOpen(false);
+          }}
+          variant="ghost"
+        >
+          <BotIcon className="text-muted-foreground" size={16} />
+          Quiz
+        </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              className="flex h-8 w-full items-center justify-between gap-2 text-xs font-normal text-muted-foreground"
-              variant="ghost"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-bold tracking-widest text-lg leading-none mt-[-8px]">
-                  ...
-                </span>{" "}
-                Plus
-              </div>
-              <span className="text-xs">&gt;</span>
+        <Button
+          className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
+          onClick={() => {
+            onInsertTemplate(
+              "Ouvre un canevas structuré pour ce travail, avec sections, objectifs et plan d'édition ciblé. Ensuite, commence par la section d'introduction."
+            );
+            setOpen(false);
+          }}
+          variant="ghost"
+        >
+          <FilePenLineIcon className="text-muted-foreground" size={16} />
+          Canevas
+        </Button>
+
+        <Button
+          className={cn(
+            "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
+            isLearningEnabled &&
+              "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+          )}
+          onClick={() => setIsLearningEnabled(!isLearningEnabled)}
+          variant="ghost"
+        >
+          <GraduationCapIcon
+            className={
+              isLearningEnabled ? "text-primary" : "text-muted-foreground"
+            }
+            size={16}
+          />
+          Apprendre & Étudier
+        </Button>
+
+        <Button
+          className={cn(
+            "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
+            isGeolocationEnabled &&
+              "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+          )}
+          onClick={() => setIsGeolocationEnabled?.(!isGeolocationEnabled)}
+          variant="ghost"
+        >
+          <MapPin
+            className={
+              isGeolocationEnabled ? "text-primary" : "text-muted-foreground"
+            }
+            size={16}
+          />
+          Position
+        </Button>
+      </PopoverContent>
+      <Dialog onOpenChange={setIsQuizDialogOpen} open={isQuizDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurer le quiz</DialogTitle>
+            <DialogDescription>
+              Renseignez le sujet, le nombre de questions et la difficulté avant
+              génération.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-1">
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Sujet</span>
+              <input
+                className="h-9 rounded-md border border-border/50 bg-background px-3 text-sm outline-none"
+                onChange={(event) => setQuizTopic(event.target.value)}
+                placeholder="ex. culture générale"
+                value={quizTopic}
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Questions</span>
+              <input
+                className="h-9 rounded-md border border-border/50 bg-background px-3 text-sm outline-none"
+                max={20}
+                min={1}
+                onChange={(event) => {
+                  const parsedValue = Number.parseInt(event.target.value, 10);
+                  setQuizQuestionCount(
+                    Number.isNaN(parsedValue)
+                      ? 5
+                      : Math.min(20, Math.max(1, parsedValue))
+                  );
+                }}
+                type="number"
+                value={quizQuestionCount}
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="text-muted-foreground">Difficulté</span>
+              <select
+                className="h-9 rounded-md border border-border/50 bg-background px-3 text-sm outline-none"
+                onChange={(event) => setQuizDifficulty(event.target.value)}
+                value={quizDifficulty}
+              >
+                <option value="facile">Facile</option>
+                <option value="moyen">Moyen</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsQuizDialogOpen(false)} variant="ghost">
+              Annuler
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            className="w-56 p-2 shadow-lg rounded-xl"
-            side="right"
-          >
             <Button
-              className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
               onClick={() => {
                 onInsertTemplate(
-                  "Ouvre un Canevas structuré pour ce travail, avec sections, objectifs et plan d'édition ciblé. Ensuite, commence par la section d'introduction."
+                  `Crée un quiz interactif de difficulté ${quizDifficulty} sur le sujet « ${quizTopic.trim() || "culture générale"} » avec ${quizQuestionCount} questions. Pour chaque question, propose 4 choix, indique la bonne réponse, puis ajoute une explication courte.`
                 );
-                setOpen(false);
+                setIsQuizDialogOpen(false);
               }}
-              variant="ghost"
             >
-              <FilePenLineIcon className="text-muted-foreground" size={16} />
-              Ouvrir un Canevas
+              Générer le quiz
             </Button>
-            <Button
-              className={cn(
-                "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
-                isLearningEnabled &&
-                  "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-              )}
-              onClick={() => setIsLearningEnabled(!isLearningEnabled)}
-              variant="ghost"
-            >
-              <Button
-                className={cn(
-                  "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
-                  isGeolocationEnabled &&
-                    "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-                )}
-                onClick={() => setIsGeolocationEnabled?.(!isGeolocationEnabled)}
-                variant="ghost"
-              >
-                <MapPin
-                  className={
-                    isGeolocationEnabled
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  }
-                  size={16}
-                />
-                Géolocalisation
-              </Button>
-              <GraduationCapIcon
-                className={
-                  isLearningEnabled ? "text-primary" : "text-muted-foreground"
-                }
-                size={16}
-              />
-              Apprendre & Étudier
-            </Button>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PopoverContent>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Popover>
   );
 }

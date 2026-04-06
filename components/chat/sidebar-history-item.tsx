@@ -29,6 +29,7 @@ import {
 const PureChatItem = ({
   chat,
   isActive,
+  isPinned,
   onDelete,
   onPin,
   onRename,
@@ -37,6 +38,7 @@ const PureChatItem = ({
 }: {
   chat: Chat;
   isActive: boolean;
+  isPinned: boolean;
   onDelete: (chatId: string) => void;
   onPin: (chatId: string) => void;
   onRename: (chatId: string, title: string) => void;
@@ -140,7 +142,7 @@ const PureChatItem = ({
             className="cursor-pointer"
             onSelect={() => onPin(chat.id)}
           >
-            Épingler
+            {isPinned ? "Désépingler" : "Épingler"}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer"
