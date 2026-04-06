@@ -153,11 +153,16 @@ export default function ExtensionsPage() {
         <div className="flex items-center gap-3">
           <PuzzleIcon className="size-8 text-foreground" />
           <div>
-            <h1 className="text-3xl font-bold">Extensions</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">Extensions</h1>
+              <span className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+                Bêta
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">
               Retrouvez LearnUp, Shopper, Actualités, CookAI, mAIHealth, Studio
               et vos autres extensions dans un hub unique, avec les modes
-              Masquer, Favoris et Épingler, toujours en interface Liquid Glass.
+              Masquer, Favoris et Épingler.
             </p>
           </div>
         </div>

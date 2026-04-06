@@ -100,7 +100,7 @@ export default function PricingPage() {
         `${planDefinitions[key].limits.imagesPerWeek}`,
     },
     {
-      label: "Entrées mémoire",
+      label: "Mémoire IA (entrées)",
       getValue: (key: PlanKey) => `${planDefinitions[key].limits.memoryUnits}`,
     },
     {
@@ -119,7 +119,7 @@ export default function PricingPage() {
 
     if (!nextPlan) {
       setMessage({
-        text: `Code invalide pour mAI ${selectedTargetPlan}. Vérifiez votre code officiel.`,
+        text: `Code invalide pour ${planDefinitions[selectedTargetPlan].label}. Vérifiez votre code officiel.`,
         type: "error",
       });
       return;
@@ -139,7 +139,7 @@ export default function PricingPage() {
           <BadgeCheck className="size-7 text-primary" />
           <h1 className="text-3xl font-bold">Comparer les forfaits mAI</h1>
           <Badge className="rounded-full bg-primary/90 text-white hover:bg-primary/90">
-            v0.6.5
+            v0.6.7
           </Badge>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -309,14 +309,14 @@ export default function PricingPage() {
       >
         <h3 className="text-lg font-semibold">Activation par code officiel</h3>
         <p className="mt-2 text-sm text-muted-foreground">
-          Forfait ciblé: <strong>mAI {selectedTargetPlan}</strong>. Saisissez
+          Forfait ciblé: <strong>{planDefinitions[selectedTargetPlan].label}</strong>. Saisissez
           votre code officiel reçu via les canaux mAI.
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <Input
             onChange={(event) => setActivationCode(event.target.value)}
-            placeholder={`Entrez votre code mAI ${selectedTargetPlan}`}
+            placeholder={`Entrez votre code ${planDefinitions[selectedTargetPlan].label}`}
             value={activationCode}
           />
           <Button
@@ -327,7 +327,7 @@ export default function PricingPage() {
           >
             {isActivating
               ? "Activation..."
-              : `Activer mAI ${selectedTargetPlan}`}
+              : `Activer ${planDefinitions[selectedTargetPlan].label}`}
           </Button>
         </div>
 
@@ -345,9 +345,8 @@ export default function PricingPage() {
 
       <footer className="rounded-2xl border border-border/50 bg-card/70 p-4 text-xs text-muted-foreground">
         <p className="flex items-center gap-2">
-          <Sparkles className="size-3.5" /> Expérience Liquid Glass: cartes
-          translucides, gradients subtils, bordures adoucies et profondeur via
-          backdrop-blur.
+          <Sparkles className="size-3.5" /> Interface modernisée: cartes
+          lisibles, transitions fluides et activation instantanée.
         </p>
       </footer>
     </div>

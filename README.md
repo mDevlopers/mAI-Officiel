@@ -18,12 +18,12 @@ Ce dépôt contient l’application officielle **mAI** : interface conversationn
   - Menus contextuels et actions rapides
 
 - **Contrôle parental & sécurité**
-  - Module de **contrôle parental** (v0.6.4)
+  - Module de **contrôle parental** (v0.6.7)
   - Paramètres de sécurité centralisés
   - Gestion des niveaux de réflexion / profondeur de réponse
 
 - **Expérience utilisateur**
-  - Refonte graphique **“liquid glass”** (v0.6.2)
+  - Refonte graphique moderne (v0.6.7)
   - Mode **ghost** (discrétion / présence minimale)
   - UI basée sur **shadcn/ui** + **Radix UI** + **Tailwind CSS**
 

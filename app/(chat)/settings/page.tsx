@@ -39,16 +39,20 @@ const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
-const APP_VERSION = "0.6.5";
+const APP_VERSION = "0.6.7";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
 const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
   "gpt-4.1",
+  "gpt-4.1-mini",
   "gpt-4o-mini",
   "o4-mini",
-  "claude-3.7",
-  "gpt-4.1-mini",
+  "gpt-5.4-mini",
+  "gpt-5.4-nano",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
   "claude-3.7-sonnet",
+  "mistral-small-latest",
 ] as const;
 const schedulerFrequencies = [
   "quotidienne",
@@ -1034,7 +1038,7 @@ export default function SettingsPage() {
           {isHydrated && plan !== "max" && (
             <div className="mt-4 flex justify-center">
               <Button asChild className="rounded-full" variant="outline">
-                <a href="/">
+                <a href="/pricing">
                   {plan === "free"
                     ? "Obtenir Plus"
                     : plan === "plus"

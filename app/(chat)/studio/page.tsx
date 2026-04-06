@@ -93,7 +93,7 @@ export default function StudioPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Studio IA</h1>
           <p className="text-sm text-muted-foreground">
-            Génération et édition d'images avec interface Liquid Glass.
+            Génération et édition d'images avec une interface moderne.
           </p>
         </div>
         <div className="flex gap-2 rounded-2xl border border-border/60 bg-background/40 p-1 backdrop-blur-xl">
