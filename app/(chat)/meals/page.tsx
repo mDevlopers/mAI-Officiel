@@ -22,8 +22,6 @@ export default function MealsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [externalContext, setExternalContext] = useState("");
   const [history, setHistory] = useState<ReportHistory[]>([]);
-  const [accessCode, setAccessCode] = useState("");
-  const [isUnlocked, setIsUnlocked] = useState(false);
   const [searchesToday, setSearchesToday] = useState(0);
   const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
   const [importSource, setImportSource] = useState<"device" | "mai-library">(
@@ -43,12 +41,6 @@ export default function MealsPage() {
     () => [...inspirationBubbles].sort(() => Math.random() - 0.5).slice(0, 3),
     []
   );
-
-  useEffect(() => {
-    fetch("/api/restricted-access?area=news")
-      .then((res) => res.json())
-      .then((payload) => setIsUnlocked(payload.unlocked === true));
-  }, []);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -116,40 +108,6 @@ export default function MealsPage() {
     () => new Blob([report], { type: "text/plain;charset=utf-8" }),
     [report]
   );
-
-  if (!isUnlocked) {
-    return (
-      <div className="liquid-glass flex h-full w-full items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-red-500/30 bg-card/70 p-5">
-          <p className="text-sm font-semibold text-red-500">Accès restreint</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Entrez le code d'accès pour ouvrir Recettes & Repas.
-          </p>
-          <input
-            className="mt-3 h-10 w-full rounded-xl border border-border/50 bg-background/70 px-3"
-            onChange={(event) => setAccessCode(event.target.value)}
-            placeholder="Code d'accès"
-            value={accessCode}
-          />
-          <Button
-            className="mt-3 w-full"
-            onClick={async () => {
-              const response = await fetch("/api/restricted-access", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ area: "meals", code: accessCode }),
-              });
-              if (response.ok) {
-                setIsUnlocked(true);
-              }
-            }}
-          >
-            Déverrouiller
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="liquid-glass flex h-full w-full flex-col gap-5 overflow-y-auto p-6 md:p-10">

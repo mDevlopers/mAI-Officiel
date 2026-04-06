@@ -83,7 +83,7 @@ export default function LearnUpPage() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Outil de révision intelligent: générateur de quiz, exercices ciblés et
-          fiches/cours automatiques en interface Liquid Glass.
+          fiches/cours automatiques avec une interface claire et moderne.
         </p>
       </header>
 

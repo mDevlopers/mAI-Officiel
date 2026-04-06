@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   ShoppingBag,
   Sparkles,
-  Store,
 } from "lucide-react";
 
 export type StoreExtension = {
@@ -138,12 +137,5 @@ export const extensionCatalog: StoreExtension[] = [
     icon: LibraryBig,
     route: "/library",
   },
-  {
-    id: "store",
-    title: "Store mAI",
-    description:
-      "Centre de découverte et gestion de vos extensions disponibles en un seul endroit.",
-    icon: Store,
-    route: "/extensions",
-  },
+
 ];
