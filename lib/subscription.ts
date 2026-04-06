@@ -6,7 +6,7 @@ export type PlanLimits = {
   quizPerDay: number | "illimites";
   memoryUnits: number;
   messagesPerHour: number;
-  coderCredits: number;
+  unifiedCreditsPerWeek: number;
   imagesPerWeek: number;
   taskSchedules: number;
   newsSearchesPerDay: number;
@@ -21,7 +21,7 @@ export type PlanDefinition = {
   limits: PlanLimits;
 };
 
-export const PLAN_STORAGE_KEY = "mai.subscription.plan.v013";
+export const PLAN_STORAGE_KEY = "mai.subscription.plan.v014";
 
 export const planDefinitions: Record<PlanKey, PlanDefinition> = {
   free: {
@@ -33,7 +33,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       quizPerDay: 2,
       memoryUnits: 50,
       messagesPerHour: 10,
-      coderCredits: 30,
+      unifiedCreditsPerWeek: 20,
       imagesPerWeek: 2,
       taskSchedules: 2,
       newsSearchesPerDay: 3,
@@ -50,7 +50,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       quizPerDay: 10,
       memoryUnits: 75,
       messagesPerHour: 30,
-      coderCredits: 50,
+      unifiedCreditsPerWeek: 35,
       imagesPerWeek: 3,
       taskSchedules: 5,
       newsSearchesPerDay: 5,
@@ -68,7 +68,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       quizPerDay: 20,
       memoryUnits: 100,
       messagesPerHour: 50,
-      coderCredits: 75,
+      unifiedCreditsPerWeek: 50,
       imagesPerWeek: 4,
       taskSchedules: 10,
       newsSearchesPerDay: 10,
@@ -85,7 +85,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       quizPerDay: "illimites",
       memoryUnits: 200,
       messagesPerHour: 200,
-      coderCredits: 150,
+      unifiedCreditsPerWeek: 75,
       imagesPerWeek: 5,
       taskSchedules: 20,
       newsSearchesPerDay: 20,

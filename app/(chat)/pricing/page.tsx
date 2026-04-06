@@ -34,12 +34,14 @@ const planPrices: Record<PlanKey, { amount: string; subtitle: string }> = {
 
 const highlightsByPlan: Record<PlanKey, string[]> = {
   free: [
+    "20 crédits unifiés / semaine sur tout l'écosystème",
     "Obtenez des explications simples",
     "Discutez brièvement pour des besoins courants",
     "Essayez la génération d'images",
     "Mémoire et contexte limités",
   ],
   plus: [
+    "35 crédits unifiés / semaine",
     "Résolvez des problèmes complexes",
     "Discutez plus longtemps dans différentes sessions",
     "Créez plus d'images, plus vite",
@@ -47,12 +49,14 @@ const highlightsByPlan: Record<PlanKey, string[]> = {
     "Planifiez des tâches récurrentes",
   ],
   pro: [
+    "50 crédits unifiés / semaine",
     "Analyses avancées multi-outils",
     "Capacités étendues pour Coder et Studio",
     "Volume de messages et fichiers élevé",
     "Exécution fluide pour équipes projet",
   ],
   max: [
+    "75 crédits unifiés / semaine",
     "Capacité maximale sur tous les modules mAI",
     "Priorité sur les flux intensifs",
     "Quotas très élevés pour mAINews & mAIHealth",
@@ -105,7 +109,7 @@ export default function PricingPage() {
           <BadgeCheck className="size-7 text-primary" />
           <h1 className="text-3xl font-bold">Comparer les forfaits mAI</h1>
           <Badge className="rounded-full bg-primary/90 text-white hover:bg-primary/90">
-            v0.5.5
+            v0.5.7
           </Badge>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
@@ -210,8 +214,8 @@ export default function PricingPage() {
                   /h
                 </p>
                 <p className="flex items-center gap-1">
-                  <Wand2 className="size-3.5" /> {planItem.limits.coderCredits}{" "}
-                  Coder
+                  <Wand2 className="size-3.5" />{" "}
+                  {planItem.limits.unifiedCreditsPerWeek} crédits/sem
                 </p>
                 <p className="flex items-center gap-1">
                   <Image className="size-3.5" /> {planItem.limits.imagesPerWeek}

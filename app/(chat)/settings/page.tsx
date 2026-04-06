@@ -465,10 +465,10 @@ export default function SettingsPage() {
         used: 0,
       },
       {
-        key: "coder",
-        limit: currentPlanDefinition.limits.coderCredits,
-        period: "month",
-        title: "Crédits Coder",
+        key: "credits",
+        limit: currentPlanDefinition.limits.unifiedCreditsPerWeek,
+        period: "week",
+        title: "Crédits unifiés",
         used: 0,
       },
       {
@@ -517,7 +517,7 @@ export default function SettingsPage() {
         used: getUsageCount("health", "month"),
       },
     ];
-  }, [currentPlanDefinition, isHydrated, tasks.length]);
+  }, [currentPlanDefinition, getUsageCount, isHydrated, tasks.length]);
 
   const totalCreditsOverview = useMemo(() => {
     if (creditMetrics.length === 0) {
@@ -542,7 +542,7 @@ export default function SettingsPage() {
         <Settings2 className="size-8 text-primary" />
         <h1 className="text-3xl font-bold">Paramètres</h1>
         <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-xs text-muted-foreground">
-          v0.5.5
+          v0.5.7
         </span>
       </div>
 
@@ -570,20 +570,27 @@ export default function SettingsPage() {
       </section>
 
       <section className="liquid-glass rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background/60 to-card/70 p-5">
-        <h2 className="text-lg font-semibold">v0.5.5 · Lancement LearnUp & Shopper</h2>
+        <h2 className="text-lg font-semibold">
+          v0.5.7 · Unification &amp; Super-Extensions
+        </h2>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>
-            <strong>LearnUp:</strong> générateur de quiz IA, exercices ciblés,
-            fiches de révision et cours structurés (prompt, classe, difficulté,
-            matière, nombre de questions).
+            <strong>Nouveau système de crédits unifié :</strong> les crédits
+            sont partagés sur tout l&apos;écosystème mAI (Free: 20/semaine,
+            mAI+: 35/semaine, Pro: 50/semaine, mAIMax: 75/semaine).
           </li>
           <li>
-            <strong>Shopper:</strong> recherche multi-plateformes, synthèse du
-            meilleur rapport qualité/prix, visual proof et scan budget.
+            <strong>mAINews:</strong> flux ultra-personnalisé par centres
+            d&apos;intérêt et nouveau mode Lecture Rapide (audio/texte).
           </li>
           <li>
-            <strong>Maintenance:</strong> corrections de bugs mineurs et
-            optimisations générales des modules.
+            <strong>Projets &amp; BrainStorming:</strong> vue Timeline, jalons
+            avec progression, mind maps automatiques et mode Idée Flash.
+          </li>
+          <li>
+            <strong>Presets &amp; modules:</strong> nouveaux presets
+            spécialisés, optimisations UI de CookAI/LearnUp et corrections de
+            bugs transverses.
           </li>
         </ul>
       </section>
@@ -641,7 +648,7 @@ export default function SettingsPage() {
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {isHydrated
-              ? `${currentPlanDefinition.limits.messagesPerHour} messages/h • ${currentPlanDefinition.limits.coderCredits} crédits Coder • ${currentPlanDefinition.limits.imagesPerWeek} images/semaine`
+              ? `${currentPlanDefinition.limits.messagesPerHour} messages/h • ${currentPlanDefinition.limits.unifiedCreditsPerWeek} crédits unifiés/semaine • ${currentPlanDefinition.limits.imagesPerWeek} images/semaine`
               : "Chargement du forfait..."}
           </p>
 
