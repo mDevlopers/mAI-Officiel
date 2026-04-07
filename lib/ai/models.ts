@@ -54,6 +54,66 @@ export const chatModels: ChatModel[] = [
     provider: "kwaipilot",
     description: "Modèle code à très bas coût d'entrée.",
   },
+  {
+    id: "openrouter/meta-llama/llama-3.2-3b-instruct:free",
+    name: "OpenRouter · Llama 3.2 3B (Free)",
+    provider: "openrouter",
+    description:
+      "Gratuit via OpenRouter, idéal pour prototypage ultra low-cost.",
+  },
+  {
+    id: "openrouter/mistralai/mistral-small-3.2-24b-instruct:free",
+    name: "OpenRouter · Mistral Small 3.2 (Free)",
+    provider: "openrouter",
+    description:
+      "Option gratuite polyvalente, bonne qualité/coût côté OpenRouter.",
+  },
+  {
+    id: "openrouter/qwen/qwen-2.5-7b-instruct",
+    name: "OpenRouter · Qwen 2.5 7B",
+    provider: "openrouter",
+    description: "Très abordable pour chat généraliste via OpenRouter.",
+  },
+  {
+    id: "ollama/qwen2.5:3b",
+    name: "Ollama · Qwen2.5 3B",
+    provider: "ollama",
+    description: "Modèle local très léger, coût quasi nul hors machine.",
+  },
+  {
+    id: "ollama/llama3.2:3b",
+    name: "Ollama · Llama 3.2 3B",
+    provider: "ollama",
+    description: "Local compact pour réponses rapides sans coût API.",
+  },
+  {
+    id: "ollama/phi3.5:3.8b",
+    name: "Ollama · Phi 3.5 3.8B",
+    provider: "ollama",
+    description:
+      "Alternative locale économique pour tâches techniques légères.",
+  },
+  {
+    id: "fireworks/accounts/fireworks/models/llama-v3p1-8b-instruct",
+    name: "Fireworks · Llama 3.1 8B Instruct",
+    provider: "fireworks-ai",
+    description:
+      "Modèle Fireworks économique pour assistants et chat à faible coût.",
+  },
+  {
+    id: "fireworks/accounts/fireworks/models/qwen2p5-7b-instruct",
+    name: "Fireworks · Qwen 2.5 7B Instruct",
+    provider: "fireworks-ai",
+    description:
+      "Très bon compromis latence/prix pour usages généralistes Fireworks.",
+  },
+  {
+    id: "fireworks/accounts/fireworks/models/deepseek-v3",
+    name: "Fireworks · DeepSeek V3",
+    provider: "fireworks-ai",
+    description:
+      "Option à coût maîtrisé pour tâches plus complexes côté Fireworks.",
+  },
 
   // 🟡 Peu cher
   {
