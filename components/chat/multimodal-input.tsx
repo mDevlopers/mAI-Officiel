@@ -1240,6 +1240,7 @@ function PureModelSelectorCompact({
               anthropic: "Anthropic",
               "arcee-ai": "Arcee AI",
               bytedance: "ByteDance",
+              "cloudflare-workers-ai": "Cloudflare Workers AI",
               cohere: "Cohere",
               deepseek: "DeepSeek",
               google: "Google",

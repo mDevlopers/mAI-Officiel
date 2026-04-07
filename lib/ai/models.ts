@@ -115,6 +115,69 @@ export const chatModels: ChatModel[] = [
       "Très performant en raisonnement, avec coût maîtrisé côté SambaNova.",
     reasoningEffort: "medium",
   },
+  // Cloudflare Workers AI: sélection limitée aux modèles annoncés <= 0,5$/M tokens.
+  {
+    id: "cloudflare/@cf/meta/llama-3.2-1b-instruct",
+    name: "Cloudflare · Llama 3.2 1B Instruct",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Ultra low-cost (≤ 0,5$/M), idéal pour grands volumes et réponses courtes.",
+  },
+  {
+    id: "cloudflare/@cf/meta/llama-3.2-3b-instruct",
+    name: "Cloudflare · Llama 3.2 3B Instruct",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Très économique (≤ 0,5$/M), bon compromis qualité/prix en production.",
+  },
+  {
+    id: "cloudflare/@cf/meta/llama-3.1-8b-instruct-fp8-fast",
+    name: "Cloudflare · Llama 3.1 8B FP8 Fast",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Rapide et abordable (≤ 0,5$/M), pertinent pour assistants réactifs.",
+  },
+  {
+    id: "cloudflare/@cf/meta/llama-3.1-8b-instruct-fp8",
+    name: "Cloudflare · Llama 3.1 8B FP8",
+    provider: "cloudflare-workers-ai",
+    description: "Version 8B coût maîtrisé (≤ 0,5$/M) pour charge soutenue.",
+  },
+  {
+    id: "cloudflare/@cf/meta/llama-3.1-8b-instruct-awq",
+    name: "Cloudflare · Llama 3.1 8B AWQ",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Quantized AWQ économique (≤ 0,5$/M) avec latence généralement faible.",
+  },
+  {
+    id: "cloudflare/@cf/meta/llama-3-8b-instruct-awq",
+    name: "Cloudflare · Llama 3 8B AWQ",
+    provider: "cloudflare-workers-ai",
+    description: "Option 8B AWQ très abordable (≤ 0,5$/M) pour chat général.",
+  },
+  {
+    id: "cloudflare/@cf/mistral/mistral-7b-instruct-v0.1",
+    name: "Cloudflare · Mistral 7B Instruct",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Mistral 7B à bas prix (≤ 0,5$/M), utile pour tâches texte polyvalentes.",
+  },
+  {
+    id: "cloudflare/@cf/zai-org/glm-4.7-flash",
+    name: "Cloudflare · GLM 4.7 Flash",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Modèle flash économique (≤ 0,5$/M), orienté vitesse et coût réduit.",
+  },
+  {
+    id: "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+    name: "Cloudflare · Gemma 4 26B A4B",
+    provider: "cloudflare-workers-ai",
+    description:
+      "Grand modèle restant dans le budget (≤ 0,5$/M) pour usages exigeants.",
+    reasoningEffort: "medium",
+  },
   {
     id: "fireworks/accounts/fireworks/models/llama-v3p1-8b-instruct",
     name: "Fireworks · Llama 3.1 8B Instruct",
