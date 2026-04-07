@@ -44,7 +44,7 @@ export const ModelSelectorContent = ({
   <PopoverContent
     align="start"
     className={cn(
-      "w-[280px] p-0 rounded-xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]",
+      "w-[300px] p-0 rounded-2xl border border-[color:var(--glass-border)] bg-[color:var(--glass-surface)] backdrop-blur-2xl shadow-[var(--glass-shadow)]",
       className
     )}
     side="top"
@@ -183,15 +183,18 @@ export const ModelSelectorLogo = ({
   }
 
   let logoProvider = provider;
-  if (provider === "ollama") logoProvider = "llama";
-  if (provider === "openrouter") logoProvider = "fastrouter";
+  if (provider === "ollama") logoProvider = "meta";
+  if (provider === "openrouter") logoProvider = "openrouter";
+  if (provider === "llama") logoProvider = "meta";
 
   return (
     <img
       {...props}
       alt={`${provider} logo`}
-      className={cn("size-4 dark:invert", className)}
+      className={cn("size-4", className)}
+      decoding="async"
       height={16}
+      loading="lazy"
       src={`https://models.dev/logos/${logoProvider}.svg`}
       width={16}
     />

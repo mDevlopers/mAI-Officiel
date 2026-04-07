@@ -282,10 +282,15 @@ export const embeddingModels = [
   },
 ] as const;
 
-export async function getCapabilities(): Promise<
-  Record<string, ModelCapabilities>
-> {
-  const customModelsCapabilities = Object.fromEntries(
+const ENABLE_REMOTE_MODEL_CAPABILITIES =
+  process.env.ENABLE_REMOTE_MODEL_CAPABILITIES === "1";
+
+const CAPABILITIES_CACHE_TTL_MS = 1000 * 60 * 10;
+let cachedCapabilities: Record<string, ModelCapabilities> | null = null;
+let cachedCapabilitiesAt = 0;
+
+function buildLocalCapabilities(): Record<string, ModelCapabilities> {
+  return Object.fromEntries(
     chatModels.map((m) => [
       m.id,
       {
@@ -299,23 +304,39 @@ export async function getCapabilities(): Promise<
       },
     ])
   );
+}
+
+export async function getCapabilities(): Promise<
+  Record<string, ModelCapabilities>
+> {
+  const localCapabilities = buildLocalCapabilities();
+
+  // Latence minimale par défaut: on évite des dizaines de requêtes distantes au chargement.
+  if (!ENABLE_REMOTE_MODEL_CAPABILITIES) {
+    return localCapabilities;
+  }
+
+  const now = Date.now();
+  if (
+    cachedCapabilities &&
+    now - cachedCapabilitiesAt < CAPABILITIES_CACHE_TTL_MS
+  ) {
+    return cachedCapabilities;
+  }
 
   const gatewayModelsCapabilitiesArray = await Promise.all(
     chatModels.map(async (model) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1500);
+
       try {
         const res = await fetch(
           `https://ai-gateway.vercel.sh/v1/models/${model.id}/endpoints`,
-          { next: { revalidate: 86_400 } }
+          { next: { revalidate: 86_400 }, signal: controller.signal }
         );
+
         if (!res.ok) {
-          return [
-            model.id,
-            customModelsCapabilities[model.id] ?? {
-              tools: false,
-              vision: false,
-              reasoning: false,
-            },
-          ] as const;
+          return [model.id, localCapabilities[model.id]] as const;
         }
 
         const json = await res.json();
@@ -339,22 +360,20 @@ export async function getCapabilities(): Promise<
           },
         ] as const;
       } catch {
-        return [
-          model.id,
-          customModelsCapabilities[model.id] ?? {
-            tools: false,
-            vision: false,
-            reasoning: false,
-          },
-        ] as const;
+        return [model.id, localCapabilities[model.id]] as const;
+      } finally {
+        clearTimeout(timeout);
       }
     })
   );
 
-  return {
-    ...customModelsCapabilities,
+  cachedCapabilities = {
+    ...localCapabilities,
     ...Object.fromEntries(gatewayModelsCapabilitiesArray),
   };
+  cachedCapabilitiesAt = now;
+
+  return cachedCapabilities;
 }
 
 export const isDemo = process.env.IS_DEMO === "1";

@@ -66,6 +66,7 @@ import {
   type ModelCapabilities,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
+import { resolveModelLogoProvider } from "@/lib/ai/model-brand";
 import { cn } from "@/lib/utils";
 import {
   PromptInput,
@@ -98,66 +99,6 @@ function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
   // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
-}
-
-function getModelLogoProvider(
-  model: Pick<ChatModel, "id" | "name" | "provider">
-) {
-  const id = model.id.toLowerCase();
-  const name = model.name.toLowerCase();
-
-  if (id.includes("deepseek") || name.includes("deepseek")) {
-    return "deepseek";
-  }
-  if (id.includes("openai/") || id.includes("/gpt") || name.includes("gpt")) {
-    return "openai";
-  }
-  if (id.includes("stepfun") || name.includes("step 1")) {
-    return "stepfun";
-  }
-  if (id.includes("liquid/") || name.includes("lfm")) {
-    return "liquid";
-  }
-  if (id.includes("gemini") || id.includes("/google/")) {
-    return "google";
-  }
-  if (id.includes("gemma") || name.includes("gemma")) {
-    return "google";
-  }
-  if (
-    id.includes("phi-3.5") ||
-    id.includes("phi3.5") ||
-    name.includes("phi 3.5")
-  ) {
-    return "microsoft";
-  }
-  if (id.includes("qwen") || id.includes("alibaba/")) {
-    return "alibaba";
-  }
-  if (id.includes("minimax")) {
-    return "minimax";
-  }
-  if (id.includes("voyage")) {
-    return "voyage";
-  }
-  if (id.includes("claude") || id.includes("/anthropic/")) {
-    return "anthropic";
-  }
-  if (id.includes("nemotron")) {
-    return "nvidia";
-  }
-  if (id.includes("llama")) {
-    return "llama";
-  }
-
-  if (name.includes("m-5.")) {
-    return "mai-star";
-  }
-
-  if (model.provider === "ollama") {
-    return "llama";
-  }
-  return model.provider;
 }
 
 function isMSeriesHighlighted(modelName: string): boolean {
@@ -1250,7 +1191,9 @@ function PureModelSelectorCompact({
           data-testid="model-selector"
           variant="ghost"
         >
-          <ModelSelectorLogo provider={getModelLogoProvider(selectedModel)} />
+          <ModelSelectorLogo
+            provider={resolveModelLogoProvider(selectedModel)}
+          />
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>
       </ModelSelectorTrigger>
@@ -1373,7 +1316,7 @@ function PureModelSelectorCompact({
                         })
                       )
                       .map(({ model, curated }) => {
-                        const logoProvider = getModelLogoProvider(model);
+                        const logoProvider = resolveModelLogoProvider(model);
                         return (
                           <ModelSelectorItem
                             className={cn(
