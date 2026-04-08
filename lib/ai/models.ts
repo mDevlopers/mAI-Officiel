@@ -63,10 +63,10 @@ export const chatModels: ChatModel[] = [
   },
   {
     id: "openrouter/mistralai/mistral-small-3.2-24b-instruct:free",
-    name: "Mistral Small 3.2 (Free)",
+    name: "m-5.7",
     provider: "openrouter",
     description:
-      "Option gratuite polyvalente, bonne qualité/coût côté OpenRouter.",
+      "Option gratuite polyvalente, bonne qualité/coût.",
   },
   {
     id: "openrouter/qwen/qwen-2.5-7b-instruct",
