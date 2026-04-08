@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,12 @@ export default function ProjectDetailsPage({
   const logoRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!project) {
+      return;
+    }
+    setMemory(project.memory ?? "");
+  }, [project]);
   const allModels = useMemo(() => {
     const customAgents = modelsData?.customAgents ?? [];
     return [
@@ -216,7 +222,7 @@ export default function ProjectDetailsPage({
             className="min-h-[280px]"
             onChange={(event) => setMemory(event.target.value)}
             placeholder="Ajoutez vos sources, notes et documents ici"
-            value={memory || project.memory || ""}
+            value={memory}
           />
           <input
             accept=".txt,.md,.csv,.json,.pdf,.doc,.docx"
@@ -233,9 +239,7 @@ export default function ProjectDetailsPage({
                     `\n\n--- ${file.name} ---\n${await file.text()}`
                 )
               );
-              setMemory((prev) =>
-                `${prev || project.memory || ""}${contents.join("\n")}`.trim()
-              );
+              setMemory((prev) => `${prev}${contents.join("\n")}`.trim());
               toast.success("Documents importés");
             }}
             ref={sourceRef}

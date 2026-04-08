@@ -4,7 +4,6 @@ import {
   BadgeCheck,
   Bot,
   Brain,
-  FolderKanban,
   Palette,
   Shield,
   UserCircle2,
@@ -36,7 +35,7 @@ type ProfileSettings = {
 };
 
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
-const APP_VERSION = "0.7.5";
+const APP_VERSION = "0.7.7";
 
 const AVATAR_PRESETS = [
   {
@@ -103,9 +102,9 @@ export function useProfileSettings({
   const [profession, setProfession] = useState("");
   const [personalContext, setPersonalContext] = useState("");
   const [aiMemory, setAiMemory] = useState("");
-  const [projectTitle, setProjectTitle] = useState("");
-  const [projectDescription, setProjectDescription] = useState("");
-  const [projectIconColor, setProjectIconColor] = useState("#60a5fa");
+  const [_projectTitle, setProjectTitle] = useState("");
+  const [_projectDescription, setProjectDescription] = useState("");
+  const [_projectIconColor, setProjectIconColor] = useState("#60a5fa");
   const [stylisticDirectives, setStylisticDirectives] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -171,9 +170,9 @@ export function useProfileSettings({
       displayName: displayName.trim() || getDefaultDisplayName(user, isGuest),
       personalContext,
       profession,
-      projectDescription,
-      projectIconColor,
-      projectTitle,
+      projectDescription: _projectDescription,
+      projectIconColor: _projectIconColor,
+      projectTitle: _projectTitle,
       stylisticDirectives,
     };
 
@@ -191,9 +190,9 @@ export function useProfileSettings({
     isHydrated,
     personalContext,
     profession,
-    projectDescription,
-    projectIconColor,
-    projectTitle,
+    _projectDescription,
+    _projectIconColor,
+    _projectTitle,
     stylisticDirectives,
     user,
   ]);
@@ -218,9 +217,6 @@ export function useProfileSettings({
     displayName,
     personalContext,
     profession,
-    projectDescription,
-    projectIconColor,
-    projectTitle,
     selectedAvatar,
     setAiMemory,
     setAiName,
@@ -259,9 +255,6 @@ export function UserSettingsDialog({
   open,
   personalContext,
   profession,
-  projectDescription,
-  projectIconColor,
-  projectTitle,
   stylisticDirectives,
   user,
 }: {
@@ -286,9 +279,6 @@ export function UserSettingsDialog({
   open: boolean;
   personalContext: string;
   profession: string;
-  projectDescription: string;
-  projectIconColor: string;
-  projectTitle: string;
   stylisticDirectives: string;
   user: User;
 }) {
@@ -333,9 +323,6 @@ export function UserSettingsDialog({
             </p>
             <p className="flex items-center gap-2 rounded-lg px-2 py-1.5">
               <Bot className="size-3.5" /> Agent IA
-            </p>
-            <p className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-              <FolderKanban className="size-3.5" /> Projets
             </p>
             <p className="flex items-center gap-2 rounded-lg px-2 py-1.5">
               <Brain className="size-3.5" /> Ingestion de données
@@ -454,39 +441,6 @@ export function UserSettingsDialog({
                   placeholder="Mémoire persistante (préférences, objectifs, contexte)"
                   value={aiMemory}
                 />
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border/60 bg-background/40 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
-              <h3 className="text-sm font-semibold">Projets & identité</h3>
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
-                <Input
-                  onChange={(event) => onProjectTitleChange(event.target.value)}
-                  placeholder="Titre du projet"
-                  value={projectTitle}
-                />
-                <Input
-                  onChange={(event) =>
-                    onProjectIconColorChange(event.target.value)
-                  }
-                  placeholder="Couleur d'icône (hex)"
-                  value={projectIconColor}
-                />
-                <textarea
-                  className="md:col-span-2 min-h-20 w-full rounded-xl border border-border/60 bg-background/70 p-2 text-sm"
-                  onChange={(event) =>
-                    onProjectDescriptionChange(event.target.value)
-                  }
-                  placeholder="Description du projet (facultatif)"
-                  value={projectDescription}
-                />
-              </div>
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span
-                  className="size-3 rounded-full"
-                  style={{ background: projectIconColor }}
-                />
-                Aperçu de couleur d&apos;identité projet
               </div>
             </section>
 

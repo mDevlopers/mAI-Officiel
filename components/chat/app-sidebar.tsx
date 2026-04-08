@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  BotIcon,
-  FolderKanbanIcon,
-  PenSquareIcon,
-  PuzzleIcon,
-  SearchIcon,
-  TrashIcon,
-} from "lucide-react";
+import { PenSquareIcon, PuzzleIcon, SearchIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
@@ -144,28 +137,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">Nouvelle discussion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {[
-                  {
-                    href: "/projects",
-                    icon: FolderKanbanIcon,
-                    label: "Projets",
-                  },
-                  { href: "/mais", icon: BotIcon, label: "mAIs" },
-                ].map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/20 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href} onClick={closeMobileSidebar}>
-                        <item.icon className="size-4" />
-                        <span className="font-medium">{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -180,11 +151,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
 
                 {normalizedGlobalQuery.length > 0 &&
-                  [
-                    { href: "/projects", label: "Projets" },
-                    { href: "/mais", label: "mAIs" },
-                    { href: "/extensions", label: "Extensions" },
-                  ]
+                  [{ href: "/extensions", label: "Extensions" }]
                     .filter((item) =>
                       item.label.toLowerCase().includes(normalizedGlobalQuery)
                     )
