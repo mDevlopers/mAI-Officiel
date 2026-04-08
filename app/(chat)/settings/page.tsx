@@ -1086,9 +1086,9 @@ export default function SettingsPage() {
               label: "Tâches",
             },
             {
-              description: "Être notifié des mises à jour projets.",
+              description: "Être notifié des mises à jour de la plateforme.",
               key: "projectUpdates" as const,
-              label: "Projets",
+              label: "Plateforme",
             },
           ].map((notificationItem) => (
             <button
