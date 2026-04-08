@@ -92,11 +92,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               <div className="flex w-full items-center gap-2 px-1">
                 <SidebarMenuButton
                   asChild
-                  className="group/logo relative h-7 min-w-7 justify-start rounded-lg border border-sidebar-border/60 bg-sidebar-accent/15 px-1 transition-colors hover:bg-sidebar-accent/35"
+                  className="group/logo relative h-8 w-8 shrink-0 justify-center rounded-lg border border-sidebar-border/60 bg-sidebar-accent/15 p-0 transition-colors hover:bg-sidebar-accent/35"
                   tooltip="mAI"
                 >
                   <Link
-                    className="relative flex w-full items-center"
+                    className="relative flex size-full items-center justify-center"
                     href="/"
                     onClick={closeMobileSidebar}
                   >
