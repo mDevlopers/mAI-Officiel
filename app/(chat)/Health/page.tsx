@@ -9,9 +9,16 @@ import {
   ShieldAlert,
   Stethoscope,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 import {
   canConsumeUsage,
   consumeUsage,
@@ -30,12 +37,27 @@ const riskKeywords = [
 ];
 
 export default function HealthPage() {
+  const searchParams = useSearchParams();
   const { currentPlanDefinition, isHydrated } = useSubscriptionPlan();
   const [documentText, setDocumentText] = useState("");
   const [hasRequestedAnalysis, setHasRequestedAnalysis] = useState(false);
   const [requestsThisMonth, setRequestsThisMonth] = useState(0);
   const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
   const [aiPlan, setAiPlan] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
+
+  useEffect(() => {
+    const modelFromRoute = searchParams.get("model");
+    if (!modelFromRoute) {
+      return;
+    }
+
+    if (extensionAiModels.includes(modelFromRoute as ExtensionAiModel)) {
+      setSelectedModel(modelFromRoute as ExtensionAiModel);
+    }
+  }, [searchParams]);
   const healthBubbles = useMemo(
     () =>
       [
@@ -100,6 +122,7 @@ export default function HealthPage() {
     setQuotaMessage(null);
 
     const actions = [
+      buildAiCopilotNote(selectedModel, "santé", documentText),
       "Vérifier que l'identité patient est anonymisée.",
       "Confirmer les doses et fréquences avec le référentiel médical local.",
       "Documenter les points d'incertitude pour le praticien.",
@@ -132,6 +155,23 @@ export default function HealthPage() {
             </p>
           </div>
         </div>
+        <div className="mt-4 rounded-xl border border-border/50 bg-background/50 p-3">
+          <label className="text-xs text-muted-foreground">
+            Modèle IA clinique
+            <select
+              className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm"
+              onChange={(event) =>
+                setSelectedModel(event.target.value as ExtensionAiModel)
+              }
+              value={selectedModel}
+            >
+              {extensionAiModels.map((entry) => (
+                <option key={entry}>{entry}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
         <div className="mt-4 rounded-xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
           <p className="flex items-center gap-2 font-semibold">
             <AlertTriangle className="size-4" /> Clause obligatoire

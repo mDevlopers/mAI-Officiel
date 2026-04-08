@@ -1,7 +1,13 @@
 "use client";
 
-import { BrainCircuit, ListChecks } from "lucide-react";
+import { Bot, BrainCircuit, ListChecks } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 
 function buildSocraticQuestions(topic: string) {
   const seed = topic.trim() || "ton idée";
@@ -24,9 +30,16 @@ function buildPlan(topic: string) {
 
 export default function BrainstormingPage() {
   const [idea, setIdea] = useState("");
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
 
   const questions = useMemo(() => buildSocraticQuestions(idea), [idea]);
   const plan = useMemo(() => buildPlan(idea), [idea]);
+  const aiInsight = useMemo(
+    () => buildAiCopilotNote(selectedModel, "stratégie", idea),
+    [idea, selectedModel]
+  );
 
   return (
     <div className="liquid-glass mx-auto flex h-full w-full max-w-5xl flex-col gap-5 overflow-y-auto p-6">
@@ -42,6 +55,21 @@ export default function BrainstormingPage() {
 
       <section className="liquid-glass rounded-2xl p-5">
         <label className="text-sm">
+          Modèle IA
+          <select
+            className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2"
+            onChange={(event) =>
+              setSelectedModel(event.target.value as ExtensionAiModel)
+            }
+            value={selectedModel}
+          >
+            {extensionAiModels.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-sm">
           Votre idée de départ
           <textarea
             className="mt-1 min-h-28 w-full rounded-xl border border-border/60 bg-background/60 p-3"
@@ -50,6 +78,13 @@ export default function BrainstormingPage() {
             value={idea}
           />
         </label>
+      </section>
+
+      <section className="liquid-glass rounded-2xl p-5">
+        <h2 className="mb-2 flex items-center gap-2 font-semibold">
+          <Bot className="size-4 text-primary" /> Suggestion IA
+        </h2>
+        <p className="text-sm text-muted-foreground">{aiInsight}</p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">

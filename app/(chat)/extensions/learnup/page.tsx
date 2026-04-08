@@ -2,10 +2,22 @@
 
 import { BookOpenCheck, FileText, GraduationCap, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 
 const grades = ["6e", "5e", "4e", "3e", "2nde", "1ère", "Terminale"] as const;
 const difficulties = ["Facile", "Moyen", "Difficile"] as const;
-const subjects = ["Mathématiques", "Français", "Histoire", "SVT", "Physique"] as const;
+const subjects = [
+  "Mathématiques",
+  "Français",
+  "Histoire",
+  "SVT",
+  "Physique",
+] as const;
 
 function clampQuestionCount(value: number) {
   // Bugfix proactif: on borne la valeur pour éviter 0, NaN ou des volumes trop élevés.
@@ -16,7 +28,12 @@ function clampQuestionCount(value: number) {
   return Math.min(20, Math.max(1, Math.round(value)));
 }
 
-function buildQuiz(prompt: string, grade: string, difficulty: string, count: number) {
+function buildQuiz(
+  prompt: string,
+  grade: string,
+  difficulty: string,
+  count: number
+) {
   const safePrompt = prompt.trim() || "Réviser les notions clés du chapitre";
 
   return Array.from({ length: count }, (_, index) => ({
@@ -35,8 +52,10 @@ function buildExercises(
 ) {
   const safePrompt = prompt.trim() || "S'entraîner sur les points à consolider";
 
-  return Array.from({ length: count }, (_, index) =>
-    `${index + 1}. ${subject} (${grade} · ${difficulty}) — ${safePrompt}`
+  return Array.from(
+    { length: count },
+    (_, index) =>
+      `${index + 1}. ${subject} (${grade} · ${difficulty}) — ${safePrompt}`
   );
 }
 
@@ -53,9 +72,14 @@ function buildCourseSheet(prompt: string, subject: string, grade: string) {
 
 export default function LearnUpPage() {
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
   const [grade, setGrade] = useState<(typeof grades)[number]>("3e");
-  const [difficulty, setDifficulty] = useState<(typeof difficulties)[number]>("Moyen");
-  const [subject, setSubject] = useState<(typeof subjects)[number]>("Mathématiques");
+  const [difficulty, setDifficulty] =
+    useState<(typeof difficulties)[number]>("Moyen");
+  const [subject, setSubject] =
+    useState<(typeof subjects)[number]>("Mathématiques");
   const [questionCount, setQuestionCount] = useState(5);
 
   const safeQuestionCount = clampQuestionCount(questionCount);
@@ -73,6 +97,11 @@ export default function LearnUpPage() {
   const courseSheet = useMemo(
     () => buildCourseSheet(prompt, subject, grade),
     [grade, prompt, subject]
+  );
+
+  const tutorNote = useMemo(
+    () => buildAiCopilotNote(selectedModel, "apprentissage", prompt),
+    [prompt, selectedModel]
   );
 
   return (
@@ -102,7 +131,9 @@ export default function LearnUpPage() {
           Classe
           <select
             className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2"
-            onChange={(event) => setGrade(event.target.value as (typeof grades)[number])}
+            onChange={(event) =>
+              setGrade(event.target.value as (typeof grades)[number])
+            }
             value={grade}
           >
             {grades.map((entry) => (
@@ -121,6 +152,21 @@ export default function LearnUpPage() {
             value={difficulty}
           >
             {difficulties.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="text-sm">
+          Modèle IA
+          <select
+            className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2"
+            onChange={(event) =>
+              setSelectedModel(event.target.value as ExtensionAiModel)
+            }
+            value={selectedModel}
+          >
+            {extensionAiModels.map((entry) => (
               <option key={entry}>{entry}</option>
             ))}
           </select>
@@ -154,6 +200,10 @@ export default function LearnUpPage() {
         </label>
       </section>
 
+      <section className="liquid-glass rounded-2xl border border-border/50 p-5">
+        <p className="text-sm text-muted-foreground">{tutorNote}</p>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-3">
         <article className="liquid-glass rounded-2xl border border-border/50 p-5">
           <h2 className="mb-3 flex items-center gap-2 font-semibold">
@@ -161,7 +211,10 @@ export default function LearnUpPage() {
           </h2>
           <ul className="space-y-3 text-sm text-muted-foreground">
             {quiz.map((item) => (
-              <li className="rounded-xl border border-border/40 bg-background/40 p-3" key={item.id}>
+              <li
+                className="rounded-xl border border-border/40 bg-background/40 p-3"
+                key={item.id}
+              >
                 <p className="font-medium text-foreground">{item.question}</p>
                 <p className="mt-1 text-xs">{item.choices.join(" · ")}</p>
               </li>
@@ -171,7 +224,8 @@ export default function LearnUpPage() {
 
         <article className="liquid-glass rounded-2xl border border-border/50 p-5">
           <h2 className="mb-3 flex items-center gap-2 font-semibold">
-            <Sparkles className="size-4 text-primary" /> Générateur d&apos;Exercices
+            <Sparkles className="size-4 text-primary" /> Générateur
+            d&apos;Exercices
           </h2>
           <ol className="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
             {exercises.map((item) => (

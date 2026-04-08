@@ -1,9 +1,21 @@
 "use client";
 
-import { Download, SendHorizonal, UploadCloud, Utensils } from "lucide-react";
+import {
+  ClipboardList,
+  Download,
+  SendHorizonal,
+  UploadCloud,
+  Utensils,
+} from "lucide-react";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 import {
   canConsumeUsage,
   consumeUsage,
@@ -13,6 +25,22 @@ import {
 type Result = { link: string; snippet: string; source: string; title: string };
 
 type ReportHistory = { createdAt: string; query: string; report: string };
+
+const MEALS_HISTORY_STORAGE_KEY = "mai.meals.history.v2";
+const dietaryFocuses = [
+  "Équilibré",
+  "Végétarien",
+  "Protéiné",
+  "Sans gluten",
+] as const;
+
+const MEALS_INSPIRATION_BUBBLES = [
+  "Recettes de saison rapides",
+  "Dîner végétarien léger",
+  "Plats traditionnels revisités",
+  "Desserts sans sucre ajouté",
+  "Repas de fête à petit budget",
+] as const;
 
 export default function MealsPage() {
   const { currentPlanDefinition, isHydrated } = useSubscriptionPlan();
@@ -27,18 +55,20 @@ export default function MealsPage() {
   const [importSource, setImportSource] = useState<"device" | "mai-library">(
     "device"
   );
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
+  const [dietaryFocus, setDietaryFocus] =
+    useState<(typeof dietaryFocuses)[number]>("Équilibré");
+  const [servings, setServings] = useState(2);
 
   const dailyLimit = currentPlanDefinition.limits.mealsSearchesPerDay;
   const remainingSearches = Math.max(dailyLimit - searchesToday, 0);
-  const inspirationBubbles = [
-    "Recettes de saison rapides",
-    "Dîner végétarien léger",
-    "Plats traditionnels revisités",
-    "Desserts sans sucre ajouté",
-    "Repas de fête à petit budget",
-  ];
   const randomBubbles = useMemo(
-    () => [...inspirationBubbles].sort(() => Math.random() - 0.5).slice(0, 3),
+    () =>
+      [...MEALS_INSPIRATION_BUBBLES]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3),
     []
   );
 
@@ -48,7 +78,27 @@ export default function MealsPage() {
     }
 
     setSearchesToday(getUsageCount("meals", "day"));
+    const rawHistory = localStorage.getItem(MEALS_HISTORY_STORAGE_KEY);
+    if (rawHistory) {
+      try {
+        const parsed = JSON.parse(rawHistory) as ReportHistory[];
+        setHistory(Array.isArray(parsed) ? parsed.slice(0, 10) : []);
+      } catch {
+        localStorage.removeItem(MEALS_HISTORY_STORAGE_KEY);
+      }
+    }
   }, [isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    localStorage.setItem(
+      MEALS_HISTORY_STORAGE_KEY,
+      JSON.stringify(history.slice(0, 10))
+    );
+  }, [history, isHydrated]);
 
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,6 +111,7 @@ export default function MealsPage() {
 
   const handleSearch = async () => {
     if (!query.trim()) {
+      setQuotaMessage("Ajoutez une requête recette avant de lancer CookAI.");
       return;
     }
 
@@ -77,7 +128,11 @@ export default function MealsPage() {
       const response = await fetch("/api/meals/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileContext: externalContext, query }),
+        body: JSON.stringify({
+          fileContext: externalContext,
+          model: selectedModel,
+          query: `${query} | régime: ${dietaryFocus} | portions: ${servings}`,
+        }),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -86,7 +141,11 @@ export default function MealsPage() {
       }
 
       setResults(payload.organicResults ?? []);
-      setReport(payload.report ?? payload.error ?? "Aucun rapport généré");
+      const generatedReport =
+        payload.report ?? payload.error ?? "Aucun rapport généré";
+      setReport(
+        `${buildAiCopilotNote(selectedModel, "cuisine", query)}\nPréférence: ${dietaryFocus} · Portions: ${servings}\n\n${generatedReport}`
+      );
       const usage = consumeUsage("meals", "day");
       setSearchesToday(usage.count);
       if (payload.report) {
@@ -99,6 +158,8 @@ export default function MealsPage() {
           ...prev,
         ]);
       }
+    } catch {
+      setReport("Impossible de contacter le service CookAI. Réessayez.");
     } finally {
       setIsLoading(false);
     }
@@ -109,11 +170,27 @@ export default function MealsPage() {
     [report]
   );
 
+  const shoppingList = useMemo(() => {
+    if (!report) {
+      return [];
+    }
+
+    return report
+      .split("\n")
+      .filter(
+        (line) => /[-•]/.test(line) || /ingrédient|ingredient/i.test(line)
+      )
+      .slice(0, 8);
+  }, [report]);
+
   return (
     <div className="liquid-glass flex h-full w-full flex-col gap-5 overflow-y-auto p-6 md:p-10">
       <div className="flex items-center gap-3">
         <Utensils className="size-8 text-primary" />
         <h1 className="text-3xl font-bold">Recettes & Repas (CookAI)</h1>
+        <p className="text-xs text-muted-foreground">
+          Propulsé par {selectedModel}
+        </p>
       </div>
       <div className="flex flex-wrap gap-2">
         {randomBubbles.map((bubble) => (
@@ -128,7 +205,7 @@ export default function MealsPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+      <div className="liquid-glass rounded-2xl p-4">
         <p className="mb-3 text-xs text-muted-foreground">
           Quota CookAI : {searchesToday}/{dailyLimit} recherches
           aujourd&apos;hui ({remainingSearches} restante
@@ -147,6 +224,42 @@ export default function MealsPage() {
           >
             {isLoading ? "Recherche..." : "Rechercher"}
           </Button>
+          <select
+            className="h-11 rounded-xl border border-border bg-background/60 px-3 text-xs"
+            onChange={(event) =>
+              setSelectedModel(event.target.value as ExtensionAiModel)
+            }
+            value={selectedModel}
+          >
+            {extensionAiModels.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+          <select
+            className="h-11 rounded-xl border border-border bg-background/60 px-3 text-xs"
+            onChange={(event) =>
+              setDietaryFocus(
+                event.target.value as (typeof dietaryFocuses)[number]
+              )
+            }
+            value={dietaryFocus}
+          >
+            {dietaryFocuses.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+          <input
+            className="h-11 w-24 rounded-xl border border-border bg-background/60 px-3 text-xs"
+            max={12}
+            min={1}
+            onChange={(event) =>
+              setServings(
+                Math.min(12, Math.max(1, Number(event.target.value) || 1))
+              )
+            }
+            type="number"
+            value={servings}
+          />
           <select
             className="h-11 rounded-xl border border-border bg-background/60 px-3 text-xs"
             onChange={(event) =>
@@ -173,7 +286,7 @@ export default function MealsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+        <div className="liquid-glass rounded-2xl p-4">
           <h2 className="mb-2 font-semibold">Résultats Web (mSearch)</h2>
           <div className="space-y-3 text-sm">
             {results.map((item) => (
@@ -196,7 +309,7 @@ export default function MealsPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+        <div className="liquid-glass rounded-2xl p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="font-semibold">Rapport de synthèse</h2>
             <div className="flex gap-2">
@@ -227,19 +340,42 @@ export default function MealsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/70 p-4">
+      <div className="liquid-glass rounded-2xl p-4">
+        <h3 className="mb-2 flex items-center gap-2 font-semibold">
+          <ClipboardList className="size-4 text-primary" /> Liste de courses
+          rapide
+        </h3>
+        {shoppingList.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Lancez une recherche pour générer une liste de courses.
+          </p>
+        ) : (
+          <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+            {shoppingList.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="liquid-glass rounded-2xl p-4">
         <h3 className="mb-2 font-semibold">Historique des rapports</h3>
         <div className="space-y-2 text-sm">
-          {history.map((item, index) => (
-            <div
-              className="rounded-lg border border-border/50 p-3"
-              key={`${item.createdAt}-${index}`}
+          {history.map((item) => (
+            <button
+              className="w-full rounded-lg border border-border/50 p-3 text-left hover:bg-background/45"
+              key={`${item.createdAt}-${item.query}`}
+              onClick={() => {
+                setQuery(item.query);
+                setReport(item.report);
+              }}
+              type="button"
             >
               <p className="font-medium">{item.query}</p>
               <p className="text-xs text-muted-foreground">
                 {new Date(item.createdAt).toLocaleString()}
               </p>
-            </div>
+            </button>
           ))}
           {history.length === 0 && (
             <p className="text-muted-foreground">

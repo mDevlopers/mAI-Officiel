@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import {
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModelOptions,
+} from "@/lib/ai/extension-models";
 import { extensionCatalog } from "./data";
 
 type ExtensionPreferences = {
@@ -35,6 +40,10 @@ export default function ExtensionsPage() {
   const [preferences, setPreferences] =
     useState<ExtensionPreferences>(defaultPreferences);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [globalModel, setGlobalModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
 
   useEffect(() => {
     try {
@@ -78,20 +87,30 @@ export default function ExtensionsPage() {
       isPinned: pinnedSet.has(extension.id),
     }));
 
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
     const filtered = withMeta.filter((extension) => {
-      if (filter === "all") {
-        return !extension.isHidden;
+      const visibleByFilter =
+        filter === "all"
+          ? !extension.isHidden
+          : filter === "favorites"
+            ? extension.isFavorite && !extension.isHidden
+            : filter === "pinned"
+              ? extension.isPinned && !extension.isHidden
+              : extension.isHidden;
+
+      if (!visibleByFilter) {
+        return false;
       }
 
-      if (filter === "favorites") {
-        return extension.isFavorite && !extension.isHidden;
+      if (!normalizedSearch) {
+        return true;
       }
 
-      if (filter === "pinned") {
-        return extension.isPinned && !extension.isHidden;
-      }
-
-      return extension.isHidden;
+      return (
+        extension.title.toLowerCase().includes(normalizedSearch) ||
+        extension.description.toLowerCase().includes(normalizedSearch)
+      );
     });
 
     return filtered.sort((a, b) => {
@@ -105,7 +124,13 @@ export default function ExtensionsPage() {
 
       return a.title.localeCompare(b.title, "fr");
     });
-  }, [filter, preferences.favorites, preferences.hidden, preferences.pinned]);
+  }, [
+    filter,
+    preferences.favorites,
+    preferences.hidden,
+    preferences.pinned,
+    searchTerm,
+  ]);
 
   const togglePreference = (
     key: keyof ExtensionPreferences,
@@ -144,7 +169,8 @@ export default function ExtensionsPage() {
   ];
 
   const handleOpenExtension = (route: string) => {
-    router.push(route);
+    const separator = route.includes("?") ? "&" : "?";
+    router.push(`${route}${separator}model=${globalModel}`);
   };
 
   return (
@@ -168,6 +194,51 @@ export default function ExtensionsPage() {
         </div>
       </header>
 
+      <section className="liquid-glass grid gap-3 rounded-2xl border border-border/50 p-4 md:grid-cols-2">
+        <label className="text-xs text-muted-foreground">
+          Recherche extension
+          <input
+            className="mt-1 h-10 w-full rounded-xl border border-border/60 bg-background/60 px-3 text-sm"
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Ex: rédaction, santé, shopping..."
+            value={searchTerm}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Modèle global par défaut
+          <select
+            className="mt-1 h-10 w-full rounded-xl border border-border/60 bg-background/60 px-3 text-sm"
+            onChange={(event) =>
+              setGlobalModel(event.target.value as ExtensionAiModel)
+            }
+            value={globalModel}
+          >
+            {extensionAiModelOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label} · coût {option.monthlyCostProfile}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+
+      <section className="liquid-glass rounded-2xl border border-border/50 p-4">
+        <p className="mb-2 text-xs text-muted-foreground">
+          Tous les modules sont propulsés par les modèles IA disponibles :
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {extensionAiModelOptions.map((option) => (
+            <span
+              className="rounded-full border border-border/60 bg-background/50 px-2 py-1 text-[11px] text-muted-foreground"
+              key={option.id}
+              title={option.strengths}
+            >
+              {option.id}
+            </span>
+          ))}
+        </div>
+      </section>
+
       <section className="liquid-glass flex flex-wrap gap-2 rounded-2xl border border-border/50 p-3">
         {filters.map((item) => {
           const active = filter === item.id;
@@ -190,31 +261,46 @@ export default function ExtensionsPage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleExtensions.length === 0 && (
+          <div className="liquid-glass rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground md:col-span-2 xl:col-span-3">
+            Aucune extension ne correspond à votre recherche.
+          </div>
+        )}
         {visibleExtensions.map((extension) => (
           <div
             className="liquid-glass group rounded-2xl border border-border/50 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-[var(--shadow-card)]"
             key={extension.id}
           >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xl font-semibold">
-                <span className="inline-flex size-8 items-center justify-center rounded-xl border border-black/20 bg-white text-black shadow-sm dark:border-white/20 dark:bg-black dark:text-white">
-                  <extension.icon
-                    className="size-4 stroke-[2.2]"
-                    stroke="currentColor"
-                  />
+            <button
+              className="w-full cursor-pointer text-left"
+              onClick={() => handleOpenExtension(extension.route)}
+              type="button"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-xl font-semibold">
+                  <span className="inline-flex size-8 items-center justify-center rounded-xl border border-black/20 bg-white text-black shadow-sm dark:border-white/20 dark:bg-black dark:text-white">
+                    <extension.icon
+                      className="size-4 stroke-[2.2]"
+                      stroke="currentColor"
+                    />
+                  </span>
+                  <h2 className="text-lg font-bold text-foreground">
+                    {extension.title}
+                  </h2>
+                </div>
+                <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+                  Standard
                 </span>
-                <h2 className="text-lg font-bold text-foreground">
-                  {extension.title}
-                </h2>
               </div>
-              <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
-                Standard
-              </span>
-            </div>
 
-            <p className="line-clamp-2 min-h-10 text-sm text-muted-foreground">
-              {extension.description}
-            </p>
+              <p className="line-clamp-2 min-h-10 text-sm text-muted-foreground">
+                {extension.description}
+              </p>
+              <span className="mt-4 inline-flex items-center gap-1 text-xs text-foreground">
+                Ouvrir l&apos;extension
+                <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
+            </button>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <button
@@ -277,15 +363,6 @@ export default function ExtensionsPage() {
                 {extension.isHidden ? "Afficher" : "Masquer"}
               </button>
             </div>
-
-            <button
-              className="mt-4 inline-flex items-center gap-1 text-xs text-foreground"
-              onClick={() => handleOpenExtension(extension.route)}
-              type="button"
-            >
-              Ouvrir l&apos;extension
-              <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </button>
           </div>
         ))}
       </section>

@@ -3,14 +3,24 @@
 import {
   Bold,
   Bot,
+  Copy,
   Download,
   Italic,
   MessageSquare,
   PenBox,
+  RefreshCw,
   Sparkles,
+  Trash2,
   Underline,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 
 const tones = ["Professionnel", "Amical", "Créatif", "Chill"] as const;
 const formats = [
@@ -31,6 +41,8 @@ type DraftComment = {
   note: string;
   selection: string;
 };
+
+const ECRI20_DRAFT_STORAGE_KEY = "mai.ecri20.draft.v1";
 
 function generateDraft(prompt: string, tone: Tone, format: Format) {
   const lead = `Ton: ${tone} · Format: ${format}`;
@@ -67,6 +79,7 @@ function applyWrap(
 }
 
 export default function Ecri20Page() {
+  const searchParams = useSearchParams();
   const [tone, setTone] = useState<Tone>("Professionnel");
   const [format, setFormat] = useState<Format>("Post LinkedIn");
   const [prompt, setPrompt] = useState("");
@@ -77,6 +90,20 @@ export default function Ecri20Page() {
   const [comments, setComments] = useState<DraftComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [assistantSuggestion, setAssistantSuggestion] = useState("");
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
+
+  useEffect(() => {
+    const modelFromRoute = searchParams.get("model");
+    if (!modelFromRoute) {
+      return;
+    }
+
+    if (extensionAiModels.includes(modelFromRoute as ExtensionAiModel)) {
+      setSelectedModel(modelFromRoute as ExtensionAiModel);
+    }
+  }, [searchParams]);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -85,7 +112,75 @@ export default function Ecri20Page() {
     [prompt, tone, format]
   );
 
+  const aiModelBadge = `Propulsé par ${selectedModel}`;
+
   const effectiveDraft = draft || generatedDraft;
+
+  const writingStats = useMemo(() => {
+    const wordCount = effectiveDraft.trim()
+      ? effectiveDraft.trim().split(/\s+/).length
+      : 0;
+    return {
+      readTimeMinutes: Math.max(1, Math.ceil(wordCount / 180)),
+      wordCount,
+    };
+  }, [effectiveDraft]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ECRI20_DRAFT_STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        comments?: DraftComment[];
+        draft?: string;
+        format?: Format;
+        fontFamily?: (typeof fontFamilies)[number];
+        fontSize?: (typeof fontSizes)[number];
+        prompt?: string;
+        selectedModel?: ExtensionAiModel;
+        tone?: Tone;
+      };
+
+      setPrompt(parsed.prompt ?? "");
+      setDraft(parsed.draft ?? "");
+      setTone(parsed.tone ?? "Professionnel");
+      setFormat(parsed.format ?? "Post LinkedIn");
+      setSelectedModel(parsed.selectedModel ?? defaultExtensionAiModel);
+      setFontFamily(parsed.fontFamily ?? "Inter");
+      setFontSize(parsed.fontSize ?? 16);
+      setComments(Array.isArray(parsed.comments) ? parsed.comments : []);
+    } catch {
+      localStorage.removeItem(ECRI20_DRAFT_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      ECRI20_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        comments,
+        draft,
+        format,
+        fontFamily,
+        fontSize,
+        prompt,
+        selectedModel,
+        tone,
+      })
+    );
+  }, [
+    comments,
+    draft,
+    fontFamily,
+    fontSize,
+    format,
+    prompt,
+    selectedModel,
+    tone,
+  ]);
 
   const runFormatAction = (kind: "bold" | "italic" | "underline") => {
     const textarea = textareaRef.current;
@@ -101,19 +196,20 @@ export default function Ecri20Page() {
       underline: ["<u>", "</u>"],
     };
 
-    const next = applyWrap(
-      effectiveDraft,
-      selectionStart,
-      selectionEnd,
-      wraps[kind]
-    );
+    const hasSelection = selectionEnd > selectionStart;
+    const next = hasSelection
+      ? applyWrap(effectiveDraft, selectionStart, selectionEnd, wraps[kind])
+      : applyWrap(effectiveDraft, selectionStart, selectionEnd, [
+          wraps[kind][0],
+          `texte${wraps[kind][1]}`,
+        ]);
     setDraft(next);
   };
 
   const generateAssistantSuggestion = () => {
     const context = prompt.trim() || "Sans brief explicite";
     setAssistantSuggestion(
-      `Copilote IA : pour un ton ${tone.toLowerCase()}, ajoutez une preuve chiffrée dans le développement et concluez avec un CTA orienté ${format.toLowerCase()}. Contexte retenu : ${context}.`
+      `${buildAiCopilotNote(selectedModel, "rédaction", context)} Ton ${tone.toLowerCase()} et format ${format.toLowerCase()} recommandés.`
     );
   };
 
@@ -138,6 +234,26 @@ export default function Ecri20Page() {
       ...prev,
     ]);
     setCommentText("");
+  };
+
+  const removeComment = (id: string) => {
+    setComments((prev) => prev.filter((comment) => comment.id !== id));
+  };
+
+  const resetDraft = () => {
+    setDraft("");
+    setPrompt("");
+    setComments([]);
+    setAssistantSuggestion("");
+    localStorage.removeItem(ECRI20_DRAFT_STORAGE_KEY);
+  };
+
+  const copyDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(effectiveDraft);
+    } catch {
+      // fallback volontairement silencieux
+    }
   };
 
   const handleExport = (kind: "txt" | "json" | "docx" | "pdf") => {
@@ -226,6 +342,22 @@ export default function Ecri20Page() {
         </label>
 
         <label className="text-sm md:col-span-2">
+          Modèle IA
+          <select
+            className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2"
+            onChange={(event) =>
+              setSelectedModel(event.target.value as ExtensionAiModel)
+            }
+            value={selectedModel}
+          >
+            {extensionAiModels.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">{aiModelBadge}</p>
+        </label>
+
+        <label className="text-sm md:col-span-2">
           Brief utilisateur
           <textarea
             className="mt-1 min-h-24 w-full rounded-xl border border-border/60 bg-background/60 p-3"
@@ -301,6 +433,26 @@ export default function Ecri20Page() {
           </label>
         </div>
 
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>{writingStats.wordCount} mots</span>
+          <span>•</span>
+          <span>~ {writingStats.readTimeMinutes} min de lecture</span>
+          <button
+            className="ml-auto inline-flex items-center gap-1 rounded-lg border px-2 py-1"
+            onClick={copyDraft}
+            type="button"
+          >
+            <Copy className="size-3" /> Copier
+          </button>
+          <button
+            className="inline-flex items-center gap-1 rounded-lg border px-2 py-1"
+            onClick={resetDraft}
+            type="button"
+          >
+            <RefreshCw className="size-3" /> Réinitialiser
+          </button>
+        </div>
+
         <textarea
           className="min-h-80 w-full rounded-xl border border-border/60 bg-background/60 p-3"
           onChange={(event) => setDraft(event.target.value)}
@@ -363,7 +515,16 @@ export default function Ecri20Page() {
                   className="rounded-xl border border-border/60 bg-background/60 p-2"
                   key={comment.id}
                 >
-                  <p className="font-medium">{comment.selection}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium">{comment.selection}</p>
+                    <button
+                      className="rounded-md border px-1.5 py-0.5 text-[10px]"
+                      onClick={() => removeComment(comment.id)}
+                      type="button"
+                    >
+                      <Trash2 className="size-3" />
+                    </button>
+                  </div>
                   <p>{comment.note}</p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(comment.createdAt).toLocaleString("fr-FR")}

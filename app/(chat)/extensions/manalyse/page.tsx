@@ -1,7 +1,13 @@
 "use client";
 
-import { Loader2, ScanSearch } from "lucide-react";
-import { useState } from "react";
+import { Bot, Loader2, ScanSearch } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  buildAiCopilotNote,
+  defaultExtensionAiModel,
+  type ExtensionAiModel,
+  extensionAiModels,
+} from "@/lib/ai/extension-models";
 
 type ReportPayload = {
   summary: string;
@@ -22,6 +28,19 @@ export default function MAnalysePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<ReportPayload | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<ExtensionAiModel>(
+    defaultExtensionAiModel
+  );
+
+  const aiGuide = useMemo(
+    () =>
+      buildAiCopilotNote(
+        selectedModel,
+        "analyse documentaire",
+        sourceType === "url" ? targetUrl : (file?.name ?? "fichier")
+      ),
+    [file?.name, selectedModel, sourceType, targetUrl]
+  );
 
   const handleAnalyse = async () => {
     setIsLoading(true);
@@ -29,6 +48,7 @@ export default function MAnalysePage() {
 
     const payload = new FormData();
     payload.set("sourceType", sourceType);
+    payload.set("model", selectedModel);
 
     if (sourceType === "url") {
       payload.set("targetUrl", targetUrl);
@@ -37,21 +57,25 @@ export default function MAnalysePage() {
       payload.set("uploadedFile", file);
     }
 
-    const response = await fetch("/api/extensions/manalyse", {
-      method: "POST",
-      body: payload,
-    });
+    try {
+      const response = await fetch("/api/extensions/manalyse", {
+        method: "POST",
+        body: payload,
+      });
 
-    const data = await response.json();
-    setIsLoading(false);
+      const data = await response.json();
+      if (!response.ok) {
+        setNotes([data.error ?? "Analyse indisponible."]);
+        return;
+      }
 
-    if (!response.ok) {
-      setNotes([data.error ?? "Analyse indisponible."]);
-      return;
+      setReport(data.report);
+      setNotes([aiGuide, ...(data.notes ?? [])]);
+    } catch {
+      setNotes(["Erreur réseau durant l'analyse. Réessayez."]);
+    } finally {
+      setIsLoading(false);
     }
-
-    setReport(data.report);
-    setNotes(data.notes ?? []);
   };
 
   return (
@@ -91,6 +115,26 @@ export default function MAnalysePage() {
             Fichier / Image
           </button>
         </div>
+
+        <label className="mb-3 block text-xs text-muted-foreground">
+          Modèle IA d&apos;analyse
+          <select
+            className="mt-1 w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm"
+            onChange={(event) =>
+              setSelectedModel(event.target.value as ExtensionAiModel)
+            }
+            value={selectedModel}
+          >
+            {extensionAiModels.map((entry) => (
+              <option key={entry}>{entry}</option>
+            ))}
+          </select>
+        </label>
+
+        <p className="mb-3 flex items-center gap-2 rounded-xl bg-background/50 p-2 text-xs text-muted-foreground">
+          <Bot className="size-3.5 text-primary" />
+          {aiGuide}
+        </p>
 
         {sourceType === "url" ? (
           <input
