@@ -4,7 +4,7 @@ import { PenSquareIcon, SearchIcon, TrashIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
@@ -38,25 +38,12 @@ import {
 } from "../ui/alert-dialog";
 import { BrandStarLogoIcon } from "./icons";
 
-const QUICK_LINKS = [
-  { href: "/", label: "Discussion" },
-  { href: "/news", label: "Actualités" },
-  { href: "/studio", label: "Studio" },
-  { href: "/translation", label: "Traduction" },
-  { href: "/library", label: "Bibliothèque" },
-  { href: "/meals", label: "Repas" },
-  { href: "/Health", label: "Santé" },
-  { href: "/settings", label: "Paramètres" },
-  { href: "/pricing", label: "Tarifs" },
-] as const;
-
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
-  const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const closeMobileSidebar = () => {
     if (isMobile) {
@@ -75,16 +62,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
   }, []);
-
-  const quickLinks = useMemo(() => {
-    if (!normalizedGlobalQuery) {
-      return [];
-    }
-
-    return QUICK_LINKS.filter((item) =>
-      item.label.toLowerCase().includes(normalizedGlobalQuery)
-    );
-  }, [normalizedGlobalQuery]);
 
   const handleDeleteAll = async () => {
     setShowDeleteAllDialog(false);
@@ -173,29 +150,18 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {quickLinks.map((item) => (
-                  <SidebarMenuItem key={`quick-${item.href}`}>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 rounded-lg border border-dashed border-sidebar-border/70 text-[12px] text-sidebar-foreground/75"
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href} onClick={closeMobileSidebar}>
-                        <SearchIcon className="size-3.5" />
-                        <span>Aller vers {item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-
-                {normalizedGlobalQuery.length > 0 &&
-                  quickLinks.length === 0 && (
-                    <SidebarMenuItem>
-                      <div className="px-2 py-1 text-[11px] text-sidebar-foreground/60">
-                        Aucun module trouvé.
-                      </div>
-                    </SidebarMenuItem>
-                  )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="liquid-panel h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent/45 hover:text-sidebar-foreground"
+                    tooltip="Studio"
+                  >
+                    <Link href="/studio" onClick={closeMobileSidebar}>
+                      <SearchIcon className="size-4" />
+                      <span className="font-medium">Studio</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
                 {user && (
                   <SidebarMenuItem>
