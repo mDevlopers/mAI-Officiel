@@ -88,12 +88,52 @@ import type { VisibilityType } from "./visibility-selector";
 
 type UploadSource = "device" | "mai-library";
 type ReflectionLevel = "light" | "moderate" | "deep" | "very-deep";
+const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
+const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const reflectionLevels: ReflectionLevel[] = [
   "light",
   "moderate",
   "deep",
   "very-deep",
 ];
+
+function getPersistentMemoryFromLocalStorage(): string | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  try {
+    const rawProfile = window.localStorage.getItem(
+      PROFILE_SETTINGS_STORAGE_KEY
+    );
+    if (!rawProfile) {
+      return undefined;
+    }
+
+    const parsedProfile = JSON.parse(rawProfile) as {
+      aiMemory?: unknown;
+      aiMemoryEntries?: unknown;
+    };
+
+    const textMemory =
+      typeof parsedProfile.aiMemory === "string" ? parsedProfile.aiMemory : "";
+    const listMemory = Array.isArray(parsedProfile.aiMemoryEntries)
+      ? parsedProfile.aiMemoryEntries
+          .filter((entry): entry is string => typeof entry === "string")
+          .join("\n")
+      : "";
+
+    const mergedMemory = [listMemory, textMemory]
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .join("\n")
+      .slice(0, MAX_PERSISTENT_MEMORY_CHARS);
+
+    return mergedMemory.length > 0 ? mergedMemory : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function setCookie(name: string, value: string) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -397,6 +437,7 @@ function PureMultimodalInput({
       typeof window === "undefined"
         ? false
         : localStorage.getItem("mai.ghost-mode") === "true";
+    const persistentMemory = getPersistentMemoryFromLocalStorage();
 
     sendMessage({
       role: "user",
@@ -423,6 +464,7 @@ function PureMultimodalInput({
         clientGeolocation: geolocationPos,
         ghostMode: isGhostModeEnabled,
         uploadSource,
+        persistentMemory,
       },
     });
 
