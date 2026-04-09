@@ -12,8 +12,25 @@ const MISTRAL_API_BASE_URL =
 const HUGGINGFACE_API_BASE_URL =
   process.env.HUGGINGFACE_API_BASE_URL ??
   "https://router.huggingface.co/v1/chat/completions";
+const FS_API_BASE_URL =
+  process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1";
 
 export const cometTextModels = new Set(["gpt-5.4-nano", "gpt-5.4-mini"]);
+const fsModelMapping: Record<string, string> = {
+  "openai/gpt-5.4": "gpt-5.4",
+  "openai/gpt-5.4-mini": "gpt-5.4-mini",
+  "openai/gpt-5.2": "gpt-5.2",
+  "openai/gpt-5.1": "gpt-5.1",
+  "openai/gpt-5": "gpt-5",
+  "azure/deepseek-v3.2": "DeepSeek-V3.2",
+  "azure/kimi-k2.5": "Kimi-K2.5",
+  "azure/mistral-large-3": "Mistral-Large-3",
+  "anthropic/claude-opus-4-6": "claude-opus-4-6",
+  "anthropic/claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+  "anthropic/claude-sonnet-4-6": "claude-sonnet-4-6",
+  "anthropic/claude-haiku-4-5": "claude-haiku-4-5",
+};
+export const fsTextModels = new Set(Object.keys(fsModelMapping));
 export const cometImageModels = new Set([
   "flux-2-max",
   "kling-image",
@@ -57,6 +74,7 @@ const geminiKeys = [
 const cerebrasKeys = [process.env.CEREBRAS_API_KEY].filter(Boolean) as string[];
 const mistralKeys = [process.env.MISTRAL_API_KEY].filter(Boolean) as string[];
 const huggingFaceKeys = [process.env.HF_API_KEY].filter(Boolean) as string[];
+const fsKeys = [process.env.FS_API_KEY].filter(Boolean) as string[];
 
 // Alias pour rester compatible avec des IDs "marketing"/preview selon les périodes.
 const geminiModelAliases: Record<string, string[]> = {
@@ -154,6 +172,7 @@ function extractImagePayload(data: any): {
 export function isExternalTextModel(modelId: string): boolean {
   return (
     cometTextModels.has(modelId) ||
+    fsTextModels.has(modelId) ||
     geminiCheapModels.has(modelId) ||
     huggingFaceCheapModels.has(modelId) ||
     cerebrasCheapModels.has(modelId) ||
@@ -268,6 +287,56 @@ export function runExternalTextModel(
     });
 
     return withFallback(geminiCalls, "Échec fallback Gemini");
+  }
+
+  if (fsTextModels.has(modelId)) {
+    if (fsKeys.length === 0) {
+      throw new Error("FS_API_KEY manquante");
+    }
+
+    const providerModelId = fsModelMapping[modelId];
+    if (!providerModelId) {
+      throw new Error("Mapping modèle FranceStudent introuvable");
+    }
+
+    const fsCalls = fsKeys.map((apiKey, index) => async () => {
+      const response = await fetch(`${FS_API_BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: providerModelId,
+          messages: [
+            ...(systemInstruction
+              ? [{ role: "system", content: systemInstruction }]
+              : []),
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `FranceStudent clé ${index + 1} a échoué (${response.status})`
+        );
+      }
+
+      const data = await response.json();
+      const text = extractTextFromChatCompletion(data);
+
+      if (!text) {
+        throw new Error(
+          `FranceStudent clé ${index + 1} a renvoyé une réponse vide`
+        );
+      }
+
+      return { provider: `francestudent-${index + 1}`, text };
+    });
+
+    return withFallback(fsCalls, "Échec fallback FranceStudent");
   }
 
   if (cerebrasCheapModels.has(modelId)) {

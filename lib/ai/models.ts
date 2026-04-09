@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL = "openai/gpt-5-mini";
+export const DEFAULT_CHAT_MODEL = "openai/gpt-5.4";
 
 export const titleModel = {
   id: "openai/gpt-5-nano",
@@ -65,8 +65,7 @@ export const chatModels: ChatModel[] = [
     id: "openrouter/mistralai/mistral-small-3.2-24b-instruct:free",
     name: "m-5.7",
     provider: "mAI",
-    description:
-      "Option gratuite polyvalente, bonne qualité/coût.",
+    description: "Option gratuite polyvalente, bonne qualité/coût.",
   },
   {
     id: "openrouter/qwen/qwen-2.5-7b-instruct",
@@ -275,6 +274,41 @@ export const chatModels: ChatModel[] = [
     description: "Très bon coût d'entrée pour automatisations fréquentes.",
   },
   {
+    id: "openai/gpt-5.4-mini",
+    name: "GPT-5.4 Mini",
+    provider: "openai",
+    description: "Version compacte de GPT-5.4 pour latence et coût réduits.",
+  },
+  {
+    id: "openai/gpt-5.4",
+    name: "GPT-5.4",
+    provider: "openai",
+    description: "Latest frontier agentic coding model.",
+    reasoningEffort: "high",
+  },
+  {
+    id: "openai/gpt-5.2",
+    name: "GPT-5.2",
+    provider: "openai",
+    description:
+      "Latest frontier model with improvements across knowledge, reasoning and coding.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "openai/gpt-5.1",
+    name: "GPT-5.1",
+    provider: "openai",
+    description: "Broad world knowledge with strong general reasoning.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "openai/gpt-5",
+    name: "GPT-5",
+    provider: "openai",
+    description: "Broad world knowledge with strong general reasoning.",
+    reasoningEffort: "medium",
+  },
+  {
     id: "openai/gpt-5-mini",
     name: "GPT-5 Mini",
     provider: "openai",
@@ -349,6 +383,60 @@ export const chatModels: ChatModel[] = [
     name: "Kimi K2.5",
     provider: "moonshotai",
     description: "Modèle premium abordable pour tâches complexes.",
+  },
+  {
+    id: "azure/deepseek-v3.2",
+    name: "DeepSeek-V3.2",
+    provider: "deepseek",
+    description:
+      "Latest frontier model with improvements across knowledge, reasoning and coding.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "azure/kimi-k2.5",
+    name: "Kimi-K2.5",
+    provider: "kimi",
+    description:
+      "Open-source, multimodal model from Moonshot AI built for agentic workflows.",
+  },
+  {
+    id: "azure/mistral-large-3",
+    name: "Mistral-Large-3",
+    provider: "mistral",
+    description:
+      "Large Mistral model deployed on Azure OpenAI for advanced chat and reasoning tasks.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "anthropic/claude-opus-4-6",
+    name: "Claude Opus 4.6",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "high",
+  },
+  {
+    id: "anthropic/claude-sonnet-4-6",
+    name: "Claude Sonnet 4.6",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "anthropic/claude-sonnet-4-20250514",
+    name: "Claude Sonnet 4 (20250514)",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "anthropic/claude-haiku-4-5",
+    name: "Claude Haiku 4.5",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
   },
 ];
 
