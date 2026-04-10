@@ -19,11 +19,21 @@ import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { ChatbotError } from "../errors";
 import { generateUUID } from "../utils";
 import {
+  type Agent,
+  agent,
   type Chat,
+  type CoderProject,
   chat,
+  coderProject,
   type DBMessage,
   document,
+  type MemoryEntry,
+  memoryEntry,
   message,
+  type Project,
+  type ProjectTask,
+  project,
+  projectTask,
   type Suggestion,
   stream,
   suggestion,
@@ -631,8 +641,6 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
   }
 }
 
-import { type Agent, agent, type Project, project } from "./schema";
-
 export async function createAgent(
   data: Partial<Agent> & { userId: string; name: string }
 ) {
@@ -738,4 +746,86 @@ export async function deleteProject(id: string) {
     console.error("Failed to delete project:", error);
     throw new Error("Failed to delete project");
   }
+}
+
+export function createProjectTask(
+  data: Partial<ProjectTask> & {
+    userId: string;
+    projectId: string;
+    title: string;
+  }
+) {
+  return db.insert(projectTask).values(data).returning();
+}
+
+export function getProjectTasksByUser(userId: string) {
+  return db
+    .select()
+    .from(projectTask)
+    .where(eq(projectTask.userId, userId))
+    .orderBy(desc(projectTask.createdAt));
+}
+
+export function updateProjectTask(id: string, data: Partial<ProjectTask>) {
+  return db
+    .update(projectTask)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(projectTask.id, id))
+    .returning();
+}
+
+export function deleteProjectTask(id: string) {
+  return db.delete(projectTask).where(eq(projectTask.id, id));
+}
+
+export function createMemoryEntry(
+  data: Partial<MemoryEntry> & { userId: string; content: string }
+) {
+  return db.insert(memoryEntry).values(data).returning();
+}
+
+export function getMemoryEntriesByUser(userId: string) {
+  return db
+    .select()
+    .from(memoryEntry)
+    .where(eq(memoryEntry.userId, userId))
+    .orderBy(desc(memoryEntry.createdAt));
+}
+
+export function updateMemoryEntry(id: string, data: Partial<MemoryEntry>) {
+  return db
+    .update(memoryEntry)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(memoryEntry.id, id))
+    .returning();
+}
+
+export function deleteMemoryEntry(id: string) {
+  return db.delete(memoryEntry).where(eq(memoryEntry.id, id));
+}
+
+export function createCoderProject(
+  data: Partial<CoderProject> & { userId: string; name: string }
+) {
+  return db.insert(coderProject).values(data).returning();
+}
+
+export function getCoderProjectsByUser(userId: string) {
+  return db
+    .select()
+    .from(coderProject)
+    .where(eq(coderProject.userId, userId))
+    .orderBy(desc(coderProject.updatedAt));
+}
+
+export function updateCoderProject(id: string, data: Partial<CoderProject>) {
+  return db
+    .update(coderProject)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(coderProject.id, id))
+    .returning();
+}
+
+export function deleteCoderProject(id: string) {
+  return db.delete(coderProject).where(eq(coderProject.id, id));
 }

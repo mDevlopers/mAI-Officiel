@@ -175,3 +175,65 @@ export const project = pgTable("Project", {
 });
 
 export type Project = InferSelectModel<typeof project>;
+
+export const projectTask = pgTable("ProjectTask", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  projectId: uuid("projectId")
+    .notNull()
+    .references(() => project.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  dueDate: timestamp("dueDate"),
+  status: varchar("status", {
+    enum: ["todo", "in_progress", "done"],
+  })
+    .notNull()
+    .default("todo"),
+  priority: varchar("priority", {
+    enum: ["low", "normal", "high"],
+  })
+    .notNull()
+    .default("normal"),
+  createdByAi: boolean("createdByAi").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type ProjectTask = InferSelectModel<typeof projectTask>;
+
+export const memoryEntry = pgTable("MemoryEntry", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  projectId: uuid("projectId").references(() => project.id),
+  content: text("content").notNull(),
+  source: varchar("source", {
+    enum: ["auto_silent", "auto_confirmed", "manual"],
+  })
+    .notNull()
+    .default("manual"),
+  ignored: boolean("ignored").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type MemoryEntry = InferSelectModel<typeof memoryEntry>;
+
+export const coderProject = pgTable("CoderProject", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  projectId: uuid("projectId").references(() => project.id),
+  name: text("name").notNull(),
+  language: varchar("language").notNull().default("html"),
+  files: json("files").notNull().default({}),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type CoderProject = InferSelectModel<typeof coderProject>;
