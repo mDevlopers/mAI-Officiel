@@ -4,31 +4,30 @@ export type AffordableModelOption = {
 };
 
 export const affordableTextModels: AffordableModelOption[] = [
-  { id: "gpt-5.4-nano", label: "GPT-5.4 Nano (CometAPI)" },
-  { id: "gpt-5.4-mini", label: "GPT-5.4 Mini (CometAPI)" },
+  { id: "openai/gpt-5.4", label: "GPT-5.4 (FranceStudent)" },
+  { id: "openai/gpt-5.4-mini", label: "GPT-5.4 Mini (FranceStudent)" },
+  { id: "openai/gpt-5.2", label: "GPT-5.2 (FranceStudent)" },
+  { id: "openai/gpt-5.1", label: "GPT-5.1 (FranceStudent)" },
+  { id: "openai/gpt-5", label: "GPT-5 (FranceStudent)" },
+  { id: "azure/deepseek-v3.2", label: "DeepSeek-V3.2 (FranceStudent)" },
+  { id: "azure/kimi-k2.5", label: "Kimi-K2.5 (FranceStudent)" },
+  { id: "azure/mistral-large-3", label: "Mistral-Large-3 (FranceStudent)" },
   {
-    id: "huggingface/Qwen/Qwen2.5-7B-Instruct",
-    label: "Qwen 2.5 7B Instruct (Hugging Face)",
+    id: "anthropic/claude-opus-4-6",
+    label: "Claude Opus 4.6 (FranceStudent)",
   },
   {
-    id: "huggingface/meta-llama/Llama-3.1-8B-Instruct",
-    label: "Llama 3.1 8B Instruct (Hugging Face)",
+    id: "anthropic/claude-sonnet-4-20250514",
+    label: "Claude Sonnet 4 (20250514) (FranceStudent)",
   },
   {
-    id: "huggingface/microsoft/Phi-3.5-mini-instruct",
-    label: "Phi-3.5 Mini Instruct (Hugging Face)",
+    id: "anthropic/claude-sonnet-4-6",
+    label: "Claude Sonnet 4.6 (FranceStudent)",
   },
-  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
-  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-  { id: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
   {
-    id: "gemini-3.1-flash-lite-preview",
-    label: "Gemini 3.1 Flash Lite Preview",
+    id: "anthropic/claude-haiku-4-5",
+    label: "Claude Haiku 4.5 (FranceStudent)",
   },
-  { id: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview" },
-  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview" },
 ];
 
 export const affordableImageModels: AffordableModelOption[] = [

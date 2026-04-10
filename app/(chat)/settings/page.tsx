@@ -44,19 +44,18 @@ const APP_VERSION = "0.7.5";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
 const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
-  "gpt-4.1",
-  "gpt-4.1-mini",
-  "gpt-4o-mini",
-  "o4-mini",
-  "gpt-5.4-mini",
-  "gpt-5.4-nano",
-  "gemini-2.5-pro",
-  "gemini-3-pro-preview",
-  "gemini-3.1-pro-preview",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "claude-3.7-sonnet",
-  "mistral-small-latest",
+  "openai/gpt-5.4",
+  "openai/gpt-5.4-mini",
+  "openai/gpt-5.2",
+  "openai/gpt-5.1",
+  "openai/gpt-5",
+  "azure/deepseek-v3.2",
+  "azure/kimi-k2.5",
+  "azure/mistral-large-3",
+  "anthropic/claude-opus-4-6",
+  "anthropic/claude-sonnet-4-20250514",
+  "anthropic/claude-sonnet-4-6",
+  "anthropic/claude-haiku-4-5",
 ] as const;
 const schedulerFrequencies = [
   "quotidienne",
@@ -278,7 +277,7 @@ export default function SettingsPage() {
     title: string;
   }>({
     frequency: "quotidienne",
-    model: "gpt-4.1",
+    model: "openai/gpt-5.4",
     nextRunAt: "",
     title: "",
   });
