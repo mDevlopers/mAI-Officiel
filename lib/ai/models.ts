@@ -40,6 +40,13 @@ export const chatModels: ChatModel[] = [
     reasoningEffort: "medium",
   },
   {
+    id: "openai/gpt-5.4-nano",
+    name: "GPT-5.4 Nano",
+    provider: "openai",
+    description: "Ultra-rapide et économique pour tâches courtes.",
+    reasoningEffort: "minimal",
+  },
+  {
     id: "openai/gpt-5.2",
     name: "GPT-5.2",
     provider: "openai",
@@ -75,6 +82,13 @@ export const chatModels: ChatModel[] = [
     provider: "kimi",
     description:
       "Open-source, multimodal model from Moonshot AI built for agentic workflows.",
+  },
+  {
+    id: "openrouter/openai/gpt-oss-120b",
+    name: "GPT-OSS-120b",
+    provider: "openrouter",
+    description: "Grand modèle open-source orienté raisonnement et code.",
+    reasoningEffort: "high",
   },
   {
     id: "azure/mistral-large-3",

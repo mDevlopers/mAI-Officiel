@@ -728,6 +728,17 @@ export async function deleteAgent(id: string) {
   }
 }
 
+export async function deleteAgentByUser(id: string, userId: string) {
+  try {
+    return await db
+      .delete(agent)
+      .where(and(eq(agent.id, id), eq(agent.userId, userId)));
+  } catch (error) {
+    console.error("Failed to delete agent by user:", error);
+    throw new Error("Failed to delete agent");
+  }
+}
+
 export async function updateAgent(id: string, data: Partial<Agent>) {
   try {
     return await db
@@ -737,6 +748,23 @@ export async function updateAgent(id: string, data: Partial<Agent>) {
       .returning();
   } catch (error) {
     console.error("Failed to update agent:", error);
+    throw new Error("Failed to update agent");
+  }
+}
+
+export async function updateAgentByUser(
+  id: string,
+  userId: string,
+  data: Partial<Agent>
+) {
+  try {
+    return await db
+      .update(agent)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(agent.id, id), eq(agent.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update agent by user:", error);
     throw new Error("Failed to update agent");
   }
 }

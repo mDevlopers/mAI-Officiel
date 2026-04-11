@@ -22,6 +22,12 @@ export const extensionAiModelOptions: ExtensionModelOption[] = [
     strengths: "Rapide, économique, idéal pour assistants quotidiens.",
   },
   {
+    id: "openai/gpt-5.4-nano",
+    label: "GPT-5.4 Nano",
+    monthlyCostProfile: "très-faible",
+    strengths: "Version nano à très faible coût pour actions fréquentes.",
+  },
+  {
     id: "openai/gpt-5.2",
     label: "GPT-5.2",
     monthlyCostProfile: "faible",
@@ -38,6 +44,12 @@ export const extensionAiModelOptions: ExtensionModelOption[] = [
     label: "DeepSeek-V3.2",
     monthlyCostProfile: "très-faible",
     strengths: "Fort rapport qualité/prix pour tâches variées et code.",
+  },
+  {
+    id: "openrouter/openai/gpt-oss-120b",
+    label: "GPT-OSS-120b",
+    monthlyCostProfile: "faible",
+    strengths: "Open-source haut niveau pour assistants et automatisations.",
   },
 ] as const;
 

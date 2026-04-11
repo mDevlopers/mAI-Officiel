@@ -1,6 +1,7 @@
 "use client";
 
 import { BotIcon, PenSquareIcon, PlusIcon, TrashIcon } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -74,11 +75,13 @@ export function AgentListDialog({
                 >
                   <div className="flex items-center gap-3">
                     <div className="bg-primary/10 p-2 rounded-md text-primary">
-                      {agent.image ? (
-                        <img
+                      {agent.avatarUrl ? (
+                        <Image
                           alt={agent.name}
                           className="w-5 h-5 rounded-sm object-cover"
-                          src={agent.image}
+                          height={20}
+                          src={agent.avatarUrl}
+                          width={20}
                         />
                       ) : (
                         <BotIcon size={20} />

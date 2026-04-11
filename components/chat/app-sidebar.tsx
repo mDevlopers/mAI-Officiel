@@ -1,6 +1,16 @@
 "use client";
 
-import { FolderIcon, PenSquareIcon, SearchIcon, TrashIcon } from "lucide-react";
+import {
+  BookOpenIcon,
+  BotIcon,
+  CreditCardIcon,
+  FolderIcon,
+  LanguagesIcon,
+  PenSquareIcon,
+  SearchIcon,
+  Settings2Icon,
+  TrashIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
@@ -39,12 +49,13 @@ import {
 import { BrandStarLogoIcon } from "./icons";
 
 const QUICK_LINKS = [
-  { href: "/", label: "Discussion" },
-  { href: "/translation", label: "Traduction" },
-  { href: "/library", label: "Bibliothèque" },
-  { href: "/projects", label: "Projets" },
-  { href: "/settings", label: "Paramètres" },
-  { href: "/pricing", label: "Tarifs" },
+  { href: "/", label: "Discussion", icon: PenSquareIcon },
+  { href: "/mais", label: "mAIs", icon: BotIcon },
+  { href: "/translation", label: "Traduction", icon: LanguagesIcon },
+  { href: "/library", label: "Bibliothèque", icon: BookOpenIcon },
+  { href: "/projects", label: "Projets", icon: FolderIcon },
+  { href: "/settings", label: "Paramètres", icon: Settings2Icon },
+  { href: "/pricing", label: "Tarifs", icon: CreditCardIcon },
 ] as const;
 
 export function AppSidebar({ user }: { user: User | undefined }) {
@@ -84,7 +95,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   }, [normalizedGlobalQuery]);
 
   const featuredLinks = useMemo(
-    () => QUICK_LINKS.filter((item) => item.label === "Projets"),
+    () =>
+      QUICK_LINKS.filter((item) => ["mAIs", "Projets"].includes(item.label)),
     []
   );
 
@@ -183,9 +195,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       tooltip={item.label}
                     >
                       <Link href={item.href} onClick={closeMobileSidebar}>
-                        {item.label === "Projets" ? (
-                          <FolderIcon className="size-3.5" />
-                        ) : null}
+                        <item.icon className="size-3.5" />
                         <span className="font-medium">{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -200,7 +210,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       tooltip={item.label}
                     >
                       <Link href={item.href} onClick={closeMobileSidebar}>
-                        <SearchIcon className="size-3.5" />
+                        <item.icon className="size-3.5" />
                         <span>Aller vers {item.label}</span>
                       </Link>
                     </SidebarMenuButton>

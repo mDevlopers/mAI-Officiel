@@ -34,9 +34,9 @@ export function AgentForm({
     const data = {
       name: formData.get("name"),
       description: formData.get("description"),
-      systemPrompt: formData.get("systemPrompt"),
-      memory: formData.get("memory"),
-      image: formData.get("image"),
+      instructions: formData.get("instructions"),
+      model: formData.get("model"),
+      avatarUrl: formData.get("avatarUrl"),
     };
 
     try {
@@ -94,36 +94,35 @@ export function AgentForm({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="image">Logo (URL)</Label>
+            <Label htmlFor="avatarUrl">Logo (URL)</Label>
             <Input
-              defaultValue={agent?.image}
-              id="image"
-              name="image"
+              defaultValue={agent?.avatarUrl}
+              id="avatarUrl"
+              name="avatarUrl"
               placeholder="https://..."
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="systemPrompt">
+            <Label htmlFor="instructions">
               Comportement & Instructions (System Prompt)
             </Label>
             <Textarea
               className="min-h-[100px]"
-              defaultValue={agent?.systemPrompt}
-              id="systemPrompt"
-              name="systemPrompt"
+              defaultValue={agent?.instructions}
+              id="instructions"
+              name="instructions"
               placeholder="Tu es un expert en droit des affaires..."
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="memory">Base de connaissances (Texte)</Label>
-            <Textarea
-              className="min-h-[100px]"
-              defaultValue={agent?.memory}
-              id="memory"
-              name="memory"
-              placeholder="Collez ici les textes de référence, lois, documents internes..."
+            <Label htmlFor="model">Modèle</Label>
+            <Input
+              defaultValue={agent?.model ?? "openai/gpt-5.4"}
+              id="model"
+              name="model"
+              placeholder="openai/gpt-5.4"
             />
           </div>
 

@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  Copy,
   Download,
   Eye,
   FileImage,
   FileText,
+  Heart,
   Pencil,
   Pin,
   PinOff,
@@ -31,6 +33,7 @@ import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 
 type LibraryAssetType = "image" | "document";
 type LibraryAssetSource = "device" | "mai-library";
+type FilterMode = "all" | "favorites" | "recent";
 
 type LibraryAsset = {
   id: string;
@@ -39,6 +42,7 @@ type LibraryAsset = {
   source: LibraryAssetSource;
   createdAt: string;
   pinned: boolean;
+  favorite: boolean;
   url: string;
 };
 
@@ -52,6 +56,7 @@ const initialAssets: LibraryAsset[] = [
     source: "mai-library",
     createdAt: new Date().toISOString(),
     pinned: true,
+    favorite: true,
     url: "/images/demo-thumbnail.png",
   },
   {
@@ -61,6 +66,7 @@ const initialAssets: LibraryAsset[] = [
     source: "mai-library",
     createdAt: new Date().toISOString(),
     pinned: false,
+    favorite: false,
     url: "",
   },
 ];
@@ -71,21 +77,23 @@ export default function LibraryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [importSource, setImportSource] =
     useState<LibraryAssetSource>("device");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [assetToDelete, setAssetToDelete] = useState<string | null>(null);
   const [renamingAssetId, setRenamingAssetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [previewAsset, setPreviewAsset] = useState<LibraryAsset | null>(null);
+
   const storageLimit = useMemo(() => {
     if (plan === "max") {
       return 100;
     }
     if (plan === "pro") {
-      return 50;
+      return 70;
     }
     if (plan === "plus") {
-      return 30;
+      return 50;
     }
-    return 20;
+    return 30;
   }, [plan]);
 
   useEffect(() => {
@@ -95,9 +103,16 @@ export default function LibraryPage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(initialAssets));
         return;
       }
+
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        setAssets(parsed);
+        setAssets(
+          parsed.map((asset) => ({
+            ...asset,
+            favorite: Boolean(asset.favorite),
+            pinned: Boolean(asset.pinned),
+          }))
+        );
       }
     } catch {
       setAssets(initialAssets);
@@ -109,36 +124,52 @@ export default function LibraryPage() {
   }, [assets]);
 
   useEffect(() => {
-    // Nettoie les URLs temporaires créées côté client pour éviter les fuites mémoire.
     return () => {
-      assets.forEach((asset) => {
+      for (const asset of assets) {
         if (asset.url.startsWith("blob:")) {
           URL.revokeObjectURL(asset.url);
         }
-      });
+      }
     };
   }, [assets]);
 
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    const base = [...assets].sort(
-      (a, b) => Number(b.pinned) - Number(a.pinned)
+    const sorted = [...assets].sort(
+      (a, b) =>
+        Number(b.pinned) - Number(a.pinned) ||
+        +new Date(b.createdAt) - +new Date(a.createdAt)
     );
+
+    const byFilter = sorted.filter((asset) => {
+      if (filterMode === "favorites") {
+        return asset.favorite;
+      }
+      if (filterMode === "recent") {
+        return (
+          +new Date(asset.createdAt) >= Date.now() - 7 * 24 * 60 * 60 * 1000
+        );
+      }
+      return true;
+    });
+
     if (!normalizedSearch) {
-      return base;
+      return byFilter;
     }
-    return base.filter((asset) =>
+
+    return byFilter.filter((asset) =>
       `${asset.name} ${asset.type} ${asset.source}`
         .toLowerCase()
         .includes(normalizedSearch)
     );
-  }, [assets, searchTerm]);
+  }, [assets, filterMode, searchTerm]);
 
-  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
     }
+
     if (assets.length >= storageLimit) {
       toast.error(
         `Limite atteinte pour ${plan.toUpperCase()} : ${storageLimit} fichiers maximum.`
@@ -157,12 +188,30 @@ export default function LibraryPage() {
         source: importSource,
         createdAt: new Date().toISOString(),
         pinned: false,
+        favorite: false,
         url,
       },
       ...current,
     ]);
 
     event.target.value = "";
+  };
+
+  const duplicateAsset = (asset: LibraryAsset) => {
+    if (assets.length >= storageLimit) {
+      toast.error("Duplication impossible : quota atteint.");
+      return;
+    }
+
+    setAssets((current) => [
+      {
+        ...asset,
+        id: crypto.randomUUID(),
+        name: `${asset.name} (copie)`,
+        createdAt: new Date().toISOString(),
+      },
+      ...current,
+    ]);
   };
 
   const openRenameEditor = (asset: LibraryAsset) => {
@@ -193,13 +242,12 @@ export default function LibraryPage() {
 
     setAssets((current) => {
       const asset = current.find((candidate) => candidate.id === assetToDelete);
-
       if (asset?.url.startsWith("blob:")) {
         URL.revokeObjectURL(asset.url);
       }
-
       return current.filter((candidate) => candidate.id !== assetToDelete);
     });
+
     setAssetToDelete(null);
   };
 
@@ -247,16 +295,30 @@ export default function LibraryPage() {
       <section className="rounded-2xl border border-border/60 bg-card/65 p-4 backdrop-blur-xl">
         <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>Recherche instantanée</span>
-          {searchTerm.trim() ? (
-            <button
-              className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[11px] transition-colors hover:border-primary/40 hover:text-foreground"
-              onClick={() => setSearchTerm("")}
-              type="button"
+          <div className="flex items-center gap-2">
+            <select
+              className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px]"
+              onChange={(event) =>
+                setFilterMode(event.target.value as FilterMode)
+              }
+              value={filterMode}
             >
-              Effacer
-            </button>
-          ) : null}
+              <option value="all">Tous</option>
+              <option value="favorites">Favoris</option>
+              <option value="recent">Ajouts 7 jours</option>
+            </select>
+            {searchTerm.trim() ? (
+              <button
+                className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[11px] transition-colors hover:border-primary/40 hover:text-foreground"
+                onClick={() => setSearchTerm("")}
+                type="button"
+              >
+                Effacer
+              </button>
+            ) : null}
+          </div>
         </div>
+
         <div className="mb-4 flex min-h-11 items-center gap-2 rounded-xl border border-border/50 bg-background/60 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
           <Search className="size-4 text-muted-foreground" />
           <input
@@ -346,13 +408,38 @@ export default function LibraryPage() {
                 Ajouté le {new Date(asset.createdAt).toLocaleString()}
               </p>
 
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
                   onClick={() => handleOpenAsset(asset)}
                   size="sm"
                   variant="outline"
                 >
                   <Eye className="mr-1 size-3.5" /> Ouvrir
+                </Button>
+                <Button
+                  onClick={() =>
+                    setAssets((current) =>
+                      current.map((item) =>
+                        item.id === asset.id
+                          ? { ...item, favorite: !item.favorite }
+                          : item
+                      )
+                    )
+                  }
+                  size="sm"
+                  variant="outline"
+                >
+                  <Heart
+                    className={`mr-1 size-3.5 ${asset.favorite ? "fill-current text-rose-500" : ""}`}
+                  />
+                  Favori
+                </Button>
+                <Button
+                  onClick={() => duplicateAsset(asset)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Copy className="mr-1 size-3.5" /> Dupliquer
                 </Button>
                 <Button
                   onClick={() => openRenameEditor(asset)}
@@ -376,8 +463,8 @@ export default function LibraryPage() {
 
         {filteredAssets.length === 0 && (
           <div className="mt-4 rounded-xl border border-dashed border-border/60 bg-background/40 p-4 text-sm text-muted-foreground">
-            Aucun média trouvé. Essayez une autre recherche ou importez un
-            fichier.
+            Aucun média trouvé. Essayez une autre recherche, un autre filtre ou
+            importez un fichier.
           </div>
         )}
       </section>
