@@ -42,6 +42,7 @@ const QUICK_LINKS = [
   { href: "/", label: "Discussion" },
   { href: "/news", label: "Actualités" },
   { href: "/studio", label: "Studio" },
+  { href: "/studio", label: "Coder" },
   { href: "/translation", label: "Traduction" },
   { href: "/library", label: "Bibliothèque" },
   { href: "/projects", label: "Projets" },
@@ -86,6 +87,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       item.label.toLowerCase().includes(normalizedGlobalQuery)
     );
   }, [normalizedGlobalQuery]);
+
+  const featuredLinks = useMemo(
+    () =>
+      QUICK_LINKS.filter((item) => ["Projets", "Coder"].includes(item.label)),
+    []
+  );
 
   const handleDeleteAll = async () => {
     setShowDeleteAllDialog(false);
@@ -173,6 +180,20 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <span className="font-medium">Nouvelle discussion</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {featuredLinks.map((item) => (
+                  <SidebarMenuItem key={`featured-${item.label}`}>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href} onClick={closeMobileSidebar}>
+                        <span className="font-medium">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
 
                 {quickLinks.map((item) => (
                   <SidebarMenuItem key={`quick-${item.href}`}>

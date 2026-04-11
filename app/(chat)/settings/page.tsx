@@ -40,7 +40,7 @@ const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
-const APP_VERSION = "0.7.5";
+const APP_VERSION = "0.8.0";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
 const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
@@ -103,6 +103,13 @@ type ProfileSettingsShape = {
 };
 
 type MemorySortMode = "manual" | "alpha";
+
+type PersistedMemoryEntry = {
+  content: string;
+  createdAt: string;
+  id: string;
+  type: "auto" | "manual";
+};
 
 type ExtensionKey = "coder" | "news" | "studio";
 
@@ -297,6 +304,9 @@ export default function SettingsPage() {
   const [aiPersonality, setAiPersonality] = useState("");
   const [personalContext, setPersonalContext] = useState("");
   const [aiMemoryEntries, setAiMemoryEntries] = useState<string[]>([]);
+  const [memoryEntryIds, setMemoryEntryIds] = useState<string[]>([]);
+  const [isMemoryLoading, setIsMemoryLoading] = useState(false);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryEditingIndex, setMemoryEditingIndex] = useState<number | null>(
     null
@@ -363,6 +373,7 @@ export default function SettingsPage() {
       setAiPersonality(defaultProfileSettings.aiPersonality);
       setPersonalContext(defaultProfileSettings.personalContext);
       setAiMemoryEntries([]);
+      setMemoryEntryIds([]);
       setAiName(defaultProfileSettings.aiName);
       return;
     }
@@ -408,6 +419,9 @@ export default function SettingsPage() {
       setAiPersonality(parsed.aiPersonality ?? "");
       setPersonalContext(parsed.personalContext ?? "");
       setAiMemoryEntries(nextMemoryEntries);
+      setMemoryEntryIds(
+        nextMemoryEntries.map((_, index) => `local-memory-${index}`)
+      );
       setAiName(parsed.aiName ?? "mAI");
     } catch {
       // Ignore un éventuel JSON invalide pour ne pas bloquer l'écran.
@@ -418,9 +432,53 @@ export default function SettingsPage() {
       setAiPersonality(defaultProfileSettings.aiPersonality);
       setPersonalContext(defaultProfileSettings.personalContext);
       setAiMemoryEntries([]);
+      setMemoryEntryIds([]);
       setAiName(defaultProfileSettings.aiName);
     }
   }, []);
+
+  useEffect(() => {
+    if (!data?.user?.id) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMemoryEntries = async () => {
+      setIsMemoryLoading(true);
+      setMemoryError(null);
+
+      try {
+        const response = await fetch("/api/memory", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Chargement mémoire impossible");
+        }
+
+        const payload = (await response.json()) as PersistedMemoryEntry[];
+        if (!isMounted) {
+          return;
+        }
+
+        setAiMemoryEntries(payload.map((entry) => entry.content));
+        setMemoryEntryIds(payload.map((entry) => entry.id));
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setMemoryError("Impossible de synchroniser la mémoire serveur.");
+      } finally {
+        if (isMounted) {
+          setIsMemoryLoading(false);
+        }
+      }
+    };
+
+    loadMemoryEntries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [data?.user?.id]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -739,13 +797,36 @@ export default function SettingsPage() {
     setMemoryEditingIndex(null);
   };
 
-  const handleSaveMemoryEntry = () => {
+  const handleSaveMemoryEntry = async () => {
     const sanitizedDraft = memoryDraft.trim().slice(0, MAX_MEMORY_ENTRY_LENGTH);
     if (!sanitizedDraft) {
       return;
     }
 
+    setMemoryError(null);
+
     if (memoryEditingIndex !== null) {
+      const memoryId = memoryEntryIds[memoryEditingIndex];
+      if (!memoryId) {
+        return;
+      }
+
+      const response = await fetch(`/api/memory/${memoryId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: sanitizedDraft,
+          type: "manual",
+        }),
+      });
+
+      if (!response.ok) {
+        setMemoryError("Impossible de modifier cette entrée.");
+        return;
+      }
+
       setAiMemoryEntries((prev) =>
         prev.map((entry, index) =>
           index === memoryEditingIndex ? sanitizedDraft : entry
@@ -759,7 +840,25 @@ export default function SettingsPage() {
       return;
     }
 
-    setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+    const response = await fetch("/api/memory", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: sanitizedDraft,
+        type: "manual",
+      }),
+    });
+
+    if (!response.ok) {
+      setMemoryError("Impossible d'ajouter cette entrée mémoire.");
+      return;
+    }
+
+    const created = (await response.json()) as PersistedMemoryEntry;
+    setAiMemoryEntries((prev) => [...prev, created.content]);
+    setMemoryEntryIds((prev) => [...prev, created.id]);
     resetMemoryEditor();
   };
 
@@ -768,32 +867,60 @@ export default function SettingsPage() {
     setMemoryDraft(aiMemoryEntries[index] ?? "");
   };
 
-  const handleDeleteMemoryEntry = (index: number) => {
+  const handleDeleteMemoryEntry = async (index: number) => {
+    const memoryId = memoryEntryIds[index];
+    if (!memoryId) {
+      return;
+    }
+
+    setMemoryError(null);
+    const response = await fetch(`/api/memory/${memoryId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      setMemoryError("Impossible de supprimer cette entrée.");
+      return;
+    }
+
     setAiMemoryEntries((prev) =>
       prev.filter((_, current) => current !== index)
     );
+    setMemoryEntryIds((prev) => prev.filter((_, current) => current !== index));
     if (memoryEditingIndex === index) {
       resetMemoryEditor();
+    } else if (memoryEditingIndex !== null && memoryEditingIndex > index) {
+      setMemoryEditingIndex(memoryEditingIndex - 1);
     }
   };
 
   const handleSortSettings = () => {
     setMemorySortMode((prevMode) => {
       if (prevMode === "manual") {
-        manualMemoryOrderRef.current = [...aiMemoryEntries];
-        setAiMemoryEntries((prevEntries) =>
-          [...prevEntries].sort((left, right) =>
-            left.localeCompare(right, "fr")
-          )
+        manualMemoryOrderRef.current = [...memoryEntryIds];
+        const indexed = aiMemoryEntries.map((entry, index) => ({
+          entry,
+          id: memoryEntryIds[index] ?? `memory-${index}`,
+        }));
+        indexed.sort((left, right) =>
+          left.entry.localeCompare(right.entry, "fr")
         );
+        setAiMemoryEntries(indexed.map((item) => item.entry));
+        setMemoryEntryIds(indexed.map((item) => item.id));
         return "alpha";
       }
 
-      setAiMemoryEntries(
-        manualMemoryOrderRef.current.length > 0
-          ? manualMemoryOrderRef.current
-          : aiMemoryEntries
-      );
+      if (manualMemoryOrderRef.current.length > 0) {
+        const entryById = new Map(
+          memoryEntryIds.map((id, index) => [id, aiMemoryEntries[index] ?? ""])
+        );
+        setMemoryEntryIds(manualMemoryOrderRef.current);
+        setAiMemoryEntries(
+          manualMemoryOrderRef.current
+            .map((id) => entryById.get(id) ?? "")
+            .filter(Boolean)
+        );
+      }
 
       return "manual";
     });
@@ -1915,6 +2042,16 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+              {isMemoryLoading ? (
+                <p className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
+                  Synchronisation de la mémoire...
+                </p>
+              ) : null}
+              {memoryError ? (
+                <p className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">
+                  {memoryError}
+                </p>
+              ) : null}
               {aiMemoryEntries.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
                   Aucune mémoire enregistrée.
@@ -1923,7 +2060,7 @@ export default function SettingsPage() {
                 aiMemoryEntries.map((entry, index) => (
                   <div
                     className="rounded-xl border border-border/50 bg-background/60 p-3"
-                    key={`${index}-${entry.slice(0, 24)}`}
+                    key={memoryEntryIds[index] ?? `memory-${index}`}
                   >
                     <p className="line-clamp-3 whitespace-pre-wrap text-sm">
                       {entry}

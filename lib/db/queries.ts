@@ -867,3 +867,32 @@ export async function getMemoryEntriesByUser(
     throw new Error("Failed to get memory entries");
   }
 }
+
+export async function updateMemoryEntryByUser(
+  id: string,
+  userId: string,
+  data: Partial<Pick<MemoryEntry, "content" | "projectId" | "type">>
+) {
+  try {
+    return await db
+      .update(memoryEntry)
+      .set(data)
+      .where(and(eq(memoryEntry.id, id), eq(memoryEntry.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update memory entry:", error);
+    throw new Error("Failed to update memory entry");
+  }
+}
+
+export async function deleteMemoryEntryByUser(id: string, userId: string) {
+  try {
+    return await db
+      .delete(memoryEntry)
+      .where(and(eq(memoryEntry.id, id), eq(memoryEntry.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to delete memory entry:", error);
+    throw new Error("Failed to delete memory entry");
+  }
+}
