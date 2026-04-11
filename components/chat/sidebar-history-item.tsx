@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { memo, useState } from "react";
+import { memo } from "react";
+import { FolderIcon } from "lucide-react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
-import type { Chat } from "@/lib/db/schema";
+import type { Chat, Project } from "@/lib/db/schema";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,8 @@ const PureChatItem = ({
   onPin,
   onRename,
   onReport,
+  onAssignProject,
+  projects,
   setOpenMobile,
 }: {
   chat: Chat;
@@ -43,14 +46,14 @@ const PureChatItem = ({
   onPin: (chatId: string) => void;
   onRename: (chatId: string, title: string) => void;
   onReport: (chatId: string) => void;
+  onAssignProject: (chatId: string, projectId: string) => void;
+  projects: Project[];
   setOpenMobile: (open: boolean) => void;
 }) => {
   const { visibilityType, setVisibilityType } = useChatVisibility({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
   });
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(chat.title);
 
   const handleCopyId = async () => {
     await navigator.clipboard.writeText(chat.id);
@@ -104,31 +107,18 @@ const PureChatItem = ({
           <DropdownMenuItem
             className="cursor-pointer"
             onSelect={() => {
-              setIsRenaming(true);
-              setRenameValue(chat.title);
+              const nextTitle = window.prompt(
+                "Nouveau nom de la discussion",
+                chat.title
+              );
+              if (!nextTitle) {
+                return;
+              }
+              onRename(chat.id, nextTitle.trim());
             }}
           >
             Renommer
           </DropdownMenuItem>
-          {isRenaming && (
-            <div className="px-2 pb-2">
-              <input
-                className="h-8 w-full rounded-md border border-border/50 bg-background/80 px-2 text-xs"
-                onChange={(event) => setRenameValue(event.target.value)}
-                value={renameValue}
-              />
-              <button
-                className="mt-1 w-full rounded-md bg-primary/10 py-1 text-xs text-primary"
-                onClick={() => {
-                  onRename(chat.id, renameValue.trim());
-                  setIsRenaming(false);
-                }}
-                type="button"
-              >
-                Enregistrer le titre complet
-              </button>
-            </div>
-          )}
           <DropdownMenuItem className="cursor-pointer" onSelect={handleCopyId}>
             Copier l'ID
           </DropdownMenuItem>
@@ -144,6 +134,29 @@ const PureChatItem = ({
           >
             {isPinned ? "Désépingler" : "Épingler"}
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer">
+              <FolderIcon className="size-3.5" />
+              <span>Projet</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl">
+                {projects.length === 0 ? (
+                  <DropdownMenuItem disabled>Aucun projet</DropdownMenuItem>
+                ) : (
+                  projects.map((project) => (
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      key={project.id}
+                      onClick={() => onAssignProject(chat.id, project.id)}
+                    >
+                      {project.name}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
           <DropdownMenuItem
             className="cursor-pointer"
             onSelect={() => onReport(chat.id)}

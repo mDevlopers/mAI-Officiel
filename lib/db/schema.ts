@@ -175,3 +175,38 @@ export const project = pgTable("Project", {
 });
 
 export type Project = InferSelectModel<typeof project>;
+
+export const task = pgTable("Task", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  projectId: uuid("projectId")
+    .notNull()
+    .references(() => project.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  dueDate: timestamp("dueDate"),
+  status: varchar("status", { enum: ["todo", "doing", "done"] })
+    .notNull()
+    .default("todo"),
+  priority: varchar("priority", { enum: ["low", "medium", "high"] })
+    .notNull()
+    .default("medium"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type Task = InferSelectModel<typeof task>;
+
+export const memoryEntry = pgTable("Memory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  projectId: uuid("projectId").references(() => project.id),
+  content: text("content").notNull(),
+  type: varchar("type", { enum: ["auto", "manual"] })
+    .notNull()
+    .default("manual"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type MemoryEntry = InferSelectModel<typeof memoryEntry>;

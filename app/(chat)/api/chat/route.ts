@@ -29,12 +29,14 @@ import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { createProjectTaskTool } from "@/lib/ai/tools/create-project-task";
 import { webSearch } from "@/lib/ai/tools/web-search";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
   getChatById,
+  getProjectById,
   getMessageCountByUserId,
   getMessagesByChatId,
   saveChat,
@@ -82,6 +84,7 @@ export async function POST(request: Request) {
       contextualActions,
       ghostMode,
       persistentMemory,
+      projectId,
     } = requestBody;
     const isGhostMode = ghostMode === true;
 
@@ -125,11 +128,18 @@ export async function POST(request: Request) {
       }
       messagesFromDb = await getMessagesByChatId({ id });
     } else if (message?.role === "user" && !isGhostMode) {
+      if (projectId) {
+        const selectedProject = await getProjectById(projectId);
+        if (!selectedProject || selectedProject.userId !== session.user.id) {
+          return new ChatbotError("forbidden:chat").toResponse();
+        }
+      }
       await saveChat({
         id,
         userId: session.user.id,
         title: "New chat",
         visibility: selectedVisibilityType,
+        projectId,
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
@@ -297,6 +307,7 @@ export async function POST(request: Request) {
       | "editDocument"
       | "updateDocument"
       | "requestSuggestions"
+      | "createProjectTask"
       | "webSearch"
     )[] = [
       "getWeather",
@@ -304,6 +315,7 @@ export async function POST(request: Request) {
       "editDocument",
       "updateDocument",
       "requestSuggestions",
+      "createProjectTask",
     ];
 
     // Add web search tool if contextual action is enabled
@@ -356,6 +368,7 @@ export async function POST(request: Request) {
               dataStream,
               modelId: chatModel,
             }),
+            createProjectTask: createProjectTaskTool(session.user.id),
             webSearch,
           },
           experimental_telemetry: {

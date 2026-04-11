@@ -79,11 +79,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  projectId,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  projectId?: string;
 }) {
   try {
     return await db.insert(chat).values({
@@ -92,9 +94,54 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      projectId,
     });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save chat");
+  }
+}
+
+export async function getChatsByProjectId({
+  projectId,
+  userId,
+}: {
+  projectId: string;
+  userId: string;
+}) {
+  try {
+    return await db
+      .select()
+      .from(chat)
+      .where(and(eq(chat.projectId, projectId), eq(chat.userId, userId)))
+      .orderBy(desc(chat.createdAt));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get chats by project id"
+    );
+  }
+}
+
+export async function assignChatToProject({
+  chatId,
+  projectId,
+  userId,
+}: {
+  chatId: string;
+  projectId: string;
+  userId: string;
+}) {
+  try {
+    return await db
+      .update(chat)
+      .set({ projectId })
+      .where(and(eq(chat.id, chatId), eq(chat.userId, userId)))
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to assign chat to project"
+    );
   }
 }
 
@@ -631,7 +678,16 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
   }
 }
 
-import { type Agent, agent, type Project, project } from "./schema";
+import {
+  type Agent,
+  agent,
+  type MemoryEntry,
+  memoryEntry,
+  type Project,
+  project,
+  type Task,
+  task,
+} from "./schema";
 
 export async function createAgent(
   data: Partial<Agent> & { userId: string; name: string }
@@ -698,7 +754,11 @@ export async function createProject(
 
 export async function getProjectsByUser(userId: string): Promise<Project[]> {
   try {
-    return await db.select().from(project).where(eq(project.userId, userId));
+    return await db
+      .select()
+      .from(project)
+      .where(eq(project.userId, userId))
+      .orderBy(desc(project.createdAt));
   } catch (error) {
     console.error("Failed to get projects by user:", error);
     throw new Error("Failed to get projects");
@@ -737,5 +797,149 @@ export async function deleteProject(id: string) {
   } catch (error) {
     console.error("Failed to delete project:", error);
     throw new Error("Failed to delete project");
+  }
+}
+
+export function getProjects(userId: string): Promise<Project[]> {
+  return getProjectsByUser(userId);
+}
+
+export async function updateProjectByUser(
+  id: string,
+  userId: string,
+  data: Partial<Project>
+) {
+  try {
+    return await db
+      .update(project)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(eq(project.id, id), eq(project.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update project by user:", error);
+    throw new Error("Failed to update project");
+  }
+}
+
+export async function deleteProjectByUser(id: string, userId: string) {
+  try {
+    return await db
+      .delete(project)
+      .where(and(eq(project.id, id), eq(project.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to delete project by user:", error);
+    throw new Error("Failed to delete project");
+  }
+}
+
+export async function createTask(
+  data: Pick<Task, "projectId" | "title"> &
+    Partial<Omit<Task, "id" | "projectId" | "title">>
+) {
+  try {
+    return await db.insert(task).values(data).returning();
+  } catch (error) {
+    console.error("Failed to create task:", error);
+    throw new Error("Failed to create task");
+  }
+}
+
+export async function getTasksByProject(projectId: string): Promise<Task[]> {
+  try {
+    return await db
+      .select()
+      .from(task)
+      .where(eq(task.projectId, projectId))
+      .orderBy(asc(task.dueDate), desc(task.createdAt));
+  } catch (error) {
+    console.error("Failed to get tasks by project:", error);
+    throw new Error("Failed to get tasks");
+  }
+}
+
+export async function updateTask(id: string, data: Partial<Task>) {
+  try {
+    return await db
+      .update(task)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(task.id, id))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update task:", error);
+    throw new Error("Failed to update task");
+  }
+}
+
+export async function deleteTask(id: string) {
+  try {
+    return await db.delete(task).where(eq(task.id, id)).returning();
+  } catch (error) {
+    console.error("Failed to delete task:", error);
+    throw new Error("Failed to delete task");
+  }
+}
+
+export async function createMemoryEntry(
+  data: Pick<MemoryEntry, "userId" | "content"> &
+    Partial<Omit<MemoryEntry, "id" | "userId" | "content">>
+) {
+  try {
+    return await db.insert(memoryEntry).values(data).returning();
+  } catch (error) {
+    console.error("Failed to create memory entry:", error);
+    throw new Error("Failed to create memory entry");
+  }
+}
+
+export async function getMemoryEntriesByUser(
+  userId: string,
+  projectId?: string
+): Promise<MemoryEntry[]> {
+  try {
+    return await db
+      .select()
+      .from(memoryEntry)
+      .where(
+        projectId
+          ? and(
+              eq(memoryEntry.userId, userId),
+              eq(memoryEntry.projectId, projectId)
+            )
+          : eq(memoryEntry.userId, userId)
+      )
+      .orderBy(desc(memoryEntry.createdAt));
+  } catch (error) {
+    console.error("Failed to get memory entries:", error);
+    throw new Error("Failed to get memory entries");
+  }
+}
+
+export async function updateMemoryEntryByUser(
+  id: string,
+  userId: string,
+  data: Partial<Pick<MemoryEntry, "content" | "projectId" | "type">>
+) {
+  try {
+    return await db
+      .update(memoryEntry)
+      .set(data)
+      .where(and(eq(memoryEntry.id, id), eq(memoryEntry.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to update memory entry:", error);
+    throw new Error("Failed to update memory entry");
+  }
+}
+
+export async function deleteMemoryEntryByUser(id: string, userId: string) {
+  try {
+    return await db
+      .delete(memoryEntry)
+      .where(and(eq(memoryEntry.id, id), eq(memoryEntry.userId, userId)))
+      .returning();
+  } catch (error) {
+    console.error("Failed to delete memory entry:", error);
+    throw new Error("Failed to delete memory entry");
   }
 }

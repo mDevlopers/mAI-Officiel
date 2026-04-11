@@ -10,15 +10,49 @@ const FileSchema = z.object({
     .refine((file) => file.size <= 5 * 1024 * 1024, {
       message: "File size should be less than 5MB",
     })
-    .refine((file) => ["image/jpeg", "image/png"].includes(file.type), {
-      message: "File type should be JPEG or PNG",
-    }),
+    .refine(
+      (file) =>
+        [
+          "application/pdf",
+          "text/plain",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "text/markdown",
+          "text/csv",
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "image/gif",
+        ].includes(file.type),
+      {
+        message:
+          "File type should be PDF, TXT, DOCX, MD, CSV, JPEG, PNG, WEBP or GIF",
+      }
+    ),
+  projectId: z.string().uuid().optional(),
 });
+
+const ProjectIdSchema = z.object({
+  projectId: z.string().uuid().optional(),
+});
+
+function buildUploadPath({
+  userId,
+  projectId,
+  filename,
+}: {
+  userId: string;
+  projectId?: string;
+  filename: string;
+}) {
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const scope = projectId ? `projects/${projectId}` : "library";
+  return `${userId}/${scope}/${Date.now()}-${safeName}`;
+}
 
 export async function POST(request: Request) {
   const session = await auth();
 
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -29,12 +63,27 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as Blob;
+    const rawProjectId = formData.get("projectId");
+
+    const parsedProject = ProjectIdSchema.safeParse({
+      projectId:
+        typeof rawProjectId === "string" && rawProjectId.trim().length > 0
+          ? rawProjectId
+          : undefined,
+    });
+
+    if (!parsedProject.success) {
+      return NextResponse.json({ error: "Invalid projectId" }, { status: 400 });
+    }
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const validatedFile = FileSchema.safeParse({ file });
+    const validatedFile = FileSchema.safeParse({
+      file,
+      projectId: parsedProject.data.projectId,
+    });
 
     if (!validatedFile.success) {
       const errorMessage = validatedFile.error.errors
@@ -45,11 +94,15 @@ export async function POST(request: Request) {
     }
 
     const filename = (formData.get("file") as File).name;
-    const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
     const fileBuffer = await file.arrayBuffer();
+    const pathname = buildUploadPath({
+      userId: session.user.id,
+      projectId: parsedProject.data.projectId,
+      filename,
+    });
 
     try {
-      const data = await put(`${safeName}`, fileBuffer, {
+      const data = await put(pathname, fileBuffer, {
         access: "public",
       });
 

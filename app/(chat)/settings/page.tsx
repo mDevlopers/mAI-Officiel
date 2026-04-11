@@ -33,14 +33,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { planDefinitions } from "@/lib/subscription";
-import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
+import { getNextResetDate } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 
 const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
-const APP_VERSION = "0.7.5";
+const APP_VERSION = "0.8.0";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
 const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
@@ -104,7 +104,14 @@ type ProfileSettingsShape = {
 
 type MemorySortMode = "manual" | "alpha";
 
-type ExtensionKey = "coder" | "news" | "studio";
+type PersistedMemoryEntry = {
+  content: string;
+  createdAt: string;
+  id: string;
+  type: "auto" | "manual";
+};
+
+type ExtensionKey = "projects" | "library" | "translation";
 
 type ParentalSettings = {
   advancedSettingsLocked: boolean;
@@ -121,9 +128,9 @@ const defaultParentalSettings: ParentalSettings = {
   dailyLimitMinutes: 90,
   enabled: false,
   extensions: {
-    coder: true,
-    news: true,
-    studio: true,
+    library: true,
+    projects: true,
+    translation: true,
   },
   lockCodeHash: "",
   sessionUnlockedUntil: 0,
@@ -131,9 +138,9 @@ const defaultParentalSettings: ParentalSettings = {
 };
 
 const extensionLabels: Record<ExtensionKey, string> = {
-  coder: "mAICoder",
-  news: "mAINews",
-  studio: "Studio",
+  library: "Bibliothèque",
+  projects: "Projets",
+  translation: "Traduction",
 };
 
 function hashLockCode(code: string): string {
@@ -253,7 +260,7 @@ function sanitizeScheduledTasks(input: unknown): ScheduledTask[] {
 }
 
 export default function SettingsPage() {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const {
     activateByCode,
     currentPlanDefinition,
@@ -297,6 +304,9 @@ export default function SettingsPage() {
   const [aiPersonality, setAiPersonality] = useState("");
   const [personalContext, setPersonalContext] = useState("");
   const [aiMemoryEntries, setAiMemoryEntries] = useState<string[]>([]);
+  const [memoryEntryIds, setMemoryEntryIds] = useState<string[]>([]);
+  const [isMemoryLoading, setIsMemoryLoading] = useState(false);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryEditingIndex, setMemoryEditingIndex] = useState<number | null>(
     null
@@ -325,6 +335,7 @@ export default function SettingsPage() {
 
   const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
   const maxMemoryEntries = getMemoryEntriesLimitForPlan(plan);
+  const isAuthenticated = status === "authenticated" && Boolean(data?.user?.id);
 
   useEffect(() => {
     try {
@@ -363,6 +374,7 @@ export default function SettingsPage() {
       setAiPersonality(defaultProfileSettings.aiPersonality);
       setPersonalContext(defaultProfileSettings.personalContext);
       setAiMemoryEntries([]);
+      setMemoryEntryIds([]);
       setAiName(defaultProfileSettings.aiName);
       return;
     }
@@ -408,6 +420,9 @@ export default function SettingsPage() {
       setAiPersonality(parsed.aiPersonality ?? "");
       setPersonalContext(parsed.personalContext ?? "");
       setAiMemoryEntries(nextMemoryEntries);
+      setMemoryEntryIds(
+        nextMemoryEntries.map((_, index) => `local-memory-${index}`)
+      );
       setAiName(parsed.aiName ?? "mAI");
     } catch {
       // Ignore un éventuel JSON invalide pour ne pas bloquer l'écran.
@@ -418,9 +433,53 @@ export default function SettingsPage() {
       setAiPersonality(defaultProfileSettings.aiPersonality);
       setPersonalContext(defaultProfileSettings.personalContext);
       setAiMemoryEntries([]);
+      setMemoryEntryIds([]);
       setAiName(defaultProfileSettings.aiName);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadMemoryEntries = async () => {
+      setIsMemoryLoading(true);
+      setMemoryError(null);
+
+      try {
+        const response = await fetch("/api/memory", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Chargement mémoire impossible");
+        }
+
+        const payload = (await response.json()) as PersistedMemoryEntry[];
+        if (!isMounted) {
+          return;
+        }
+
+        setAiMemoryEntries(payload.map((entry) => entry.content));
+        setMemoryEntryIds(payload.map((entry) => entry.id));
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setMemoryError("Impossible de synchroniser la mémoire serveur.");
+      } finally {
+        if (isMounted) {
+          setIsMemoryLoading(false);
+        }
+      }
+    };
+
+    loadMemoryEntries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -574,18 +633,18 @@ export default function SettingsPage() {
             ? parsed.enabled
             : defaultParentalSettings.enabled,
         extensions: {
-          coder:
-            typeof parsedExtensions.coder === "boolean"
-              ? parsedExtensions.coder
-              : defaultParentalSettings.extensions.coder,
-          news:
-            typeof parsedExtensions.news === "boolean"
-              ? parsedExtensions.news
-              : defaultParentalSettings.extensions.news,
-          studio:
-            typeof parsedExtensions.studio === "boolean"
-              ? parsedExtensions.studio
-              : defaultParentalSettings.extensions.studio,
+          library:
+            typeof parsedExtensions.library === "boolean"
+              ? parsedExtensions.library
+              : defaultParentalSettings.extensions.library,
+          projects:
+            typeof parsedExtensions.projects === "boolean"
+              ? parsedExtensions.projects
+              : defaultParentalSettings.extensions.projects,
+          translation:
+            typeof parsedExtensions.translation === "boolean"
+              ? parsedExtensions.translation
+              : defaultParentalSettings.extensions.translation,
         },
         lockCodeHash:
           typeof parsed.lockCodeHash === "string" ? parsed.lockCodeHash : "",
@@ -739,13 +798,65 @@ export default function SettingsPage() {
     setMemoryEditingIndex(null);
   };
 
-  const handleSaveMemoryEntry = () => {
+  const handleSaveMemoryEntry = async () => {
     const sanitizedDraft = memoryDraft.trim().slice(0, MAX_MEMORY_ENTRY_LENGTH);
     if (!sanitizedDraft) {
       return;
     }
 
+    setMemoryError(null);
+
+    if (!isAuthenticated) {
+      if (memoryEditingIndex !== null) {
+        setAiMemoryEntries((prev) =>
+          prev.map((entry, index) =>
+            index === memoryEditingIndex ? sanitizedDraft : entry
+          )
+        );
+        resetMemoryEditor();
+        return;
+      }
+
+      if (aiMemoryEntries.length >= maxMemoryEntries) {
+        return;
+      }
+
+      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
+      resetMemoryEditor();
+      return;
+    }
+
     if (memoryEditingIndex !== null) {
+      const memoryId = memoryEntryIds[memoryEditingIndex];
+      if (!memoryId) {
+        return;
+      }
+
+      const response = await fetch(`/api/memory/${memoryId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content: sanitizedDraft,
+          type: "manual",
+        }),
+      });
+
+      if (!response.ok) {
+        // Fallback local pour éviter de bloquer l'utilisateur si l'API échoue.
+        setAiMemoryEntries((prev) =>
+          prev.map((entry, index) =>
+            index === memoryEditingIndex ? sanitizedDraft : entry
+          )
+        );
+        setMemoryError(
+          "API indisponible : modification enregistrée localement uniquement."
+        );
+        return;
+      }
+
       setAiMemoryEntries((prev) =>
         prev.map((entry, index) =>
           index === memoryEditingIndex ? sanitizedDraft : entry
@@ -759,7 +870,29 @@ export default function SettingsPage() {
       return;
     }
 
-    setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+    const response = await fetch("/api/memory", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: sanitizedDraft,
+        type: "manual",
+      }),
+    });
+
+    if (!response.ok) {
+      // Fallback local pour continuer à utiliser la mémoire même en cas d'erreur API.
+      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
+      setMemoryError("API indisponible : entrée sauvegardée localement.");
+      resetMemoryEditor();
+      return;
+    }
+
+    const created = (await response.json()) as PersistedMemoryEntry;
+    setAiMemoryEntries((prev) => [...prev, created.content]);
+    setMemoryEntryIds((prev) => [...prev, created.id]);
     resetMemoryEditor();
   };
 
@@ -768,32 +901,75 @@ export default function SettingsPage() {
     setMemoryDraft(aiMemoryEntries[index] ?? "");
   };
 
-  const handleDeleteMemoryEntry = (index: number) => {
+  const handleDeleteMemoryEntry = async (index: number) => {
+    const memoryId = memoryEntryIds[index];
+    if (!memoryId) {
+      return;
+    }
+
+    if (!isAuthenticated || memoryId.startsWith("local-memory-")) {
+      setAiMemoryEntries((prev) =>
+        prev.filter((_, current) => current !== index)
+      );
+      setMemoryEntryIds((prev) =>
+        prev.filter((_, current) => current !== index)
+      );
+      if (memoryEditingIndex === index) {
+        resetMemoryEditor();
+      }
+      return;
+    }
+
+    setMemoryError(null);
+    const response = await fetch(`/api/memory/${memoryId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      setMemoryError(
+        "Impossible de supprimer sur le serveur. Réessayez dans quelques instants."
+      );
+      return;
+    }
+
     setAiMemoryEntries((prev) =>
       prev.filter((_, current) => current !== index)
     );
+    setMemoryEntryIds((prev) => prev.filter((_, current) => current !== index));
     if (memoryEditingIndex === index) {
       resetMemoryEditor();
+    } else if (memoryEditingIndex !== null && memoryEditingIndex > index) {
+      setMemoryEditingIndex(memoryEditingIndex - 1);
     }
   };
 
   const handleSortSettings = () => {
     setMemorySortMode((prevMode) => {
       if (prevMode === "manual") {
-        manualMemoryOrderRef.current = [...aiMemoryEntries];
-        setAiMemoryEntries((prevEntries) =>
-          [...prevEntries].sort((left, right) =>
-            left.localeCompare(right, "fr")
-          )
+        manualMemoryOrderRef.current = [...memoryEntryIds];
+        const indexed = aiMemoryEntries.map((entry, index) => ({
+          entry,
+          id: memoryEntryIds[index] ?? `memory-${index}`,
+        }));
+        indexed.sort((left, right) =>
+          left.entry.localeCompare(right.entry, "fr")
         );
+        setAiMemoryEntries(indexed.map((item) => item.entry));
+        setMemoryEntryIds(indexed.map((item) => item.id));
         return "alpha";
       }
 
-      setAiMemoryEntries(
-        manualMemoryOrderRef.current.length > 0
-          ? manualMemoryOrderRef.current
-          : aiMemoryEntries
-      );
+      if (manualMemoryOrderRef.current.length > 0) {
+        const entryById = new Map(
+          memoryEntryIds.map((id, index) => [id, aiMemoryEntries[index] ?? ""])
+        );
+        setMemoryEntryIds(manualMemoryOrderRef.current);
+        setAiMemoryEntries(
+          manualMemoryOrderRef.current
+            .map((id) => entryById.get(id) ?? "")
+            .filter(Boolean)
+        );
+      }
 
       return "manual";
     });
@@ -804,8 +980,8 @@ export default function SettingsPage() {
       return [];
     }
 
-    // Le suivi existant est branché pour news/health/tâches; les autres quotas
-    // sont préparées pour une instrumentation progressive.
+    // Le suivi existant est branché pour messages/fichiers/images/tâches; les
+    // autres quotas sont préparés pour une instrumentation progressive.
     return [
       {
         key: "messages",
@@ -851,20 +1027,6 @@ export default function SettingsPage() {
         period: "month",
         title: "Tâches planifiées",
         used: tasks.length,
-      },
-      {
-        key: "news",
-        limit: currentPlanDefinition.limits.newsSearchesPerDay,
-        period: "day",
-        title: "mAINews",
-        used: getUsageCount("news", "day"),
-      },
-      {
-        key: "health",
-        limit: currentPlanDefinition.limits.healthRequestsPerMonth,
-        period: "month",
-        title: "mAIHealth",
-        used: getUsageCount("health", "month"),
       },
     ];
   }, [currentPlanDefinition, isHydrated, tasks.length]);
@@ -1845,19 +2007,24 @@ export default function SettingsPage() {
       </section>
 
       {isMemoryModalOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-2xl rounded-2xl border border-border/60 bg-card/85 p-5 shadow-xl">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
+          <div className="liquid-glass w-full max-w-2xl rounded-3xl border border-black/10 bg-white p-6 text-black shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold">Mémoire de l&apos;IA</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <h3 className="text-lg font-semibold text-black">
+                  Mémoire de l&apos;IA
+                </h3>
+                <p className="mt-1 text-xs text-black/65">
                   Ajoutez, modifiez et supprimez des mémoires (max{" "}
                   {maxMemoryEntries} selon votre forfait, plafond technique:{" "}
                   {ABSOLUTE_MAX_MEMORY_ENTRIES}).
                 </p>
+                <p className="mt-1 text-[11px] text-black/55">
+                  Mode : {isAuthenticated ? "Synchronisation serveur" : "Local"}
+                </p>
               </div>
               <button
-                className="rounded-full border border-border/50 p-1 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
+                className="rounded-full border border-black/15 bg-white/70 p-1 text-black/55 transition hover:bg-white hover:text-black"
                 onClick={() => {
                   setIsMemoryModalOpen(false);
                   resetMemoryEditor();
@@ -1878,14 +2045,14 @@ export default function SettingsPage() {
                   : "Modifier l'entrée"}
               </label>
               <textarea
-                className="min-h-28 w-full rounded-md border border-border/60 bg-background/70 p-3 text-sm outline-none"
+                className="min-h-28 w-full rounded-xl border border-black/15 bg-white p-3 text-sm text-black outline-none"
                 id="memory-draft"
                 maxLength={MAX_MEMORY_ENTRY_LENGTH}
                 onChange={(event) => setMemoryDraft(event.target.value)}
                 placeholder="Ex: Prioriser les plans d'action avec checklists et deadlines."
                 value={memoryDraft}
               />
-              <p className="text-right text-xs text-muted-foreground">
+              <p className="text-right text-xs text-black/55">
                 {memoryDraft.length}/{MAX_MEMORY_ENTRY_LENGTH}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -1915,6 +2082,16 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-4 max-h-72 space-y-2 overflow-y-auto pr-1">
+              {isMemoryLoading ? (
+                <p className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
+                  Synchronisation de la mémoire...
+                </p>
+              ) : null}
+              {memoryError ? (
+                <p className="rounded-xl border border-red-500/30 bg-red-100 p-3 text-sm text-red-700">
+                  {memoryError}
+                </p>
+              ) : null}
               {aiMemoryEntries.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
                   Aucune mémoire enregistrée.
@@ -1923,7 +2100,7 @@ export default function SettingsPage() {
                 aiMemoryEntries.map((entry, index) => (
                   <div
                     className="rounded-xl border border-border/50 bg-background/60 p-3"
-                    key={`${index}-${entry.slice(0, 24)}`}
+                    key={memoryEntryIds[index] ?? `memory-${index}`}
                   >
                     <p className="line-clamp-3 whitespace-pre-wrap text-sm">
                       {entry}

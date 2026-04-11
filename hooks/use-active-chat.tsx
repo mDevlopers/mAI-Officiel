@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
   type Dispatch,
@@ -58,6 +58,7 @@ function extractChatId(pathname: string): string | null {
 
 export function ActiveChatProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { setDataStream } = useDataStream();
   const { mutate } = useSWRConfig();
 
@@ -72,6 +73,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
   prevPathnameRef.current = pathname;
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
+  const projectId = searchParams.get("projectId");
 
   const [currentModelId, setCurrentModelId] = useState(DEFAULT_CHAT_MODEL);
   const currentModelIdRef = useRef(currentModelId);
@@ -146,6 +148,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
               : { message: lastMessage }),
             selectedChatModel: currentModelIdRef.current,
             selectedVisibilityType: visibility,
+            projectId: projectId ?? undefined,
             ...request.body,
           },
         };
@@ -218,7 +221,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       window.history.replaceState(
         {},
         "",
-        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`
       );
       sendMessage({
         role: "user" as const,
@@ -229,7 +232,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
         },
       });
     }
-  }, [sendMessage, chatId]);
+  }, [sendMessage, chatId, projectId]);
 
   useAutoResume({
     autoResume: !isNewChat && !!chatData,

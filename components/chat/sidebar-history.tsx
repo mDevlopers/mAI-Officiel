@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
 import { useLocalStorage } from "usehooks-ts";
 import {
@@ -25,7 +26,7 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { Chat } from "@/lib/db/schema";
+import type { Chat, Project } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
 import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
@@ -134,6 +135,11 @@ export function SidebarHistory({
     fetcher,
     { fallbackData: [], revalidateOnFocus: false }
   );
+  const { data: projects = [] } = useSWR<Project[]>(
+    user ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/projects` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
 
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -199,6 +205,25 @@ export function SidebarHistory({
     });
     localStorage.setItem("mai.reports.chats", JSON.stringify(currentReports));
     toast.success("Conversation signalée");
+  };
+
+  const handleAssignProject = async (chatId: string, projectId: string) => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/projects/${projectId}/chats`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId }),
+      }
+    );
+
+    if (!response.ok) {
+      toast.error("Impossible d'ajouter la discussion au projet.");
+      return;
+    }
+
+    mutate();
+    toast.success("Discussion ajoutée au projet.");
   };
 
   const handleDelete = () => {
@@ -346,6 +371,8 @@ export function SidebarHistory({
                             onPin={handlePin}
                             onRename={handleRename}
                             onReport={handleReport}
+                            onAssignProject={handleAssignProject}
+                            projects={projects}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -370,6 +397,8 @@ export function SidebarHistory({
                             onPin={handlePin}
                             onRename={handleRename}
                             onReport={handleReport}
+                            onAssignProject={handleAssignProject}
+                            projects={projects}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -394,6 +423,8 @@ export function SidebarHistory({
                             onPin={handlePin}
                             onRename={handleRename}
                             onReport={handleReport}
+                            onAssignProject={handleAssignProject}
+                            projects={projects}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -418,6 +449,8 @@ export function SidebarHistory({
                             onPin={handlePin}
                             onRename={handleRename}
                             onReport={handleReport}
+                            onAssignProject={handleAssignProject}
+                            projects={projects}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}
@@ -442,6 +475,8 @@ export function SidebarHistory({
                             onPin={handlePin}
                             onRename={handleRename}
                             onReport={handleReport}
+                            onAssignProject={handleAssignProject}
+                            projects={projects}
                             setOpenMobile={setOpenMobile}
                           />
                         ))}

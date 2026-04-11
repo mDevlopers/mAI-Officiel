@@ -7,7 +7,6 @@ import {
   ArrowUpIcon,
   BotIcon,
   BrainIcon,
-  EyeIcon,
   FilePenLineIcon,
   GraduationCapIcon,
   LockIcon,
@@ -17,7 +16,6 @@ import {
   PlusIcon,
   SearchIcon,
   Square,
-  WrenchIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -38,7 +36,6 @@ import {
   ModelSelector,
   ModelSelectorContent,
   ModelSelectorGroup,
-  ModelSelectorInput,
   ModelSelectorItem,
   ModelSelectorList,
   ModelSelectorLogo,
@@ -64,10 +61,9 @@ import {
   type ChatModel,
   chatModels,
   DEFAULT_CHAT_MODEL,
-  type ModelCapabilities,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, fetcher } from "@/lib/utils";
 import {
   PromptInput,
   PromptInputFooter,
@@ -88,6 +84,7 @@ import type { VisibilityType } from "./visibility-selector";
 
 type UploadSource = "device" | "mai-library";
 type ReflectionLevel = "light" | "moderate" | "deep" | "very-deep";
+type ProjectItem = { id: string; name: string };
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const reflectionLevels: ReflectionLevel[] = [
@@ -223,6 +220,23 @@ function PureMultimodalInput({
     } else {
       setSlashOpen(false);
     }
+
+    const mentionMatch = val.match(/(?:^|\s)@([^\s@]*)$/);
+    if (mentionMatch) {
+      setProjectMentionOpen(true);
+      setProjectMentionQuery(mentionMatch[1] ?? "");
+      setProjectMentionIndex(0);
+    } else {
+      setProjectMentionOpen(false);
+    }
+  };
+
+  const handleProjectMentionSelect = (project: ProjectItem) => {
+    const updatedInput = input.replace(/(?:^|\s)@([^\s@]*)$/, " ").trimStart();
+    setInput(updatedInput);
+    setProjectMentionOpen(false);
+    router.replace(`${window.location.pathname}?projectId=${project.id}`);
+    toast.success(`Projet sélectionné : ${project.name}`);
   };
 
   const handleSlashSelect = (cmd: SlashCommand) => {
@@ -287,6 +301,9 @@ function PureMultimodalInput({
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIndex, setSlashIndex] = useState(0);
+  const [projectMentionOpen, setProjectMentionOpen] = useState(false);
+  const [projectMentionQuery, setProjectMentionQuery] = useState("");
+  const [projectMentionIndex, setProjectMentionIndex] = useState(0);
   const [chatBarSize] = useLocalStorage<"compact" | "standard" | "large">(
     "mai.chatbar.size",
     "compact"
@@ -299,6 +316,17 @@ function PureMultimodalInput({
   const [isGeolocationEnabled, setIsGeolocationEnabled] = useLocalStorage(
     "mai.geolocation-enabled",
     false
+  );
+  const { data: projectsData } = useSWR<ProjectItem[]>(
+    projectMentionOpen ? "/api/projects" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5 * 60 * 1000,
+    }
+  );
+  const filteredProjects = (projectsData ?? []).filter((project) =>
+    project.name.toLowerCase().includes(projectMentionQuery.toLowerCase())
   );
   const [geolocationPos, setGeolocationPos] = useState<{
     latitude: number;
@@ -741,6 +769,31 @@ function PureMultimodalInput({
                 return;
               }
             }
+            if (projectMentionOpen) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setProjectMentionIndex((index) =>
+                  Math.min(index + 1, filteredProjects.length - 1)
+                );
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setProjectMentionIndex((index) => Math.max(index - 1, 0));
+                return;
+              }
+              if (
+                (e.key === "Enter" || e.key === "Tab") &&
+                filteredProjects.length > 0
+              ) {
+                e.preventDefault();
+                const selectedProject = filteredProjects[projectMentionIndex];
+                if (selectedProject) {
+                  handleProjectMentionSelect(selectedProject);
+                }
+                return;
+              }
+            }
             if (e.key === "Escape" && editingMessage && onCancelEdit) {
               e.preventDefault();
               onCancelEdit();
@@ -754,6 +807,33 @@ function PureMultimodalInput({
           ref={textareaRef}
           value={input}
         />
+        {projectMentionOpen && (
+          <div className="mx-3 mb-2 rounded-xl border border-border/60 bg-background/90 p-2 shadow-lg backdrop-blur-xl">
+            {filteredProjects.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Aucun projet trouvé pour cette mention.
+              </p>
+            ) : (
+              <div className="space-y-1">
+                {filteredProjects.slice(0, 6).map((project, index) => (
+                  <button
+                    className={cn(
+                      "flex w-full items-center rounded-lg px-2 py-1.5 text-left text-xs transition",
+                      index === projectMentionIndex
+                        ? "bg-primary/15 text-primary"
+                        : "hover:bg-muted"
+                    )}
+                    key={project.id}
+                    onClick={() => handleProjectMentionSelect(project)}
+                    type="button"
+                  >
+                    @{project.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <PromptInputFooter className="px-3 pb-3">
           <PromptInputTools>
             <ContextualActionsMenu
@@ -1209,8 +1289,6 @@ function PureModelSelectorCompact({
     { revalidateOnFocus: false, dedupingInterval: 3_600_000 }
   );
 
-  const capabilities: Record<string, ModelCapabilities> | undefined =
-    modelsData?.capabilities ?? modelsData;
   const dynamicModels: ChatModel[] | undefined = modelsData?.models;
   const activeModels = dynamicModels ?? chatModels;
 
@@ -1235,7 +1313,6 @@ function PureModelSelectorCompact({
         </Button>
       </ModelSelectorTrigger>
       <ModelSelectorContent>
-        <ModelSelectorInput placeholder="Rechercher un modèle..." />
         <ModelSelectorList>
           {(() => {
             const curatedIds = new Set(chatModels.map((m) => m.id));
@@ -1345,18 +1422,6 @@ function PureModelSelectorCompact({
                             <ModelSelectorLogo provider={logoProvider} />
                             <ModelSelectorName>{model.name}</ModelSelectorName>
                             <div className="ml-auto flex items-center gap-2 text-foreground/70">
-                              {model.provider !== "mAI" &&
-                                capabilities?.[model.id]?.tools && (
-                                  <WrenchIcon className="size-3.5" />
-                                )}
-                              {model.provider !== "mAI" &&
-                                capabilities?.[model.id]?.vision && (
-                                  <EyeIcon className="size-3.5" />
-                                )}
-                              {model.provider !== "mAI" &&
-                                capabilities?.[model.id]?.reasoning && (
-                                  <BrainIcon className="size-3.5" />
-                                )}
                               {!curated && (
                                 <LockIcon className="size-3 text-muted-foreground/50" />
                               )}
