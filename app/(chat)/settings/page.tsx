@@ -260,7 +260,7 @@ function sanitizeScheduledTasks(input: unknown): ScheduledTask[] {
 }
 
 export default function SettingsPage() {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const {
     activateByCode,
     currentPlanDefinition,
@@ -335,6 +335,7 @@ export default function SettingsPage() {
 
   const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
   const maxMemoryEntries = getMemoryEntriesLimitForPlan(plan);
+  const isAuthenticated = status === "authenticated" && Boolean(data?.user?.id);
 
   useEffect(() => {
     try {
@@ -438,7 +439,7 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (!data?.user?.id) {
+    if (!isAuthenticated) {
       return;
     }
 
@@ -478,7 +479,7 @@ export default function SettingsPage() {
     return () => {
       isMounted = false;
     };
-  }, [data?.user?.id]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -805,6 +806,27 @@ export default function SettingsPage() {
 
     setMemoryError(null);
 
+    if (!isAuthenticated) {
+      if (memoryEditingIndex !== null) {
+        setAiMemoryEntries((prev) =>
+          prev.map((entry, index) =>
+            index === memoryEditingIndex ? sanitizedDraft : entry
+          )
+        );
+        resetMemoryEditor();
+        return;
+      }
+
+      if (aiMemoryEntries.length >= maxMemoryEntries) {
+        return;
+      }
+
+      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
+      resetMemoryEditor();
+      return;
+    }
+
     if (memoryEditingIndex !== null) {
       const memoryId = memoryEntryIds[memoryEditingIndex];
       if (!memoryId) {
@@ -823,7 +845,15 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) {
-        setMemoryError("Impossible de modifier cette entrée.");
+        // Fallback local pour éviter de bloquer l'utilisateur si l'API échoue.
+        setAiMemoryEntries((prev) =>
+          prev.map((entry, index) =>
+            index === memoryEditingIndex ? sanitizedDraft : entry
+          )
+        );
+        setMemoryError(
+          "API indisponible : modification enregistrée localement uniquement."
+        );
         return;
       }
 
@@ -852,7 +882,11 @@ export default function SettingsPage() {
     });
 
     if (!response.ok) {
-      setMemoryError("Impossible d'ajouter cette entrée mémoire.");
+      // Fallback local pour continuer à utiliser la mémoire même en cas d'erreur API.
+      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
+      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
+      setMemoryError("API indisponible : entrée sauvegardée localement.");
+      resetMemoryEditor();
       return;
     }
 
@@ -873,13 +907,28 @@ export default function SettingsPage() {
       return;
     }
 
+    if (!isAuthenticated || memoryId.startsWith("local-memory-")) {
+      setAiMemoryEntries((prev) =>
+        prev.filter((_, current) => current !== index)
+      );
+      setMemoryEntryIds((prev) =>
+        prev.filter((_, current) => current !== index)
+      );
+      if (memoryEditingIndex === index) {
+        resetMemoryEditor();
+      }
+      return;
+    }
+
     setMemoryError(null);
     const response = await fetch(`/api/memory/${memoryId}`, {
       method: "DELETE",
     });
 
     if (!response.ok) {
-      setMemoryError("Impossible de supprimer cette entrée.");
+      setMemoryError(
+        "Impossible de supprimer sur le serveur. Réessayez dans quelques instants."
+      );
       return;
     }
 
@@ -1958,19 +2007,24 @@ export default function SettingsPage() {
       </section>
 
       {isMemoryModalOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-2xl rounded-2xl border border-border/60 bg-card/85 p-5 shadow-xl">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
+          <div className="liquid-glass w-full max-w-2xl rounded-3xl border border-white/25 bg-white/80 p-6 text-black shadow-2xl backdrop-blur-2xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold">Mémoire de l&apos;IA</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <h3 className="text-lg font-semibold text-black">
+                  Mémoire de l&apos;IA
+                </h3>
+                <p className="mt-1 text-xs text-black/65">
                   Ajoutez, modifiez et supprimez des mémoires (max{" "}
                   {maxMemoryEntries} selon votre forfait, plafond technique:{" "}
                   {ABSOLUTE_MAX_MEMORY_ENTRIES}).
                 </p>
+                <p className="mt-1 text-[11px] text-black/55">
+                  Mode : {isAuthenticated ? "Synchronisation serveur" : "Local"}
+                </p>
               </div>
               <button
-                className="rounded-full border border-border/50 p-1 text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
+                className="rounded-full border border-black/15 bg-white/70 p-1 text-black/55 transition hover:bg-white hover:text-black"
                 onClick={() => {
                   setIsMemoryModalOpen(false);
                   resetMemoryEditor();
@@ -1991,14 +2045,14 @@ export default function SettingsPage() {
                   : "Modifier l'entrée"}
               </label>
               <textarea
-                className="min-h-28 w-full rounded-md border border-border/60 bg-background/70 p-3 text-sm outline-none"
+                className="min-h-28 w-full rounded-xl border border-black/15 bg-white p-3 text-sm text-black outline-none"
                 id="memory-draft"
                 maxLength={MAX_MEMORY_ENTRY_LENGTH}
                 onChange={(event) => setMemoryDraft(event.target.value)}
                 placeholder="Ex: Prioriser les plans d'action avec checklists et deadlines."
                 value={memoryDraft}
               />
-              <p className="text-right text-xs text-muted-foreground">
+              <p className="text-right text-xs text-black/55">
                 {memoryDraft.length}/{MAX_MEMORY_ENTRY_LENGTH}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -2034,7 +2088,7 @@ export default function SettingsPage() {
                 </p>
               ) : null}
               {memoryError ? (
-                <p className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">
+                <p className="rounded-xl border border-red-500/30 bg-red-100 p-3 text-sm text-red-700">
                   {memoryError}
                 </p>
               ) : null}
