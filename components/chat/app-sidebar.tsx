@@ -3,6 +3,8 @@
 import {
   BookOpenIcon,
   BotIcon,
+  BracesIcon,
+  BrainCircuitIcon,
   CreditCardIcon,
   FolderIcon,
   LanguagesIcon,
@@ -54,12 +56,22 @@ const QUICK_LINKS = [
   { href: "/", label: "Discussion", icon: PenSquareIcon },
   { href: "/mais", label: "mAIs", icon: BotIcon },
   { href: "/translation", label: "Traduction", icon: LanguagesIcon },
+  { href: "/humanizy", label: "Humanizy", icon: BrainCircuitIcon },
   { href: "/library", label: "Bibliothèque", icon: BookOpenIcon },
   { href: "/projects", label: "Projets", icon: FolderIcon },
   { href: "/interpreter", label: "Code", icon: TerminalSquareIcon },
   { href: "/speaky", label: "Speaky", icon: Volume2Icon },
   { href: "/settings", label: "Paramètres", icon: Settings2Icon },
   { href: "/pricing", label: "Tarifs", icon: CreditCardIcon },
+] as const;
+
+const APPLICATION_LINKS = [
+  { href: "/mais", label: "mAIs", icon: BotIcon },
+  { href: "/translation", label: "Traduction", icon: LanguagesIcon },
+  { href: "/interpreter", label: "Code", icon: TerminalSquareIcon },
+  { href: "/speaky", label: "Speaky", icon: Volume2Icon },
+  { href: "/humanizy", label: "Humanizy", icon: BrainCircuitIcon },
+  { href: "/plugins", label: "Plugins", icon: BracesIcon },
 ] as const;
 
 export function AppSidebar({ user }: { user: User | undefined }) {
@@ -99,7 +111,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   }, [normalizedGlobalQuery]);
 
   const featuredLinks = useMemo(() => {
-    const order = ["mAIs", "Projets", "Code", "Speaky", "Bibliothèque"] as const;
+    const order = [
+      "mAIs",
+      "Projets",
+      "Code",
+      "Speaky",
+      "Bibliothèque",
+    ] as const;
     return order
       .map((label) => QUICK_LINKS.find((item) => item.label === label))
       .filter((item) => item !== undefined);
@@ -202,6 +220,25 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       <Link href={item.href} onClick={closeMobileSidebar}>
                         <item.icon className="size-3.5" />
                         <span className="font-medium">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+                <SidebarMenuItem>
+                  <div className="px-2 pt-2 text-[10px] font-semibold tracking-wide text-sidebar-foreground/55 uppercase">
+                    Applications
+                  </div>
+                </SidebarMenuItem>
+                {APPLICATION_LINKS.map((item) => (
+                  <SidebarMenuItem key={`app-${item.href}`}>
+                    <SidebarMenuButton
+                      asChild
+                      className="h-8 rounded-lg border border-sidebar-border/50 text-[13px] text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href} onClick={closeMobileSidebar}>
+                        <item.icon className="size-3.5" />
+                        <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
