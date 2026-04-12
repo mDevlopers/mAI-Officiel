@@ -451,13 +451,27 @@ const RenderWithToolbar = ({
 
 
 const INLINE_SUGGESTION_PREFIX = "mai-suggest:";
+const MAX_INLINE_SUGGESTION_PROMPT_LENGTH = 240;
+
+const isSafeExternalHref = (href: string) =>
+  href.startsWith("http://") ||
+  href.startsWith("https://") ||
+  href.startsWith("mailto:") ||
+  href.startsWith("tel:") ||
+  href.startsWith("#");
 
 const decodeSuggestionPrompt = (href: string) => {
   const encoded = href.slice(INLINE_SUGGESTION_PREFIX.length);
   try {
-    return decodeURIComponent(encoded).trim();
+    return decodeURIComponent(encoded)
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_INLINE_SUGGESTION_PROMPT_LENGTH);
   } catch {
-    return encoded.trim();
+    return encoded
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_INLINE_SUGGESTION_PROMPT_LENGTH);
   }
 };
 
@@ -473,6 +487,10 @@ export const MessageResponse = memo(
           const isInlineSuggestion = href.startsWith(INLINE_SUGGESTION_PREFIX);
 
           if (!isInlineSuggestion) {
+            if (!isSafeExternalHref(href)) {
+              return <span className="text-muted-foreground">{linkChildren}</span>;
+            }
+
             return (
               <a
                 className="underline decoration-border/70 underline-offset-4 transition-colors hover:text-foreground"

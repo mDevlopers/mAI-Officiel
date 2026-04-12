@@ -44,7 +44,7 @@ export function Preview() {
         />
         <span className="text-[13px] text-muted-foreground">mAI</span>
         <button
-          className={`ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
+          className={`liquid-panel ml-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
             isGhostModeEnabled
               ? "border-purple-500/40 bg-purple-500/20 text-purple-200 shadow-[0_0_0_3px_rgba(168,85,247,0.15)]"
               : "border-border/40 bg-card/40 text-muted-foreground hover:border-border/70"

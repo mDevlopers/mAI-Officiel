@@ -12,6 +12,7 @@ const normalizeSuggestions = (suggestions: string[]) => {
   const normalized: string[] = [];
 
   for (const rawItem of suggestions) {
+    // Normalisation stricte pour garder des CTA courts et homogènes en UI.
     const cleanedItem = trimToWordLimit(rawItem.replace(/[.:;!?]+$/g, ""));
     if (cleanedItem.length === 0) {
       continue;

@@ -913,7 +913,10 @@ ${extractedFileContext}`
           </div>
         )}
         {(isGhostModeArmed || isGhostConversation) && (
-          <div className="mx-3 mb-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-violet-400/35 bg-violet-500/10 px-2.5 py-1 text-[10px] font-medium text-violet-700 dark:text-violet-200">
+          <div
+            aria-live="polite"
+            className="liquid-panel mx-3 mb-1 inline-flex w-fit items-center gap-1.5 rounded-full border-violet-400/35 bg-violet-500/12 px-2.5 py-1 text-[10px] font-medium text-violet-700 dark:text-violet-200"
+          >
             <Ghost className="size-3.5" />
             {isGhostModeArmed
               ? "Mode Fantôme activé : prochain message privé"
