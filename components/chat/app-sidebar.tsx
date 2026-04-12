@@ -3,11 +3,11 @@
 import {
   BookOpenIcon,
   BotIcon,
-  BracesIcon,
   BrainCircuitIcon,
   CreditCardIcon,
   FolderIcon,
   LanguagesIcon,
+  LayoutGridIcon,
   PenSquareIcon,
   SearchIcon,
   Settings2Icon,
@@ -27,6 +27,12 @@ import {
   SidebarHistory,
 } from "@/components/chat/sidebar-history";
 import { SidebarUserNav } from "@/components/chat/sidebar-user-nav";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -71,7 +77,6 @@ const APPLICATION_LINKS = [
   { href: "/interpreter", label: "Code", icon: TerminalSquareIcon },
   { href: "/speaky", label: "Speaky", icon: Volume2Icon },
   { href: "/humanizy", label: "Humanizy", icon: BrainCircuitIcon },
-  { href: "/plugins", label: "Plugins", icon: BracesIcon },
 ] as const;
 
 export function AppSidebar({ user }: { user: User | undefined }) {
@@ -80,6 +85,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [isApplicationsOpen, setIsApplicationsOpen] = useState(false);
   const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const closeMobileSidebar = () => {
@@ -225,24 +231,38 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuItem>
                 ))}
                 <SidebarMenuItem>
-                  <div className="px-2 pt-2 text-[10px] font-semibold tracking-wide text-sidebar-foreground/55 uppercase">
-                    Applications
-                  </div>
-                </SidebarMenuItem>
-                {APPLICATION_LINKS.map((item) => (
-                  <SidebarMenuItem key={`app-${item.href}`}>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 rounded-lg border border-sidebar-border/50 text-[13px] text-sidebar-foreground/80 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      tooltip={item.label}
+                  <DropdownMenu
+                    onOpenChange={setIsApplicationsOpen}
+                    open={isApplicationsOpen}
+                  >
+                    <DropdownMenuTrigger asChild>
+                      <SidebarMenuButton
+                        className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        onMouseEnter={() => setIsApplicationsOpen(true)}
+                        onMouseLeave={() => setIsApplicationsOpen(false)}
+                        tooltip="Applications"
+                      >
+                        <LayoutGridIcon className="size-3.5" />
+                        <span className="font-medium">Applications</span>
+                      </SidebarMenuButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-56"
+                      onMouseEnter={() => setIsApplicationsOpen(true)}
+                      onMouseLeave={() => setIsApplicationsOpen(false)}
                     >
-                      <Link href={item.href} onClick={closeMobileSidebar}>
-                        <item.icon className="size-3.5" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                      {APPLICATION_LINKS.map((item) => (
+                        <DropdownMenuItem asChild key={`app-${item.href}`}>
+                          <Link href={item.href} onClick={closeMobileSidebar}>
+                            <item.icon className="mr-2 size-3.5" />
+                            {item.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </SidebarMenuItem>
 
                 {quickLinks.map((item) => (
                   <SidebarMenuItem key={`quick-${item.href}`}>
