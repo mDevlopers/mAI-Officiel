@@ -2,13 +2,16 @@
 
 import {
   BarChart3,
+  Bookmark,
   FileSpreadsheet,
+  History,
   Play,
   SquareTerminal,
   Table,
   Upload,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocalStorage } from "usehooks-ts";
 
 type Runtime =
   | "python"
@@ -22,10 +25,8 @@ type Runtime =
   | "ruby"
   | "php";
 
-type RuntimeFile = {
-  contentBase64: string;
-  name: string;
-};
+type RuntimeFile = { contentBase64: string; name: string };
+type EditorTheme = "monokai" | "dracula" | "one-dark";
 
 type ExecutionResponse = {
   error?: string;
@@ -35,17 +36,31 @@ type ExecutionResponse = {
   success?: boolean;
 };
 
+type ExecutionEntry = {
+  createdAt: string;
+  output: ExecutionResponse | null;
+  runtime: Runtime;
+  sourceCode: string;
+};
+
+type SavedSnippet = {
+  id: string;
+  name: string;
+  runtime: Runtime;
+  sourceCode: string;
+};
+
 const runtimeSnippets: Record<Runtime, string> = {
-  python: `import csv\nfrom pathlib import Path\n\nrows = []\nfile = Path("data.csv")\nif file.exists():\n    with file.open() as f:\n        reader = csv.DictReader(f)\n        rows = list(reader)\n    print(f"Rows: {len(rows)}")\n    print(rows[:3])\nelse:\n    values = [2, 4, 6, 8]\n    print("Mean:", sum(values) / len(values))`,
-  javascript: `import fs from "node:fs";\n\nif (fs.existsSync("data.csv")) {\n  const raw = fs.readFileSync("data.csv", "utf8");\n  const lines = raw.trim().split("\\n");\n  console.log("Rows:", Math.max(lines.length - 1, 0));\n  console.log(lines.slice(0, 3));\n} else {\n  const values = [2, 4, 6, 8];\n  const mean = values.reduce((acc, value) => acc + value, 0) / values.length;\n  console.log("Mean:", mean);\n}`,
-  typescript: `import fs from "node:fs";\n\nconst values = [2, 4, 6, 8];\nconst mean = values.reduce((acc, value) => acc + value, 0) / values.length;\nconsole.log("Mean:", mean);\n\nif (fs.existsSync("data.csv")) {\n  const rows = fs.readFileSync("data.csv", "utf8").trim().split("\\n").length - 1;\n  console.log("Rows:", Math.max(rows, 0));\n}`,
-  bash: `#!/usr/bin/env bash\nset -euo pipefail\n\necho "Sandbox ready"\nif [[ -f "data.csv" ]]; then\n  echo "File data.csv detected"\n  head -n 5 data.csv\nelse\n  echo "No data.csv file found"\n  printf "2\\n4\\n6\\n8\\n" | awk '{sum+=$1; count+=1} END {printf "Mean: %.2f\\n", sum/count}'\nfi`,
-  html: `<!doctype html>\n<html lang="fr">\n  <head>\n    <meta charset="UTF-8" />\n    <title>Preview</title>\n  </head>\n  <body>\n    <h1>Hello Interpreter</h1>\n    <p>Ce runtime valide et prévisualise votre HTML.</p>\n  </body>\n</html>`,
-  c: `#include <stdio.h>\n\nint main(void) {\n  int values[] = {2, 4, 6, 8};\n  int total = 0;\n\n  for (int i = 0; i < 4; ++i) total += values[i];\n  printf("Mean: %.2f\\n", total / 4.0);\n  return 0;\n}`,
-  cpp: `#include <iostream>\n#include <vector>\n\nint main() {\n  std::vector<int> values{2, 4, 6, 8};\n  int total = 0;\n  for (const int value : values) total += value;\n  std::cout << "Mean: " << (total / static_cast<double>(values.size())) << "\\n";\n  return 0;\n}`,
-  go: `package main\n\nimport "fmt"\n\nfunc main() {\n  values := []int{2, 4, 6, 8}\n  total := 0\n  for _, value := range values {\n    total += value\n  }\n\n  fmt.Printf("Mean: %.2f\\n", float64(total)/float64(len(values)))\n}`,
-  ruby: `values = [2, 4, 6, 8]\nmean = values.sum.to_f / values.length\nputs "Mean: #{mean}"`,
-  php: `<?php\n$values = [2, 4, 6, 8];\n$mean = array_sum($values) / count($values);\necho "Mean: {$mean}\\n";\n`,
+  python: `import statistics\nvalues = [2, 4, 6, 8]\nprint("Mean:", statistics.mean(values))`,
+  javascript: `const values = [2, 4, 6, 8];\nconst mean = values.reduce((acc, value) => acc + value, 0) / values.length;\nconsole.log("Mean:", mean);`,
+  typescript: `const values: number[] = [2, 4, 6, 8];\nconst mean = values.reduce((acc, value) => acc + value, 0) / values.length;\nconsole.log("Mean:", mean);`,
+  bash: `#!/usr/bin/env bash\necho "Sandbox ready"`,
+  html: `<!doctype html>\n<html lang="fr"><body><h1>Hello Interpreter</h1></body></html>`,
+  c: `#include <stdio.h>\nint main(void){ printf("Hello C\\n"); return 0; }`,
+  cpp: `#include <iostream>\nint main(){ std::cout << "Hello C++\\n"; }`,
+  go: `package main\nimport "fmt"\nfunc main(){ fmt.Println("Hello Go") }`,
+  ruby: `puts "Hello Ruby"`,
+  php: `<?php\necho "Hello PHP\\n";`,
 };
 
 const runtimeLabels: Record<Runtime, string> = {
@@ -74,6 +89,12 @@ const runtimeOrder: Runtime[] = [
   "php",
 ];
 
+const quickPresets: Array<{ label: string; runtime: Runtime }> = [
+  { label: "Analyse CSV", runtime: "python" },
+  { label: "Script CLI", runtime: "bash" },
+  { label: "Sandbox JS", runtime: "javascript" },
+];
+
 async function toRuntimeFile(file: File): Promise<RuntimeFile> {
   const buffer = await file.arrayBuffer();
   const contentBase64 = btoa(
@@ -83,10 +104,7 @@ async function toRuntimeFile(file: File): Promise<RuntimeFile> {
     )
   );
 
-  return {
-    contentBase64,
-    name: file.name,
-  };
+  return { contentBase64, name: file.name };
 }
 
 export default function InterpreterPage() {
@@ -95,6 +113,16 @@ export default function InterpreterPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<ExecutionResponse | null>(null);
+  const [snippetName, setSnippetName] = useState("");
+  const [editorTheme, setEditorTheme] = useState<EditorTheme>("dracula");
+  const [history, setHistory] = useLocalStorage<ExecutionEntry[]>(
+    "mai.interpreter.history.v1",
+    []
+  );
+  const [savedSnippets, setSavedSnippets] = useLocalStorage<SavedSnippet[]>(
+    "mai.interpreter.snippets.v1",
+    []
+  );
 
   const features = useMemo(
     () => [
@@ -105,6 +133,13 @@ export default function InterpreterPage() {
     ],
     []
   );
+
+  const editorThemeClass =
+    editorTheme === "monokai"
+      ? "bg-[#272822] text-[#f8f8f2]"
+      : editorTheme === "one-dark"
+        ? "bg-[#282c34] text-[#abb2bf]"
+        : "bg-[#282a36] text-[#f8f8f2]";
 
   const onRun = async () => {
     setIsRunning(true);
@@ -120,14 +155,33 @@ export default function InterpreterPage() {
 
       const payload = (await response.json()) as ExecutionResponse;
       setResult(payload);
+      setHistory([
+        {
+          createdAt: new Date().toISOString(),
+          output: payload,
+          runtime,
+          sourceCode: code,
+        },
+        ...history,
+      ].slice(0, 20));
     } catch (error) {
-      setResult({
+      const errorPayload = {
         error:
           error instanceof Error
             ? error.message
             : "Erreur inconnue pendant l'exécution",
         success: false,
-      });
+      } satisfies ExecutionResponse;
+      setResult(errorPayload);
+      setHistory([
+        {
+          createdAt: new Date().toISOString(),
+          output: errorPayload,
+          runtime,
+          sourceCode: code,
+        },
+        ...history,
+      ].slice(0, 20));
     } finally {
       setIsRunning(false);
     }
@@ -139,16 +193,15 @@ export default function InterpreterPage() {
         <div>
           <h1 className="text-2xl font-semibold">Code Interpreter</h1>
           <p className="text-sm text-muted-foreground">
-            Sandbox multi-langages: Python, JavaScript, TypeScript, Bash, HTML,
-            C, C++, Go, Ruby et PHP.
+            Mini-IDE avec thèmes, snippets, historique d'exécution et presets.
           </p>
         </div>
 
-        <div className="liquid-panel rounded-xl px-3 py-2">
-          <label className="text-xs text-muted-foreground">
+        <div className="liquid-panel rounded-xl px-3 py-2 text-xs">
+          <label>
             Runtime
             <select
-              className="ml-2 rounded-lg border border-border/50 bg-background px-2 py-1 text-xs text-foreground"
+              className="ml-2 rounded-lg border border-border/50 bg-background px-2 py-1"
               onChange={(event) => {
                 const nextRuntime = event.target.value as Runtime;
                 setRuntime(nextRuntime);
@@ -163,27 +216,83 @@ export default function InterpreterPage() {
               ))}
             </select>
           </label>
+          <label className="ml-2">
+            Thème
+            <select
+              className="ml-2 rounded-lg border border-border/50 bg-background px-2 py-1"
+              onChange={(event) => setEditorTheme(event.target.value as EditorTheme)}
+              value={editorTheme}
+            >
+              <option value="monokai">Monokai</option>
+              <option value="dracula">Dracula</option>
+              <option value="one-dark">One Dark</option>
+            </select>
+          </label>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {quickPresets.map((preset) => (
+          <button
+            className="rounded-xl border border-border/60 bg-background/60 px-3 py-1 text-xs"
+            key={preset.label}
+            onClick={() => {
+              setRuntime(preset.runtime);
+              setCode(runtimeSnippets[preset.runtime]);
+            }}
+            type="button"
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <section className="liquid-panel space-y-3 rounded-2xl p-4">
           <textarea
-            className="min-h-[360px] w-full rounded-xl border border-border/40 bg-background/70 p-3 font-mono text-xs"
+            className={`min-h-[360px] w-full rounded-xl border border-border/40 p-3 font-mono text-xs ${editorThemeClass}`}
             onChange={(event) => setCode(event.target.value)}
             value={code}
           />
 
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              className="h-8 rounded-lg border border-border/60 bg-background/70 px-2 text-xs"
+              onChange={(event) => setSnippetName(event.target.value)}
+              placeholder="Nom du snippet"
+              value={snippetName}
+            />
+            <button
+              className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-2 py-1 text-xs"
+              onClick={() => {
+                if (!snippetName.trim()) {
+                  return;
+                }
+                setSavedSnippets([
+                  {
+                    id: crypto.randomUUID(),
+                    name: snippetName.trim(),
+                    runtime,
+                    sourceCode: code,
+                  },
+                  ...savedSnippets,
+                ]);
+                setSnippetName("");
+              }}
+              type="button"
+            >
+              <Bookmark className="size-3.5" /> Sauver snippet
+            </button>
+          </div>
+
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/50 px-3 py-2 text-xs text-muted-foreground">
             <Upload className="size-3.5" />
-            Ajouter CSV / Excel / TXT / JSON (copiés dans le sandbox)
+            Ajouter CSV / Excel / TXT / JSON
             <input
               accept=".csv,.xlsx,.xls,.txt,.json"
               className="hidden"
               multiple
-              onChange={(event) =>
-                setFiles(Array.from(event.target.files ?? []))
-              }
+              onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
               type="file"
             />
           </label>
@@ -209,40 +318,64 @@ export default function InterpreterPage() {
           <h2 className="mb-2 text-sm font-medium">Output</h2>
           <div className="space-y-2 text-xs">
             {result?.logs?.length ? (
-              <pre className="rounded-xl bg-background/80 p-2">
-                {result.logs.join("\n")}
-              </pre>
+              <pre className="rounded-xl bg-background/80 p-2">{result.logs.join("\n")}</pre>
             ) : null}
-            {result?.output ? (
-              <pre className="rounded-xl bg-emerald-500/10 p-2">
-                {result.output}
-              </pre>
-            ) : null}
+            {result?.output ? <pre className="rounded-xl bg-emerald-500/10 p-2">{result.output}</pre> : null}
             {result?.error ? (
-              <pre className="rounded-xl bg-red-500/10 p-2 text-red-700">
-                {result.error}
-              </pre>
+              <pre className="rounded-xl bg-red-500/10 p-2 text-red-700">{result.error}</pre>
             ) : null}
-            {typeof result?.exitCode !== "undefined" ? (
-              <p>Code retour: {String(result.exitCode)}</p>
-            ) : null}
-            {result ? null : (
-              <p className="text-muted-foreground">
-                Aucun résultat pour le moment.
-              </p>
-            )}
+            {typeof result?.exitCode !== "undefined" ? <p>Code retour: {String(result.exitCode)}</p> : null}
+            {result ? null : <p className="text-muted-foreground">Aucun résultat pour le moment.</p>}
           </div>
 
           <div className="mt-4 grid gap-2">
             {features.map((item) => (
-              <div
-                className="flex items-center gap-2 text-xs text-muted-foreground"
-                key={item.label}
-              >
+              <div className="flex items-center gap-2 text-xs text-muted-foreground" key={item.label}>
                 <item.icon className="size-3.5" />
                 <span>{item.label}</span>
               </div>
             ))}
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <p className="flex items-center gap-1 text-xs font-semibold">
+              <Bookmark className="size-3.5" /> Snippets
+            </p>
+            <div className="max-h-24 space-y-1 overflow-auto pr-1">
+              {savedSnippets.slice(0, 6).map((snippet) => (
+                <button
+                  className="block w-full rounded-md border border-border/40 px-2 py-1 text-left text-[11px]"
+                  key={snippet.id}
+                  onClick={() => {
+                    setRuntime(snippet.runtime);
+                    setCode(snippet.sourceCode);
+                  }}
+                  type="button"
+                >
+                  {snippet.name}
+                </button>
+              ))}
+            </div>
+
+            <p className="flex items-center gap-1 pt-2 text-xs font-semibold">
+              <History className="size-3.5" /> Historique runs
+            </p>
+            <div className="max-h-32 space-y-1 overflow-auto pr-1">
+              {history.slice(0, 6).map((entry) => (
+                <button
+                  className="block w-full rounded-md border border-border/40 px-2 py-1 text-left text-[11px]"
+                  key={entry.createdAt}
+                  onClick={() => {
+                    setRuntime(entry.runtime);
+                    setCode(entry.sourceCode);
+                    setResult(entry.output);
+                  }}
+                  type="button"
+                >
+                  {runtimeLabels[entry.runtime]} · {new Date(entry.createdAt).toLocaleTimeString("fr-FR")}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
       </div>

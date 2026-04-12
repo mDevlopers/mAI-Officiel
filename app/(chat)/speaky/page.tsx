@@ -12,6 +12,7 @@ import {
   Waves,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocalStorage } from "usehooks-ts";
 import { toast } from "sonner";
 
 type SpeakyResponse = {
@@ -86,11 +87,22 @@ export default function SpeakyPage() {
     null
   );
   const [provider, setProvider] = useState<string | null>(null);
+  const [history, setHistory] = useLocalStorage<Array<{
+    createdAt: string;
+    text: string;
+    voice: string;
+    url: string;
+  }>>("mai.speaky.history.v1", []);
+  const [favoriteVoices, setFavoriteVoices] = useLocalStorage<string[]>(
+    "mai.speaky.favorite-voices.v1",
+    []
+  );
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentAudioUrlRef = useRef("");
   const bars = useMemo(() => generateWaveBars(), []);
   const cloudTextLength = text.trim().length;
+  const cloudUsagePercent = Math.min((cloudTextLength / 500) * 100, 100);
   const availableVoices = useMemo(
     () => VOICES_BY_LANGUAGE[language] ?? VOICES_BY_LANGUAGE.fr,
     [language]
@@ -168,6 +180,10 @@ export default function SpeakyPage() {
       setAudioUrl(nextUrl);
       setEstimatedDuration(payload.durationEstimateSec);
       setProvider(payload.provider);
+      setHistory([
+        { createdAt: new Date().toISOString(), text, voice, url: nextUrl },
+        ...history,
+      ].slice(0, 20));
       if (payload.selectedVoice) {
         setVoice(payload.selectedVoice);
       }
@@ -227,6 +243,23 @@ export default function SpeakyPage() {
     utterance.onend = () => setIsPlaying(false);
     utterance.onerror = () => setIsPlaying(false);
     window.speechSynthesis.speak(utterance);
+  };
+
+
+  const previewFiveSeconds = () => {
+    if (!audioRef.current || !audioUrl) {
+      toast.error("Générez un audio avant la pré-écoute.");
+      return;
+    }
+
+    audioRef.current.currentTime = 0;
+    audioRef.current.play().catch(() => {
+      // Ignore autoplay restrictions.
+    });
+
+    setTimeout(() => {
+      audioRef.current?.pause();
+    }, 5000);
   };
 
   const handleDownload = () => {
@@ -295,6 +328,12 @@ export default function SpeakyPage() {
           <p className="text-[11px] text-muted-foreground">
             Limite cloud: 500 caractères ({cloudTextLength}/500).
           </p>
+          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full transition-all ${cloudUsagePercent < 65 ? "bg-emerald-500" : cloudUsagePercent < 90 ? "bg-orange-500" : "bg-red-500"}`}
+              style={{ width: `${cloudUsagePercent}%` }}
+            />
+          </div>
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-xs">
@@ -415,6 +454,30 @@ export default function SpeakyPage() {
             </button>
             <button
               className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
+              onClick={previewFiveSeconds}
+              type="button"
+            >
+              <Play className="size-3.5" />
+              Pré-écoute 5s
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
+              onClick={() =>
+                setFavoriteVoices((current) =>
+                  current.includes(voice)
+                    ? current.filter((item) => item !== voice)
+                    : [voice, ...current]
+                )
+              }
+              type="button"
+            >
+              <Sparkles className="size-3.5" />
+              {favoriteVoices.includes(voice)
+                ? "Voix retirée des favoris"
+                : "Ajouter voix favorite"}
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
               onClick={() => {
                 audioRef.current?.pause();
                 if (speechSupport) {
@@ -472,6 +535,11 @@ export default function SpeakyPage() {
           {provider ? (
             <p className="mt-1 text-[11px]">Provider: {provider}</p>
           ) : null}
+          {favoriteVoices.length > 0 ? (
+            <p className="mt-1 text-[11px]">
+              Voix favorites: {favoriteVoices.join(", ")}
+            </p>
+          ) : null}
 
           {audioUrl ? (
             <>
@@ -518,6 +586,28 @@ export default function SpeakyPage() {
               Générez un audio pour activer l'aperçu et le téléchargement.
             </p>
           )}
+
+          <div className="mt-4 rounded-xl border border-border/50 bg-background/40 p-2">
+            <p className="mb-2 text-xs font-semibold text-foreground">
+              Historique des générations
+            </p>
+            <div className="max-h-28 space-y-1 overflow-auto">
+              {history.slice(0, 8).map((item) => (
+                <button
+                  className="block w-full rounded-md border border-border/40 px-2 py-1 text-left text-[11px]"
+                  key={`${item.createdAt}-${item.voice}`}
+                  onClick={() => {
+                    setText(item.text);
+                    setVoice(item.voice);
+                    setAudioUrl(item.url);
+                  }}
+                  type="button"
+                >
+                  {item.voice} · {new Date(item.createdAt).toLocaleTimeString("fr-FR")}
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
       </div>
     </div>

@@ -333,8 +333,10 @@ export async function POST(request: Request) {
       "textUtilities",
     ];
 
+    const forceWebSearch = contextualActions?.forceWebSearchEnabled === true;
+
     // Add web search tool if contextual action is enabled
-    if (contextualActions?.isWebSearchEnabled) {
+    if (contextualActions?.isWebSearchEnabled || forceWebSearch) {
       activeTools.push("webSearch");
     }
 
@@ -352,7 +354,11 @@ export async function POST(request: Request) {
               contextualActions?.isReasoningEnabled === true
                 ? contextualReasoningLevel
                 : undefined,
-          }),
+          }).concat(
+            forceWebSearch
+              ? "\n\n[Instruction système] La recherche web est obligatoire pour cette requête: appelle d'abord l'outil webSearch, puis réponds en t'appuyant sur ses résultats."
+              : ""
+          ),
           messages: modelMessages,
           stopWhen: stepCountIs(5),
           experimental_activeTools:

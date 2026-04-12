@@ -30,6 +30,7 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_ALTERNATE_SHORTCUT = "/"
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
@@ -90,8 +91,9 @@ function SidebarProvider({
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const pressed = event.key.toLowerCase()
       if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
+        (pressed === SIDEBAR_KEYBOARD_SHORTCUT || pressed === SIDEBAR_ALTERNATE_SHORTCUT) &&
         (event.metaKey || event.ctrlKey)
       ) {
         event.preventDefault()

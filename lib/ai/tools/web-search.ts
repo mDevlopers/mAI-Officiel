@@ -11,30 +11,53 @@ export const webSearch = tool({
   }),
   execute: async (input) => {
     try {
-      const apiKey = process.env.SERPAPI_API_KEY;
+      const apiKey = process.env.TAVILY_API_KEY;
       if (!apiKey) {
-        return { error: "Clé API SerpAPI non configurée." };
+        return { error: "Clé API Tavily non configurée." };
       }
 
-      const response = await fetch(
-        `https://serpapi.com/search.json?q=${encodeURIComponent(input.query)}&api_key=${apiKey}&engine=google`
-      );
+      const response = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: apiKey,
+          query: input.query,
+          max_results: 20,
+          include_answer: true,
+          include_raw_content: false,
+          search_depth: "advanced",
+        }),
+      });
 
       if (!response.ok) {
-        return { error: `Erreur SerpAPI: ${response.statusText}` };
+        return { error: `Erreur Tavily: ${response.statusText}` };
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        answer?: string;
+        query?: string;
+        results?: Array<{
+          content?: string;
+          score?: number;
+          title?: string;
+          url?: string;
+        }>;
+      };
 
-      // Extraction basique des résultats organiques
-      const organicResults = data.organic_results || [];
-      const results = organicResults.slice(0, 5).map((result: any) => ({
-        title: result.title,
-        link: result.link,
-        snippet: result.snippet,
+      const results = (data.results ?? []).slice(0, 20).map((result) => ({
+        score: result.score ?? 0,
+        snippet: result.content ?? "",
+        title: result.title ?? "Sans titre",
+        url: result.url ?? "",
       }));
 
-      return { results };
+      return {
+        answer: data.answer ?? "",
+        query: data.query ?? input.query,
+        results,
+      };
     } catch (error) {
       console.error("Web Search Tool Error:", error);
       return { error: "Échec de la recherche web." };

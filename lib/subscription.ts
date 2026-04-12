@@ -7,6 +7,7 @@ export type PlanLimits = {
   memoryUnits: number;
   messagesPerHour: number;
   taskSchedules: number;
+  webSearchesPerDay: number;
   newsSearchesPerDay: number;
   mealsSearchesPerDay: number;
   healthRequestsPerMonth: number;
@@ -32,6 +33,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       memoryUnits: 50,
       messagesPerHour: 20,
       taskSchedules: 2,
+      webSearchesPerDay: 10,
       newsSearchesPerDay: 3,
       mealsSearchesPerDay: 3,
       healthRequestsPerMonth: 5,
@@ -47,6 +49,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       memoryUnits: 75,
       messagesPerHour: 50,
       taskSchedules: 5,
+      webSearchesPerDay: 20,
       newsSearchesPerDay: 5,
       mealsSearchesPerDay: 5,
       healthRequestsPerMonth: 10,
@@ -63,6 +66,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       memoryUnits: 100,
       messagesPerHour: 75,
       taskSchedules: 10,
+      webSearchesPerDay: 35,
       newsSearchesPerDay: 10,
       mealsSearchesPerDay: 10,
       healthRequestsPerMonth: 15,
@@ -78,6 +82,7 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
       memoryUnits: 200,
       messagesPerHour: 100,
       taskSchedules: 20,
+      webSearchesPerDay: 50,
       newsSearchesPerDay: 20,
       mealsSearchesPerDay: 20,
       healthRequestsPerMonth: 25,

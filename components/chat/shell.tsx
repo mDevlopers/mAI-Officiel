@@ -32,6 +32,30 @@ import { submitEditedMessage } from "./message-editor";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 
+const TOKEN_USAGE_STORAGE_KEY = "mai.token-usage.v1";
+
+function incrementOutputTokens(text: string) {
+  if (typeof window === "undefined" || text.trim().length === 0) {
+    return;
+  }
+  const estimated = Math.max(1, Math.ceil(text.length / 4));
+  try {
+    const raw = window.localStorage.getItem(TOKEN_USAGE_STORAGE_KEY);
+    const parsed = raw
+      ? (JSON.parse(raw) as { inputTokens?: number; outputTokens?: number })
+      : {};
+    const next = {
+      inputTokens: Math.max(0, Math.floor(parsed.inputTokens ?? 0)),
+      outputTokens:
+        Math.max(0, Math.floor(parsed.outputTokens ?? 0)) + estimated,
+    };
+    window.localStorage.setItem(TOKEN_USAGE_STORAGE_KEY, JSON.stringify(next));
+    window.dispatchEvent(new Event("mai:token-usage-updated"));
+  } catch {
+    // ignore malformed storage
+  }
+}
+
 export function ChatShell() {
   const {
     chatId,
@@ -233,6 +257,11 @@ export function ChatShell() {
       latestAssistantMessage?.id &&
       latestAssistantMessage.id !== lastNotifiedAssistantIdRef.current
     ) {
+      const isGhostConversation =
+        sessionStorage.getItem("mai.ghost-chat-id") === chatId;
+      if (!isGhostConversation) {
+        incrementOutputTokens(latestAssistantText ?? "");
+      }
       createAiResponseNotification({
         phase: "completed",
         chatId,

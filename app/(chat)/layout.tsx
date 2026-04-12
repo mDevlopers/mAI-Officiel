@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { AppSidebar } from "@/components/chat/app-sidebar";
+import { ProductAnnouncements } from "@/components/chat/product-announcements";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import {
   SidebarInset,
@@ -39,6 +40,7 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
               "liquid-panel !text-foreground !shadow-[var(--shadow-float)]",
           }}
         />
+        <ProductAnnouncements />
         {children}
       </SidebarInset>
     </SidebarProvider>

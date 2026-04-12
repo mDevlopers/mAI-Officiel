@@ -1,4 +1,4 @@
-export type UsageFeature = "news" | "health" | "meals";
+export type UsageFeature = "news" | "health" | "meals" | "websearch";
 export type UsagePeriod = "hour" | "day" | "week" | "month";
 
 const USAGE_PREFIX = "mai.usage";

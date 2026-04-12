@@ -31,24 +31,28 @@ const highlightsByPlan: Record<PlanKey, string[]> = {
     "Idéal pour découvrir mAI",
     "Quiz illimités",
     "Jusqu'à 5 fichiers / jour",
+    "10 recherches web / jour",
   ],
   plus: [
     "50 messages / heure",
     "IA plus confortable au quotidien",
     "10 fichiers / jour",
     "Tâches planifiées avancées",
+    "20 recherches web / jour",
   ],
   pro: [
     "75 messages / heure",
     "Pour usage intensif et projets multi-modules",
     "20 fichiers / jour",
     "Mémoire IA renforcée",
+    "35 recherches web / jour",
   ],
   max: [
     "100 messages / heure",
     "Pour équipes et usages professionnels continus",
     "50 fichiers / jour",
     "Capacité maximale mAI",
+    "50 recherches web / jour",
   ],
 };
 
@@ -164,6 +168,7 @@ export default function PricingPage() {
                 </p>
                 <p>Fichiers: {planItem.limits.filesPerDay}/jour</p>
                 <p>Tâches planifiées: {planItem.limits.taskSchedules}</p>
+                <p>Recherche web: {planItem.limits.webSearchesPerDay}/jour</p>
               </div>
 
               <div className="mt-4 flex flex-col gap-2">

@@ -33,6 +33,8 @@ import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 type LibraryAssetType = "image" | "document";
 type LibraryAssetSource = "device" | "mai-library";
 type FilterMode = "all" | "favorites" | "recent";
+type ViewMode = "grid" | "list";
+type SortMode = "date" | "name";
 
 type LibraryAsset = {
   id: string;
@@ -80,6 +82,8 @@ export default function LibraryPage() {
   const [renamingAssetId, setRenamingAssetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [previewAsset, setPreviewAsset] = useState<LibraryAsset | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sortMode, setSortMode] = useState<SortMode>("date");
 
   const storageLimit = useMemo(() => {
     if (plan === "max") {
@@ -133,11 +137,15 @@ export default function LibraryPage() {
 
   const filteredAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    const sorted = [...assets].sort(
-      (a, b) =>
-        Number(b.pinned) - Number(a.pinned) ||
-        +new Date(b.createdAt) - +new Date(a.createdAt)
-    );
+    const sorted = [...assets].sort((a, b) => {
+      if (Number(b.pinned) !== Number(a.pinned)) {
+        return Number(b.pinned) - Number(a.pinned);
+      }
+      if (sortMode === "name") {
+        return a.name.localeCompare(b.name, "fr");
+      }
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    });
 
     const byFilter = sorted.filter((asset) => {
       if (filterMode === "favorites") {
@@ -160,7 +168,7 @@ export default function LibraryPage() {
         .toLowerCase()
         .includes(normalizedSearch)
     );
-  }, [assets, filterMode, searchTerm]);
+  }, [assets, filterMode, searchTerm, sortMode]);
 
   const handleImport = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -249,6 +257,23 @@ export default function LibraryPage() {
     setAssetToDelete(null);
   };
 
+
+  const handleDropImport = (files: FileList | null) => {
+    if (!files?.length) {
+      return;
+    }
+
+    const first = files[0];
+    if (!first) {
+      return;
+    }
+
+    const event = {
+      target: { files: [first], value: "" },
+    } as unknown as ChangeEvent<HTMLInputElement>;
+    handleImport(event);
+  };
+
   const handleOpenAsset = (asset: LibraryAsset) => {
     if (previewAsset?.id === asset.id) {
       setPreviewAsset(null);
@@ -300,10 +325,33 @@ export default function LibraryPage() {
         </div>
       </header>
 
-      <section className="rounded-2xl border border-border/60 bg-card/65 p-4 backdrop-blur-xl">
+      <section
+        className="rounded-2xl border border-border/60 bg-card/65 p-4 backdrop-blur-xl"
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          handleDropImport(event.dataTransfer.files);
+        }}
+      >
         <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>Recherche instantanée</span>
           <div className="flex items-center gap-2">
+            <select
+              className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px]"
+              onChange={(event) => setViewMode(event.target.value as ViewMode)}
+              value={viewMode}
+            >
+              <option value="grid">Vue grille</option>
+              <option value="list">Vue liste</option>
+            </select>
+            <select
+              className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px]"
+              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              value={sortMode}
+            >
+              <option value="date">Tri date</option>
+              <option value="name">Tri nom</option>
+            </select>
             <select
               className="h-7 rounded-lg border border-border/60 bg-background/60 px-2 text-[11px]"
               onChange={(event) =>
@@ -338,7 +386,13 @@ export default function LibraryPage() {
           />
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+              : "space-y-3"
+          }
+        >
           {filteredAssets.map((asset) => (
             <article
               className="liquid-glass rounded-2xl border border-border/50 bg-background/45 p-3"

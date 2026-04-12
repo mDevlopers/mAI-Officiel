@@ -39,6 +39,7 @@ export const postRequestBodySchema = z.object({
         .enum(["light", "moderate", "deep", "very-deep"])
         .optional(),
       isWebSearchEnabled: z.boolean().optional(),
+      forceWebSearchEnabled: z.boolean().optional(),
       isLearningEnabled: z.boolean().optional(),
     })
     .optional(),

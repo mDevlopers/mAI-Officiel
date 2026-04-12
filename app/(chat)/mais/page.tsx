@@ -7,6 +7,8 @@ import {
   PinOff,
   Plus,
   Sparkles,
+  Share2,
+  BarChart3,
   SquarePen,
   Trash2,
   UploadCloud,
@@ -14,7 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,7 @@ type MaiDraft = {
 };
 
 const MAI_PINNED_STORAGE_KEY = "mai.pinned.mai.ids";
+const MAI_USAGE_STORAGE_KEY = "mai.usage.by-id";
 
 const presets: MaiDraft[] = [
   {
@@ -105,6 +108,26 @@ function getPinnedIdsFromStorage(): string[] {
   }
 }
 
+function getUsageMapFromStorage(): Record<string, number> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = localStorage.getItem(MAI_USAGE_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    return Object.fromEntries(
+      Object.entries(parsed).filter((entry) => Number.isFinite(entry[1]))
+    );
+  } catch {
+    return {};
+  }
+}
+
 export default function MaisPage() {
   const router = useRouter();
   const {
@@ -118,6 +141,32 @@ export default function MaisPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pinnedIds, setPinnedIds] = useState<string[]>(getPinnedIdsFromStorage);
+  const [usageById, setUsageById] = useState<Record<string, number>>(
+    getUsageMapFromStorage
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const importRaw = params.get("import");
+    if (!importRaw) {
+      return;
+    }
+
+    try {
+      const imported = JSON.parse(decodeURIComponent(importRaw)) as MaiDraft;
+      setDraft({
+        avatarUrl: imported.avatarUrl ?? "",
+        description: imported.description ?? "",
+        instructions: imported.instructions ?? "",
+        model: imported.model ?? "openai/gpt-5.4",
+        name: imported.name ?? "",
+      });
+      setIsDialogOpen(true);
+      toast.success("Template importé depuis le lien partagé.");
+    } catch {
+      toast.error("Lien de partage invalide.");
+    }
+  }, []);
 
   const availableModels = useMemo(
     () =>
@@ -215,8 +264,37 @@ export default function MaisPage() {
     localStorage.setItem(MAI_PINNED_STORAGE_KEY, JSON.stringify(nextPinned));
   };
 
+
+  const incrementUsage = (agentId: string) => {
+    setUsageById((current) => {
+      const next = { ...current, [agentId]: (current[agentId] ?? 0) + 1 };
+      localStorage.setItem(MAI_USAGE_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const shareMai = async (agent: MaiAgent) => {
+    const importPayload = encodeURIComponent(
+      JSON.stringify({
+        name: agent.name,
+        description: agent.description,
+        instructions: agent.instructions,
+        model: agent.model,
+        avatarUrl: agent.avatarUrl,
+      })
+    );
+    const shareUrl = `${window.location.origin}/mais?import=${importPayload}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Lien de partage copié.");
+    } catch {
+      toast.error("Impossible de copier le lien de partage.");
+    }
+  };
   const connectMaiToChat = (agent: MaiAgent) => {
     const mention = `@${agent.name.replace(/\s+/g, "_")} `;
+    incrementUsage(agent.id);
     localStorage.setItem("input", mention);
     router.push("/");
     toast.success(
@@ -350,6 +428,9 @@ export default function MaisPage() {
                 <p className="line-clamp-2 text-xs text-muted-foreground">
                   {agent.description || "Aucune description"}
                 </p>
+                <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <BarChart3 className="size-3" /> Utilisations: {usageById[agent.id] ?? 0}
+                </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
@@ -371,6 +452,16 @@ export default function MaisPage() {
                     variant="outline"
                   >
                     <SquarePen className="mr-1 size-3.5" /> Éditer
+                  </Button>
+                  <Button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      shareMai(agent);
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Share2 className="mr-1 size-3.5" /> Partager
                   </Button>
                   <Button
                     className="text-destructive"
