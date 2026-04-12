@@ -449,6 +449,18 @@ const RenderWithToolbar = ({
   );
 };
 
+
+const INLINE_SUGGESTION_PREFIX = "mai-suggest:";
+
+const decodeSuggestionPrompt = (href: string) => {
+  const encoded = href.slice(INLINE_SUGGESTION_PREFIX.length);
+  try {
+    return decodeURIComponent(encoded).trim();
+  } catch {
+    return encoded.trim();
+  }
+};
+
 export const MessageResponse = memo(
   ({ className, children, ...props }: MessageResponseProps) => (
     <Streamdown
@@ -457,6 +469,41 @@ export const MessageResponse = memo(
         className
       )}
       components={{
+        a: ({ href = "", children: linkChildren, title }) => {
+          const isInlineSuggestion = href.startsWith(INLINE_SUGGESTION_PREFIX);
+
+          if (!isInlineSuggestion) {
+            return (
+              <a
+                className="underline decoration-border/70 underline-offset-4 transition-colors hover:text-foreground"
+                href={href}
+                rel="noreferrer"
+                target="_blank"
+                title={title}
+              >
+                {linkChildren}
+              </a>
+            );
+          }
+
+          return (
+            <button
+              className="inline cursor-pointer rounded-md border border-border/40 bg-muted/25 px-1 py-0.5 font-medium text-foreground underline decoration-primary/50 underline-offset-4 transition-all hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/10"
+              onClick={() => {
+                if (typeof window === "undefined") return;
+                const prompt = decodeSuggestionPrompt(href);
+                if (!prompt) return;
+                window.dispatchEvent(
+                  new CustomEvent("mai.inline-suggestion", { detail: { prompt } })
+                );
+              }}
+              title={title}
+              type="button"
+            >
+              {linkChildren}
+            </button>
+          );
+        },
         pre: ({ children: preChildren, ...preProps }) => (
           <RenderWithToolbar tag="pre" {...preProps}>
             {preChildren}
