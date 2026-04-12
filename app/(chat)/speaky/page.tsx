@@ -8,7 +8,7 @@ import {
   Square,
   Waves,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type SpeakyResponse = {
@@ -16,26 +16,98 @@ type SpeakyResponse = {
   contentType: string;
   durationEstimateSec: number;
   provider: string;
+  selectedVoice?: string;
+  suggestedVoices?: string[];
+};
+
+const LANGUAGE_OPTIONS = [
+  { code: "fr", label: "Français" },
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "de", label: "Deutsch" },
+  { code: "it", label: "Italiano" },
+  { code: "pt", label: "Português" },
+  { code: "nl", label: "Nederlands" },
+  { code: "pl", label: "Polski" },
+  { code: "tr", label: "Türkçe" },
+  { code: "sv", label: "Svenska" },
+  { code: "ru", label: "Русский" },
+  { code: "ar", label: "العربية" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "zh", label: "中文" },
+] as const;
+
+const VOICES_BY_LANGUAGE: Record<string, string[]> = {
+  ar: ["Zeina", "Hala"],
+  de: ["Marlene", "Vicki", "Hans"],
+  en: ["Brian", "Joanna", "Matthew", "Amy"],
+  es: ["Conchita", "Enrique", "Lucia"],
+  fr: ["Lea", "Mathieu", "Celine"],
+  hi: ["Aditi"],
+  it: ["Carla", "Bianca", "Giorgio"],
+  ja: ["Mizuki", "Takumi"],
+  ko: ["Seoyeon"],
+  nl: ["Lotte", "Ruben"],
+  pl: ["Ewa", "Maja", "Jacek"],
+  pt: ["Camila", "Vitoria", "Ricardo"],
+  ru: ["Tatyana", "Maxim"],
+  sv: ["Astrid"],
+  tr: ["Filiz"],
+  zh: ["Zhiyu"],
 };
 
 function generateWaveBars(seed = 24) {
   return Array.from({ length: seed }, (_, index) => index);
 }
 
+function getEffectiveRate(rate: number, tone: number) {
+  return Math.max(0.6, Math.min(2, rate * 2 ** (tone / 12)));
+}
+
 export default function SpeakyPage() {
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("fr");
+  const [voice, setVoice] = useState("Lea");
+  const [rate, setRate] = useState(1);
+  const [tone, setTone] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [estimatedDuration, setEstimatedDuration] = useState<number | null>(
     null
   );
+  const [provider, setProvider] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentAudioUrlRef = useRef("");
   const bars = useMemo(() => generateWaveBars(), []);
   const cloudTextLength = text.trim().length;
+  const availableVoices = useMemo(
+    () => VOICES_BY_LANGUAGE[language] ?? VOICES_BY_LANGUAGE.fr,
+    [language]
+  );
+  const effectiveRate = useMemo(
+    () => getEffectiveRate(rate, tone),
+    [rate, tone]
+  );
+
+  useEffect(() => {
+    if (!availableVoices.includes(voice)) {
+      setVoice(availableVoices[0]);
+    }
+  }, [availableVoices, voice]);
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      return;
+    }
+
+    audioRef.current.playbackRate = effectiveRate;
+    // @ts-expect-error Non-standard but supported in major Chromium/WebKit engines.
+    audioRef.current.preservesPitch = false;
+  }, [effectiveRate]);
 
   const generateCloudAudio = async () => {
     if (!text.trim()) {
@@ -43,8 +115,8 @@ export default function SpeakyPage() {
       return;
     }
 
-    if (cloudTextLength > 220) {
-      toast.error("Mode cloud limité à 220 caractères par génération.");
+    if (cloudTextLength > 500) {
+      toast.error("Mode cloud limité à 500 caractères par génération.");
       return;
     }
 
@@ -54,7 +126,7 @@ export default function SpeakyPage() {
       const response = await fetch("/api/speaky", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, language }),
+        body: JSON.stringify({ text, language, voice }),
       });
 
       const payload = (await response.json()) as SpeakyResponse & {
@@ -79,6 +151,11 @@ export default function SpeakyPage() {
 
       setAudioUrl(nextUrl);
       setEstimatedDuration(payload.durationEstimateSec);
+      setProvider(payload.provider);
+      if (payload.selectedVoice) {
+        setVoice(payload.selectedVoice);
+      }
+
       toast.success("Audio cloud généré avec succès.");
 
       setTimeout(() => {
@@ -159,23 +236,73 @@ export default function SpeakyPage() {
           />
 
           <p className="text-[11px] text-muted-foreground">
-            Limite cloud: 220 caractères par génération ({cloudTextLength}/220).
+            Limite cloud: 500 caractères ({cloudTextLength}/500).
           </p>
 
-          <label className="text-xs">
-            Langue
-            <select
-              className="mt-1 w-full rounded-lg border border-border/50 bg-background px-2 py-2 text-xs"
-              onChange={(event) => setLanguage(event.target.value)}
-              value={language}
-            >
-              <option value="fr">Français</option>
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="de">Deutsch</option>
-              <option value="it">Italiano</option>
-            </select>
-          </label>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="text-xs">
+              Langue
+              <select
+                className="mt-1 w-full rounded-lg border border-border/50 bg-background px-2 py-2 text-xs"
+                onChange={(event) => setLanguage(event.target.value)}
+                value={language}
+              >
+                {LANGUAGE_OPTIONS.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-xs">
+              Voix
+              <select
+                className="mt-1 w-full rounded-lg border border-border/50 bg-background px-2 py-2 text-xs"
+                onChange={(event) => setVoice(event.target.value)}
+                value={voice}
+              >
+                {availableVoices.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="text-xs">
+              Vitesse ({rate.toFixed(2)}x)
+              <input
+                className="mt-1 w-full"
+                max={1.6}
+                min={0.7}
+                onChange={(event) => setRate(Number(event.target.value))}
+                step={0.05}
+                type="range"
+                value={rate}
+              />
+            </label>
+
+            <label className="text-xs">
+              Ton ({tone > 0 ? `+${tone}` : tone})
+              <input
+                className="mt-1 w-full"
+                max={6}
+                min={-6}
+                onChange={(event) => setTone(Number(event.target.value))}
+                step={1}
+                type="range"
+                value={tone}
+              />
+            </label>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground">
+            Vitesse/ton appliqués au playback (taux effectif:{" "}
+            {effectiveRate.toFixed(2)}x).
+          </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -235,6 +362,9 @@ export default function SpeakyPage() {
             <p className="mt-1 text-[11px]">
               Durée estimée : ~{estimatedDuration}s
             </p>
+          ) : null}
+          {provider ? (
+            <p className="mt-1 text-[11px]">Provider: {provider}</p>
           ) : null}
 
           {audioUrl ? (

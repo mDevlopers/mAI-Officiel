@@ -10,7 +10,17 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-type Runtime = "python" | "javascript" | "bash";
+type Runtime =
+  | "python"
+  | "javascript"
+  | "typescript"
+  | "bash"
+  | "html"
+  | "c"
+  | "cpp"
+  | "go"
+  | "ruby"
+  | "php";
 
 type RuntimeFile = {
   contentBase64: string;
@@ -28,8 +38,41 @@ type ExecutionResponse = {
 const runtimeSnippets: Record<Runtime, string> = {
   python: `import csv\nfrom pathlib import Path\n\nrows = []\nfile = Path("data.csv")\nif file.exists():\n    with file.open() as f:\n        reader = csv.DictReader(f)\n        rows = list(reader)\n    print(f"Rows: {len(rows)}")\n    print(rows[:3])\nelse:\n    values = [2, 4, 6, 8]\n    print("Mean:", sum(values) / len(values))`,
   javascript: `import fs from "node:fs";\n\nif (fs.existsSync("data.csv")) {\n  const raw = fs.readFileSync("data.csv", "utf8");\n  const lines = raw.trim().split("\\n");\n  console.log("Rows:", Math.max(lines.length - 1, 0));\n  console.log(lines.slice(0, 3));\n} else {\n  const values = [2, 4, 6, 8];\n  const mean = values.reduce((acc, value) => acc + value, 0) / values.length;\n  console.log("Mean:", mean);\n}`,
+  typescript: `import fs from "node:fs";\n\nconst values = [2, 4, 6, 8];\nconst mean = values.reduce((acc, value) => acc + value, 0) / values.length;\nconsole.log("Mean:", mean);\n\nif (fs.existsSync("data.csv")) {\n  const rows = fs.readFileSync("data.csv", "utf8").trim().split("\\n").length - 1;\n  console.log("Rows:", Math.max(rows, 0));\n}`,
   bash: `#!/usr/bin/env bash\nset -euo pipefail\n\necho "Sandbox ready"\nif [[ -f "data.csv" ]]; then\n  echo "File data.csv detected"\n  head -n 5 data.csv\nelse\n  echo "No data.csv file found"\n  printf "2\\n4\\n6\\n8\\n" | awk '{sum+=$1; count+=1} END {printf "Mean: %.2f\\n", sum/count}'\nfi`,
+  html: `<!doctype html>\n<html lang="fr">\n  <head>\n    <meta charset="UTF-8" />\n    <title>Preview</title>\n  </head>\n  <body>\n    <h1>Hello Interpreter</h1>\n    <p>Ce runtime valide et prévisualise votre HTML.</p>\n  </body>\n</html>`,
+  c: `#include <stdio.h>\n\nint main(void) {\n  int values[] = {2, 4, 6, 8};\n  int total = 0;\n\n  for (int i = 0; i < 4; ++i) total += values[i];\n  printf("Mean: %.2f\\n", total / 4.0);\n  return 0;\n}`,
+  cpp: `#include <iostream>\n#include <vector>\n\nint main() {\n  std::vector<int> values{2, 4, 6, 8};\n  int total = 0;\n  for (const int value : values) total += value;\n  std::cout << "Mean: " << (total / static_cast<double>(values.size())) << "\\n";\n  return 0;\n}`,
+  go: `package main\n\nimport "fmt"\n\nfunc main() {\n  values := []int{2, 4, 6, 8}\n  total := 0\n  for _, value := range values {\n    total += value\n  }\n\n  fmt.Printf("Mean: %.2f\\n", float64(total)/float64(len(values)))\n}`,
+  ruby: `values = [2, 4, 6, 8]\nmean = values.sum.to_f / values.length\nputs "Mean: #{mean}"`,
+  php: `<?php\n$values = [2, 4, 6, 8];\n$mean = array_sum($values) / count($values);\necho "Mean: {$mean}\\n";\n`,
 };
+
+const runtimeLabels: Record<Runtime, string> = {
+  python: "Python",
+  javascript: "JavaScript",
+  typescript: "TypeScript",
+  bash: "Bash",
+  html: "HTML",
+  c: "C",
+  cpp: "C++",
+  go: "Go",
+  ruby: "Ruby",
+  php: "PHP",
+};
+
+const runtimeOrder: Runtime[] = [
+  "python",
+  "javascript",
+  "typescript",
+  "bash",
+  "html",
+  "c",
+  "cpp",
+  "go",
+  "ruby",
+  "php",
+];
 
 async function toRuntimeFile(file: File): Promise<RuntimeFile> {
   const buffer = await file.arrayBuffer();
@@ -96,32 +139,30 @@ export default function InterpreterPage() {
         <div>
           <h1 className="text-2xl font-semibold">Code Interpreter</h1>
           <p className="text-sm text-muted-foreground">
-            Sandbox isolé Python / JavaScript / Bash, exécutable en un clic.
+            Sandbox multi-langages: Python, JavaScript, TypeScript, Bash, HTML,
+            C, C++, Go, Ruby et PHP.
           </p>
         </div>
 
-        <div className="liquid-panel flex items-center gap-2 rounded-xl px-2 py-1">
-          {(["python", "javascript", "bash"] as Runtime[]).map((item) => (
-            <button
-              className={`rounded-lg px-3 py-1 text-xs ${
-                runtime === item
-                  ? "bg-black text-white"
-                  : "text-muted-foreground"
-              }`}
-              key={item}
-              onClick={() => {
-                setRuntime(item);
-                setCode(runtimeSnippets[item]);
+        <div className="liquid-panel rounded-xl px-3 py-2">
+          <label className="text-xs text-muted-foreground">
+            Runtime
+            <select
+              className="ml-2 rounded-lg border border-border/50 bg-background px-2 py-1 text-xs text-foreground"
+              onChange={(event) => {
+                const nextRuntime = event.target.value as Runtime;
+                setRuntime(nextRuntime);
+                setCode(runtimeSnippets[nextRuntime]);
               }}
-              type="button"
+              value={runtime}
             >
-              {item === "python"
-                ? "Python"
-                : item === "javascript"
-                  ? "JavaScript"
-                  : "Bash"}
-            </button>
-          ))}
+              {runtimeOrder.map((item) => (
+                <option key={item} value={item}>
+                  {runtimeLabels[item]}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
@@ -135,7 +176,7 @@ export default function InterpreterPage() {
 
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/50 px-3 py-2 text-xs text-muted-foreground">
             <Upload className="size-3.5" />
-            Ajouter CSV / Excel (les fichiers seront copiés dans le sandbox)
+            Ajouter CSV / Excel / TXT / JSON (copiés dans le sandbox)
             <input
               accept=".csv,.xlsx,.xls,.txt,.json"
               className="hidden"

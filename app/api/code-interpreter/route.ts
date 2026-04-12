@@ -11,11 +11,83 @@ const MAX_CODE_LENGTH = 60_000;
 const MAX_FILES = 5;
 const MAX_FILE_BYTES = 1_000_000;
 
-type Runtime = "python" | "javascript" | "bash";
+type Runtime =
+  | "python"
+  | "javascript"
+  | "typescript"
+  | "bash"
+  | "html"
+  | "c"
+  | "cpp"
+  | "go"
+  | "ruby"
+  | "php";
 
 type RuntimeFile = {
   contentBase64: string;
   name: string;
+};
+
+type RuntimeConfig = {
+  args: string[];
+  command: string;
+  entryFile: string;
+};
+
+const runtimeConfigs: Record<Runtime, RuntimeConfig> = {
+  python: {
+    command: "python3",
+    args: ["-I", "main.py"],
+    entryFile: "main.py",
+  },
+  javascript: {
+    command: "node",
+    args: ["main.mjs"],
+    entryFile: "main.mjs",
+  },
+  typescript: {
+    command: "node",
+    args: ["main.mts"],
+    entryFile: "main.mts",
+  },
+  bash: {
+    command: "bash",
+    args: ["main.sh"],
+    entryFile: "main.sh",
+  },
+  html: {
+    command: "bash",
+    args: [
+      "-lc",
+      "echo 'HTML preview (first 80 lines):'; sed -n '1,80p' main.html",
+    ],
+    entryFile: "main.html",
+  },
+  c: {
+    command: "bash",
+    args: ["-lc", "gcc main.c -O2 -std=c11 -o main && ./main"],
+    entryFile: "main.c",
+  },
+  cpp: {
+    command: "bash",
+    args: ["-lc", "g++ main.cpp -O2 -std=c++17 -o main && ./main"],
+    entryFile: "main.cpp",
+  },
+  go: {
+    command: "go",
+    args: ["run", "main.go"],
+    entryFile: "main.go",
+  },
+  ruby: {
+    command: "ruby",
+    args: ["main.rb"],
+    entryFile: "main.rb",
+  },
+  php: {
+    command: "php",
+    args: ["main.php"],
+    entryFile: "main.php",
+  },
 };
 
 function sanitizeFileName(input: string): string {
@@ -84,11 +156,7 @@ export async function POST(request: Request) {
     const code = body.code?.trim();
     const runtime = body.runtime;
 
-    if (
-      !code ||
-      !runtime ||
-      !["python", "javascript", "bash"].includes(runtime)
-    ) {
+    if (!code || !runtime || !runtimeConfigs[runtime]) {
       return NextResponse.json(
         { error: "Paramètres invalides" },
         { status: 400 }
@@ -135,25 +203,16 @@ export async function POST(request: Request) {
       await writeFile(join(sandboxDir, safeName), decoded);
     }
 
-    const entryFile =
-      runtime === "python"
-        ? "main.py"
-        : runtime === "javascript"
-          ? "main.mjs"
-          : "main.sh";
-    await writeFile(join(sandboxDir, entryFile), `${code}\n`);
-
-    const command =
-      runtime === "python"
-        ? "python3"
-        : runtime === "javascript"
-          ? "node"
-          : "bash";
-    const args = runtime === "python" ? ["-I", entryFile] : [entryFile];
+    const runtimeConfig = runtimeConfigs[runtime];
+    await writeFile(join(sandboxDir, runtimeConfig.entryFile), `${code}\n`);
 
     let execution: { code: number | null; stderr: string; stdout: string };
     try {
-      execution = await executeProcess(command, args, sandboxDir);
+      execution = await executeProcess(
+        runtimeConfig.command,
+        runtimeConfig.args,
+        sandboxDir
+      );
     } catch (error) {
       return NextResponse.json(
         {
@@ -161,8 +220,8 @@ export async function POST(request: Request) {
           output: "",
           error:
             error instanceof Error
-              ? `Impossible d'exécuter ${command}: ${error.message}`
-              : `Impossible d'exécuter ${command}`,
+              ? `Impossible d'exécuter ${runtimeConfig.command}: ${error.message}`
+              : `Impossible d'exécuter ${runtimeConfig.command}`,
           exitCode: 127,
           success: false,
         },
