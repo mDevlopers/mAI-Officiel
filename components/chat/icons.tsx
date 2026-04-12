@@ -291,7 +291,7 @@ export const BrandStarLogoIcon = ({ size = 28 }: { size?: number }) => {
     <Image
       alt="mAI Logo"
       height={size}
-      src="/mai-logo.svg"
+      src="/images/logo.png"
       style={{ objectFit: "contain", width: size, height: size }}
       width={size}
     />

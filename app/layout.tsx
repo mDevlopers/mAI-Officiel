@@ -11,9 +11,9 @@ export const metadata: Metadata = {
   title: "mAI",
   description: "mAI - assistant collaboratif et personnalisable.",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/images/logo.png",
+    shortcut: "/images/logo.png",
+    apple: "/images/logo.png",
   },
 };
 

@@ -5,16 +5,16 @@ import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import {
   ArrowUpIcon,
-  BotIcon,
   BrainIcon,
+  CircleHelpIcon,
   FilePenLineIcon,
   Ghost,
-  Globe2Icon,
   GraduationCapIcon,
   LockIcon,
   MicIcon,
   Paperclip,
   PlusIcon,
+  Puzzle,
   SearchIcon,
   Square,
 } from "lucide-react";
@@ -56,6 +56,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -107,6 +110,7 @@ const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const GHOST_CHAT_ID_STORAGE_KEY = "mai.ghost-chat-id";
 const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const TOKEN_USAGE_STORAGE_KEY = "mai.token-usage.v1";
+const PLUGIN_MODE_STORAGE_KEY = "mai.plugin-mode";
 const reflectionLevels: ReflectionLevel[] = [
   "light",
   "moderate",
@@ -114,32 +118,7 @@ const reflectionLevels: ReflectionLevel[] = [
   "very-deep",
 ];
 
-const toolMentionItems: MentionItem[] = [
-  {
-    id: "interpreter.python",
-    label: "@interpreter.python",
-    description: "Active l'interpréteur Python pour ce message.",
-    type: "tool",
-  },
-  {
-    id: "interpreter.javascript",
-    label: "@interpreter.javascript",
-    description: "Active l'interpréteur JavaScript pour ce message.",
-    type: "tool",
-  },
-  {
-    id: "plugin.audio-generator",
-    label: "@plugin.audio-generator",
-    description: "Active le plugin de génération audio.",
-    type: "tool",
-  },
-  {
-    id: "plugin.password-generator",
-    label: "@plugin.password-generator",
-    description: "Active le plugin de génération de mot de passe.",
-    type: "tool",
-  },
-];
+const toolMentionItems: MentionItem[] = [];
 
 function getPersistentMemoryFromLocalStorage(): string | undefined {
   if (typeof window === "undefined") {
@@ -648,27 +627,18 @@ function PureMultimodalInput({
         .join("\n\n")
         .trim();
 
-      const mentionMatches = Array.from(
-        prompt.matchAll(
-          /@(?:interpreter\.(python|javascript)|plugin\.(audio-generator|password-generator))/g
-        )
-      ).map((match) => match[0]);
-      const uniqueMentionMatches = [...new Set(mentionMatches)];
-      const toolContextBlock =
-        uniqueMentionMatches.length > 0
+      const pluginMode =
+        typeof window === "undefined"
+          ? "none"
+          : (localStorage.getItem(PLUGIN_MODE_STORAGE_KEY) ?? "none");
+      const pluginContextBlock =
+        pluginMode !== "none"
           ? [
-              "[Outils activés via @]",
-              ...uniqueMentionMatches.map((mention) => `- ${mention}`),
-              "Applique ces outils uniquement à ce message.",
+              "[Plugin activé via menu +]",
+              `- ${pluginMode}`,
+              "Applique uniquement ce plugin à cette requête.",
             ].join("\n")
           : "";
-      const promptWithoutToolMentions = prompt
-        .replace(
-          /@(?:interpreter\.(python|javascript)|plugin\.(audio-generator|password-generator))/g,
-          ""
-        )
-        .replace(/\s{2,}/g, " ")
-        .trim();
       const forcedWebSearchBlock = forceWebSearchEnabled
         ? [
             "[RECHERCHE WEB OBLIGATOIRE]",
@@ -690,18 +660,14 @@ function PureMultimodalInput({
             type: "text",
             text: extractedFileContext
               ? `${forcedWebSearchBlock ? `${forcedWebSearchBlock}\n\n` : ""}${
-                  toolContextBlock ? `${toolContextBlock}\n\n` : ""
-                }${
-                  promptWithoutToolMentions || prompt
-                }
+                  pluginContextBlock ? `${pluginContextBlock}\n\n` : ""
+                }${prompt}
 
 [Contexte extrait des fichiers]
 ${extractedFileContext}`
               : `${forcedWebSearchBlock ? `${forcedWebSearchBlock}\n\n` : ""}${
-                  toolContextBlock ? `${toolContextBlock}\n\n` : ""
-                }${
-                  promptWithoutToolMentions || prompt
-                }`,
+                  pluginContextBlock ? `${pluginContextBlock}\n\n` : ""
+                }${prompt}`,
           },
         ],
         // @ts-expect-error - appending to experimental body to be picked up by useChat
@@ -733,7 +699,7 @@ ${extractedFileContext}`
         setIsGhostModeArmed(false);
         setIsGhostConversation(true);
       } else {
-        incrementInputTokens(promptWithoutToolMentions || prompt);
+        incrementInputTokens(prompt);
       }
 
       setAttachments([]);
@@ -1320,6 +1286,10 @@ function PureContextualActionsMenu({
     "mai-learning-enabled",
     false
   );
+  const [selectedPlugin, setSelectedPlugin] = useLocalStorage<string>(
+    PLUGIN_MODE_STORAGE_KEY,
+    "none"
+  );
   const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
   const [quizDifficulty, setQuizDifficulty] = useState("moyen");
   const [reasoningLevel, setReasoningLevel] = useLocalStorage<ReflectionLevel>(
@@ -1349,6 +1319,9 @@ function PureContextualActionsMenu({
   }
   if (isLearningEnabled) {
     selectedActions.push("Apprentissage");
+  }
+  if (selectedPlugin !== "none") {
+    selectedActions.push(`Plugin: ${selectedPlugin}`);
   }
 
   const canUseDeepReflection = plan === "pro" || plan === "max";
@@ -1574,7 +1547,7 @@ function PureContextualActionsMenu({
           onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
           variant="ghost"
         >
-          <Globe2Icon
+          <SearchIcon
             className={
               isWebSearchEnabled ? "text-primary" : "text-muted-foreground"
             }
@@ -1596,7 +1569,7 @@ function PureContextualActionsMenu({
           }}
           variant="ghost"
         >
-          <Globe2Icon
+          <SearchIcon
             className={
               forceWebSearchEnabled ? "text-primary" : "text-muted-foreground"
             }
@@ -1604,6 +1577,45 @@ function PureContextualActionsMenu({
           />
           Recherche web
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
+              variant="ghost"
+            >
+              <Puzzle className="text-muted-foreground" size={16} />
+              Plugins
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-60 bg-white text-black"
+            sideOffset={4}
+          >
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>Activer un plugin</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="bg-white text-black">
+                {[
+                  "none",
+                  "interpreter.python",
+                  "interpreter.javascript",
+                  "plugin.audio-generator",
+                  "plugin.password-generator",
+                ].map((pluginId) => (
+                  <DropdownMenuItem
+                    key={pluginId}
+                    onClick={() => {
+                      setSelectedPlugin(pluginId);
+                      setOpen(false);
+                    }}
+                  >
+                    {pluginId === "none" ? "Aucun plugin" : pluginId}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <Button
           className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
@@ -1613,7 +1625,7 @@ function PureContextualActionsMenu({
           }}
           variant="ghost"
         >
-          <BotIcon className="text-muted-foreground" size={16} />
+          <CircleHelpIcon className="text-muted-foreground" size={16} />
           Quiz
         </Button>
 
