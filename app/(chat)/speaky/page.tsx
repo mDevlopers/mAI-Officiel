@@ -14,26 +14,23 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type VoiceGender = "male" | "female";
-type OpenAIVoice = "alloy" | "aria" | "verse";
 
 type SpeakyResponse = {
   audioBase64: string;
   contentType: string;
   durationEstimateSec: number;
-  voice: OpenAIVoice;
+  provider: string;
 };
 
-function generateWaveBars(seed = 18) {
+function generateWaveBars(seed = 24) {
   return Array.from({ length: seed }, (_, index) => index);
 }
 
 export default function SpeakyPage() {
   const [text, setText] = useState("");
-  const [style, setStyle] = useState("voix chaleureuse et professionnelle");
   const [rate, setRate] = useState(1);
   const [pitch, setPitch] = useState(1);
   const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
-  const [openAiVoice, setOpenAiVoice] = useState<OpenAIVoice>("aria");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
@@ -42,6 +39,7 @@ export default function SpeakyPage() {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentAudioUrlRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -57,11 +55,11 @@ export default function SpeakyPage() {
 
     return () => {
       window.speechSynthesis.onvoiceschanged = null;
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      if (currentAudioUrlRef.current) {
+        URL.revokeObjectURL(currentAudioUrlRef.current);
       }
     };
-  }, [audioUrl]);
+  }, []);
 
   const browserVoices = useMemo(() => {
     return availableVoices.filter((voice) => {
@@ -72,7 +70,8 @@ export default function SpeakyPage() {
     });
   }, [availableVoices, voiceGender]);
 
-  const bars = useMemo(() => generateWaveBars(24), []);
+  const bars = useMemo(() => generateWaveBars(), []);
+  const cloudTextLength = text.trim().length;
 
   const playBrowserSpeech = () => {
     if (typeof window === "undefined" || !text.trim()) {
@@ -101,6 +100,11 @@ export default function SpeakyPage() {
       return;
     }
 
+    if (cloudTextLength > 220) {
+      toast.error("Mode cloud limité à 220 caractères par génération.");
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
@@ -109,9 +113,7 @@ export default function SpeakyPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text,
-          style,
-          voice: openAiVoice,
-          speed: rate,
+          language: "fr",
         }),
       });
 
@@ -126,13 +128,14 @@ export default function SpeakyPage() {
       const blob = new Blob([bytes], { type: payload.contentType || "audio/mpeg" });
       const nextUrl = URL.createObjectURL(blob);
 
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      if (currentAudioUrlRef.current) {
+        URL.revokeObjectURL(currentAudioUrlRef.current);
       }
+      currentAudioUrlRef.current = nextUrl;
 
       setAudioUrl(nextUrl);
       setEstimatedDuration(payload.durationEstimateSec);
-      toast.success("Audio généré avec succès.");
+      toast.success("Audio généré avec succès (sans clé API). ");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur de génération audio");
     } finally {
@@ -189,13 +192,13 @@ export default function SpeakyPage() {
         <div>
           <h1 className="text-2xl font-semibold">Speaky</h1>
           <p className="text-sm text-muted-foreground">
-            Studio vocal Liquid Glass: génération cloud, écoute instantanée, export et archivage.
+            Studio vocal Liquid Glass: animation, export MP3, ajout bibliothèque, sans OpenAI key.
           </p>
         </div>
         <div className="liquid-panel rounded-xl px-3 py-2 text-xs text-muted-foreground">
           <p className="inline-flex items-center gap-2">
             <Sparkles className="size-3.5" />
-            Mode {useCloudVoice ? "Cloud TTS" : "Web Speech local"}
+            Mode {useCloudVoice ? "Cloud public" : "Web Speech local"}
           </p>
         </div>
       </header>
@@ -209,12 +212,11 @@ export default function SpeakyPage() {
             value={text}
           />
 
-          <input
-            className="h-10 w-full rounded-xl border border-border/40 bg-background/70 px-3 text-xs"
-            onChange={(event) => setStyle(event.target.value)}
-            placeholder="Style vocal (ex: dynamique, posé, institutionnel...)"
-            value={style}
-          />
+          {useCloudVoice && (
+            <p className="text-[11px] text-muted-foreground">
+              Limite cloud: 220 caractères par génération ({cloudTextLength}/220).
+            </p>
+          )}
 
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-xs">
@@ -250,7 +252,7 @@ export default function SpeakyPage() {
               onClick={() => setUseCloudVoice(true)}
               type="button"
             >
-              Cloud TTS
+              Cloud public
             </button>
             <button
               className={`rounded-lg border px-3 py-1 text-xs ${!useCloudVoice ? "bg-black text-white" : "text-muted-foreground"}`}
@@ -279,17 +281,7 @@ export default function SpeakyPage() {
             ))}
           </div>
 
-          {useCloudVoice ? (
-            <select
-              className="h-9 w-full rounded-xl border border-border/40 bg-background/70 px-3 text-xs"
-              onChange={(event) => setOpenAiVoice(event.target.value as OpenAIVoice)}
-              value={openAiVoice}
-            >
-              <option value="aria">Aria (naturelle)</option>
-              <option value="alloy">Alloy (neutre)</option>
-              <option value="verse">Verse (narration)</option>
-            </select>
-          ) : (
+          {!useCloudVoice && (
             <p className="text-xs text-muted-foreground">
               Voix locale détectée : {browserVoices[0]?.name ?? "par défaut navigateur"}
             </p>
