@@ -85,7 +85,7 @@ export function NotificationCenter() {
               type="button"
             >
               <p className="flex items-center gap-1 text-[11px] font-medium text-sidebar-foreground">
-                <Circle className="size-2.5 fill-current" />
+                <Circle className={cn("size-2.5", !item.read && "fill-current")} />
                 {item.title}
                 <span className={cn("rounded px-1", levelBadge(item.level))}>
                   {item.level}

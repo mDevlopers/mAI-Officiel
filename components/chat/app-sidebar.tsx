@@ -3,10 +3,14 @@
 import {
   BookOpenIcon,
   BotIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   CreditCardIcon,
   FolderIcon,
+  LayoutGridIcon,
   LanguagesIcon,
   PenSquareIcon,
+  PuzzleIcon,
   SearchIcon,
   Settings2Icon,
   TerminalSquareIcon,
@@ -35,6 +39,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -62,12 +69,21 @@ const QUICK_LINKS = [
   { href: "/pricing", label: "Tarifs", icon: CreditCardIcon },
 ] as const;
 
+const APPLICATION_LINKS = [
+  { href: "/mais", label: "Humanizy", icon: BotIcon },
+  { href: "/speaky", label: "Speaky", icon: Volume2Icon },
+  { href: "/translation", label: "Traduction", icon: LanguagesIcon },
+  { href: "/studio", label: "Studio", icon: TerminalSquareIcon },
+  { href: "/plugins", label: "Plugins", icon: PuzzleIcon },
+] as const;
+
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [applicationsOpen, setApplicationsOpen] = useState(true);
   const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const closeMobileSidebar = () => {
@@ -99,10 +115,15 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   }, [normalizedGlobalQuery]);
 
   const featuredLinks = useMemo(() => {
-    const order = ["mAIs", "Projets", "Code", "Speaky", "Bibliothèque"] as const;
+    const order = ["Projets", "Bibliothèque"] as const;
     return order
       .map((label) => QUICK_LINKS.find((item) => item.label === label))
       .filter((item) => item !== undefined);
+  }, []);
+
+  const isApplicationActive = useMemo(() => {
+    const path = window.location.pathname;
+    return APPLICATION_LINKS.some(app => path.startsWith(app.href));
   }, []);
 
   const handleDeleteAll = async () => {
@@ -192,20 +213,56 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {featuredLinks.map((item) => (
-                  <SidebarMenuItem key={`featured-${item.label}`}>
-                    <SidebarMenuButton
-                      asChild
-                      className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      tooltip={item.label}
-                    >
-                      <Link href={item.href} onClick={closeMobileSidebar}>
-                        <item.icon className="size-3.5" />
-                        <span className="font-medium">{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                 {/* Applications Menu */}
+                 <SidebarMenuItem>
+                   <SidebarMenuButton
+                     onClick={() => setApplicationsOpen(!applicationsOpen)}
+                     className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                     tooltip="Applications"
+                     isActive={isApplicationActive}
+                   >
+                     <LayoutGridIcon className="size-3.5" />
+                     <span className="font-medium">Applications</span>
+                     {applicationsOpen ? (
+                       <ChevronDownIcon className="ml-auto size-3 opacity-70" />
+                     ) : (
+                       <ChevronRightIcon className="ml-auto size-3 opacity-70" />
+                     )}
+                   </SidebarMenuButton>
+
+                   {applicationsOpen && (
+                     <SidebarMenuSub>
+                       {APPLICATION_LINKS.map((item) => (
+                         <SidebarMenuSubItem key={`app-${item.label}`}>
+                           <SidebarMenuSubButton
+                             asChild
+                             isActive={typeof window !== 'undefined' && window.location.pathname === item.href}
+                           >
+                             <Link href={item.href} onClick={closeMobileSidebar}>
+                               <item.icon className="size-3.5" />
+                               <span className="text-[12px]">{item.label}</span>
+                             </Link>
+                           </SidebarMenuSubButton>
+                         </SidebarMenuSubItem>
+                       ))}
+                     </SidebarMenuSub>
+                   )}
+                 </SidebarMenuItem>
+
+                 {featuredLinks.map((item) => (
+                   <SidebarMenuItem key={`featured-${item.label}`}>
+                     <SidebarMenuButton
+                       asChild
+                       className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                       tooltip={item.label}
+                     >
+                       <Link href={item.href} onClick={closeMobileSidebar}>
+                         <item.icon className="size-3.5" />
+                         <span className="font-medium">{item.label}</span>
+                       </Link>
+                     </SidebarMenuButton>
+                   </SidebarMenuItem>
+                 ))}
 
                 {quickLinks.map((item) => (
                   <SidebarMenuItem key={`quick-${item.href}`}>

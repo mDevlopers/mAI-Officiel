@@ -1,19 +1,12 @@
 "use client";
 
-import { BookOpen, Languages, RefreshCcw, SendHorizonal } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { BookOpen, Languages, RefreshCcw, SendHorizonal, Check, ChevronDown, Globe } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-
-const languageOptions = [
-  { code: "auto", label: "Détecter la langue" },
-  { code: "fr", label: "Français" },
-  { code: "en", label: "Anglais" },
-  { code: "es", label: "Espagnol" },
-  { code: "de", label: "Allemand" },
-  { code: "ar", label: "Arabe" },
-  { code: "it", label: "Italien" },
-  { code: "pt", label: "Portugais" },
-];
+import { supportedLanguages, getLanguageByCode } from "@/lib/i18n/languages";
+import { detectLanguage } from "@/lib/i18n/detection";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const synonymsMap: Record<string, string[]> = {
   bug: ["anomalie", "défaut", "erreur"],
@@ -21,6 +14,8 @@ const synonymsMap: Record<string, string[]> = {
   code: ["script", "source", "implémentation"],
   sécurité: ["protection", "fiabilité", "robustesse"],
 };
+
+const translationCache = new Map<string, string>();
 
 export default function TranslationPage() {
   const [sourceText, setSourceText] = useState("");
@@ -32,29 +27,85 @@ export default function TranslationPage() {
   const [isGeneratingLexicalAnalysis, setIsGeneratingLexicalAnalysis] =
     useState(false);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastRequestRef = useRef("");
+
   useEffect(() => {
-    if (!sourceText.trim()) {
+    const trimmedText = sourceText.trim();
+    if (!trimmedText) {
       setTranslatedText("");
       return;
     }
 
+    const cacheKey = `${trimmedText}:${sourceLanguage}:${targetLanguage}`;
+    
+    if (translationCache.has(cacheKey)) {
+      setTranslatedText(translationCache.get(cacheKey)!);
+      setIsTranslating(false);
+      return;
+    }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     const timer = setTimeout(async () => {
+      if (lastRequestRef.current === cacheKey) return;
+      lastRequestRef.current = cacheKey;
+
       setIsTranslating(true);
+      abortControllerRef.current = new AbortController();
+
       try {
-        const langPair = `${sourceLanguage === "auto" ? "fr" : sourceLanguage}|${targetLanguage}`;
+        let effectiveSourceLang = sourceLanguage;
+
+        if (sourceLanguage === "auto") {
+          const detection = detectLanguage(trimmedText);
+          if (detection.reliable) {
+            effectiveSourceLang = detection.detectedLanguage;
+          }
+        }
+
+        const langPair = `${effectiveSourceLang === "auto" ? "fr" : effectiveSourceLang}|${targetLanguage}`;
         const response = await fetch(
-          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(sourceText)}&langpair=${langPair}`
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmedText)}&langpair=${langPair}&de=contact@example.com`,
+          { signal: abortControllerRef.current.signal }
         );
         const payload = await response.json();
-        setTranslatedText(payload?.responseData?.translatedText ?? "");
-      } catch {
-        setTranslatedText("La traduction a échoué. Vérifiez votre connexion.");
-      } finally {
-        setIsTranslating(false);
-      }
-    }, 450);
 
-    return () => clearTimeout(timer);
+        let translated = payload?.responseData?.translatedText ?? "";
+
+        // Contextual improvements
+        const targetLang = getLanguageByCode(targetLanguage);
+        if (targetLang?.rtl) {
+          translated = `\u200F${translated}\u200E`;
+        }
+
+        // Remove common translation artifacts
+        translated = translated.replace(/\[.*?\]/g, "").trim();
+
+        translationCache.set(cacheKey, translated);
+        if (translationCache.size > 100) {
+          const firstKey = translationCache.keys().next().value;
+          if (firstKey) translationCache.delete(firstKey);
+        }
+
+        setTranslatedText(translated);
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setTranslatedText("La traduction a échoué. Vérifiez votre connexion.");
+        }
+      } finally {
+        if (!abortControllerRef.current?.signal.aborted) {
+          setIsTranslating(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timer);
+      abortControllerRef.current?.abort();
+    };
   }, [sourceLanguage, sourceText, targetLanguage]);
 
   const lexicalAnalysis = useMemo(() => {
@@ -140,19 +191,45 @@ export default function TranslationPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="liquid-glass flex flex-col space-y-3 rounded-xl border border-border p-4">
-          <div className="border-b border-border pb-3">
-            <select
-              className="h-8 rounded-full border border-border/40 bg-background/50 px-3 text-xs text-muted-foreground"
-              onChange={(e) => setSourceLanguage(e.target.value)}
-              value={sourceLanguage}
-            >
-              {languageOptions.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.label}
-                </option>
-              ))}
-            </select>
-          </div>
+           <div className="border-b border-border pb-3">
+             <Popover>
+               <PopoverTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   className="w-full justify-between rounded-full border border-border/40 bg-background/50 h-8 px-3 text-xs text-muted-foreground font-normal"
+                 >
+                   <span className="flex items-center gap-2">
+                     <span className="text-base">{getLanguageByCode(sourceLanguage)?.flag}</span>
+                     {getLanguageByCode(sourceLanguage)?.label}
+                   </span>
+                   <ChevronDown className="size-3 opacity-50" />
+                 </Button>
+               </PopoverTrigger>
+               <PopoverContent className="w-64 p-0" align="start">
+                 <Command>
+                   <CommandInput placeholder="Rechercher une langue..." />
+                   <CommandList>
+                     <CommandEmpty>Aucune langue trouvée</CommandEmpty>
+                     <CommandGroup>
+                       {supportedLanguages.map((lang) => (
+                         <CommandItem
+                           key={lang.code}
+                           value={lang.code}
+                           onSelect={() => setSourceLanguage(lang.code)}
+                           className="text-sm"
+                         >
+                           <span className="mr-2 text-base">{lang.flag}</span>
+                           <span>{lang.label}</span>
+                           <span className="ml-auto text-xs text-muted-foreground">{lang.nativeName}</span>
+                           {sourceLanguage === lang.code && <Check className="ml-2 size-3" />}
+                         </CommandItem>
+                       ))}
+                     </CommandGroup>
+                   </CommandList>
+                 </Command>
+               </PopoverContent>
+             </Popover>
+           </div>
           <textarea
             className="h-48 resize-none bg-transparent p-2 text-base outline-none md:h-64"
             onChange={(e) => setSourceText(e.target.value)}
@@ -162,21 +239,45 @@ export default function TranslationPage() {
         </div>
 
         <div className="liquid-glass flex flex-col space-y-3 rounded-xl border border-border bg-muted/20 p-4">
-          <div className="border-b border-border pb-3">
-            <select
-              className="h-8 rounded-full border border-border/40 bg-background/50 px-3 text-xs text-muted-foreground"
-              onChange={(e) => setTargetLanguage(e.target.value)}
-              value={targetLanguage}
-            >
-              {languageOptions
-                .filter((lang) => lang.code !== "auto")
-                .map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </option>
-                ))}
-            </select>
-          </div>
+           <div className="border-b border-border pb-3">
+             <Popover>
+               <PopoverTrigger asChild>
+                 <Button
+                   variant="ghost"
+                   className="w-full justify-between rounded-full border border-border/40 bg-background/50 h-8 px-3 text-xs text-muted-foreground font-normal"
+                 >
+                   <span className="flex items-center gap-2">
+                     <span className="text-base">{getLanguageByCode(targetLanguage)?.flag}</span>
+                     {getLanguageByCode(targetLanguage)?.label}
+                   </span>
+                   <ChevronDown className="size-3 opacity-50" />
+                 </Button>
+               </PopoverTrigger>
+               <PopoverContent className="w-64 p-0" align="start">
+                 <Command>
+                   <CommandInput placeholder="Rechercher une langue..." />
+                   <CommandList>
+                     <CommandEmpty>Aucune langue trouvée</CommandEmpty>
+                     <CommandGroup>
+                       {supportedLanguages.filter(lang => lang.code !== "auto").map((lang) => (
+                         <CommandItem
+                           key={lang.code}
+                           value={lang.code}
+                           onSelect={() => setTargetLanguage(lang.code)}
+                           className="text-sm"
+                         >
+                           <span className="mr-2 text-base">{lang.flag}</span>
+                           <span>{lang.label}</span>
+                           <span className="ml-auto text-xs text-muted-foreground">{lang.nativeName}</span>
+                           {targetLanguage === lang.code && <Check className="ml-2 size-3" />}
+                         </CommandItem>
+                       ))}
+                     </CommandGroup>
+                   </CommandList>
+                 </Command>
+               </PopoverContent>
+             </Popover>
+           </div>
           <div className="h-48 overflow-y-auto p-2 text-base md:h-64">
             {isTranslating ? (
               <span className="text-muted-foreground italic">

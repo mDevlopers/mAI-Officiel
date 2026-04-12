@@ -15,12 +15,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { text } = await generateText({
-      model: getLanguageModel("openai/gpt-5.4-nano"),
-      system:
-        "Tu es un assistant linguistique. Donne une analyse lexicale courte (4 phrases max), claire et actionnable.",
-      prompt: `Analyse ce texte traduit en français simple: ${parsed.data.text}`,
-    });
+     const { text } = await generateText({
+       model: getLanguageModel("openai/gpt-5.4-nano"),
+       temperature: 0.2,
+       system:
+         "Tu es un assistant linguistique expert. Donne une analyse lexicale courte (max 4 phrases), précise et contextuelle. Corrige les erreurs de syntaxe, explique le registre, et mentionne toute ambiguïté.",
+       prompt: `Analyse ce texte traduit. Identifie: registre, qualité de traduction, erreurs potentielles, suggestions d'amélioration: ${parsed.data.text}`,
+     });
 
     return NextResponse.json({ analysis: text.trim() });
   } catch {

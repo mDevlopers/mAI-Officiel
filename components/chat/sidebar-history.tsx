@@ -4,7 +4,7 @@ import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import useSWRInfinite from "swr/infinite";
@@ -133,12 +133,12 @@ export function SidebarHistory({
   } = useSWRInfinite<ChatHistory>(
     user ? getChatHistoryPaginationKey : () => null,
     fetcher,
-    { fallbackData: [], revalidateOnFocus: false }
+    { fallbackData: [], revalidateOnFocus: false, revalidateOnReconnect: false }
   );
   const { data: projects = [] } = useSWR<Project[]>(
     user ? `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/projects` : null,
     fetcher,
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnReconnect: false, dedupingInterval: 300000 }
   );
 
   const router = useRouter();
@@ -198,7 +198,7 @@ export function SidebarHistory({
     ? paginatedChatHistories.every((page) => page.chats.length === 0)
     : false;
 
-  const handleRename = async (chatId: string, title: string) => {
+  const handleRename = useCallback(async (chatId: string, title: string) => {
     mutate(
       (chatHistories) => {
         if (!chatHistories) {
@@ -221,18 +221,18 @@ export function SidebarHistory({
     });
 
     toast.success("Titre de la discussion mis à jour");
-  };
+  }, [mutate]);
 
-  const handlePin = (chatId: string) => {
+  const handlePin = useCallback((chatId: string) => {
     setPinnedChatIds((currentIds) =>
       currentIds.includes(chatId)
         ? currentIds.filter((id) => id !== chatId)
         : [chatId, ...currentIds]
     );
     toast.success("Épinglage mis à jour");
-  };
+  }, []);
 
-  const handleReport = (chatId: string) => {
+  const handleReport = useCallback((chatId: string) => {
     const currentReports = parseLocalStorageArray("mai.reports.chats");
     currentReports.unshift({
       chatId,
@@ -242,9 +242,9 @@ export function SidebarHistory({
     });
     localStorage.setItem("mai.reports.chats", JSON.stringify(currentReports));
     toast.success("Conversation signalée");
-  };
+  }, []);
 
-  const handleAssignProject = async (chatId: string, projectId: string) => {
+  const handleAssignProject = useCallback(async (chatId: string, projectId: string) => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/projects/${projectId}/chats`,
       {
@@ -261,9 +261,9 @@ export function SidebarHistory({
 
     mutate();
     toast.success("Discussion ajoutée au projet.");
-  };
+  }, [mutate]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     const chatToDelete = deleteId;
     const isCurrentChat = pathname === `/chat/${chatToDelete}`;
 
@@ -288,7 +288,7 @@ export function SidebarHistory({
     );
 
     toast.success("Discussion supprimée");
-  };
+  }, [deleteId, pathname, router, mutate]);
 
   const renderChatSection = (label: string, chats: Chat[]) => {
     if (chats.length === 0) {

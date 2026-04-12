@@ -7,9 +7,13 @@ import {
   Play,
   Square,
   Waves,
+  MicVocal,
+  Volume2,
+  Settings2,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { useWebSpeech } from "@/hooks/use-web-speech";
 
 type SpeakyResponse = {
   audioBase64: string;
@@ -18,6 +22,28 @@ type SpeakyResponse = {
   provider: string;
   selectedVoice?: string;
   suggestedVoices?: string[];
+};
+
+type VoiceStyle = "neutral" | "conversational" | "formal" | "excited" | "calm" | "narration";
+
+const VOICE_STYLES: { id: VoiceStyle; label: string }[] = [
+  { id: "neutral", label: "Neutre" },
+  { id: "conversational", label: "Conversationnel" },
+  { id: "formal", label: "Formel" },
+  { id: "excited", label: "Enthousiaste" },
+  { id: "calm", label: "Calme" },
+  { id: "narration", label: "Narration" },
+];
+
+const getStyleModifiers = (style: VoiceStyle) => {
+  switch (style) {
+    case "conversational": return { pitch: 0.95, rate: 1.05, volume: 1.0 };
+    case "formal": return { pitch: 0.9, rate: 0.95, volume: 0.95 };
+    case "excited": return { pitch: 1.15, rate: 1.1, volume: 1.05 };
+    case "calm": return { pitch: 0.85, rate: 0.85, volume: 0.9 };
+    case "narration": return { pitch: 1.0, rate: 0.9, volume: 1.0 };
+    default: return { pitch: 1.0, rate: 1.0, volume: 1.0 };
+  }
 };
 
 const LANGUAGE_OPTIONS = [
@@ -72,6 +98,9 @@ export default function SpeakyPage() {
   const [voice, setVoice] = useState("Lea");
   const [rate, setRate] = useState(1);
   const [tone, setTone] = useState(0);
+  const [pitch, setPitch] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [voiceStyle, setVoiceStyle] = useState<VoiceStyle>("neutral");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
@@ -79,6 +108,14 @@ export default function SpeakyPage() {
     null
   );
   const [provider, setProvider] = useState<string | null>(null);
+  const [useWebSpeech, setUseWebSpeech] = useState(true);
+  const [selectedWebVoice, setSelectedWebVoice] = useState<string | null>(null);
+
+  const { state: speechState, speak, stop: stopSpeech, getVoicesByLanguage } = useWebSpeech();
+  
+  const webVoices = useMemo(() => {
+    return getVoicesByLanguage(language);
+  }, [language, getVoicesByLanguage, speechState.voices]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentAudioUrlRef = useRef("");
@@ -92,6 +129,34 @@ export default function SpeakyPage() {
     () => getEffectiveRate(rate, tone),
     [rate, tone]
   );
+
+  const speechSettings = useMemo(() => {
+    const styleMod = getStyleModifiers(voiceStyle);
+    const selectedVoice = webVoices.find((v) => v.name === selectedWebVoice) || webVoices[0] || null;
+
+    return {
+      rate: Math.max(0.5, Math.min(2, effectiveRate * styleMod.rate)),
+      pitch: Math.max(0.5, Math.min(2, pitch * styleMod.pitch)),
+      volume: Math.max(0.1, Math.min(1, volume * styleMod.volume)),
+      voice: selectedVoice,
+    };
+  }, [effectiveRate, pitch, volume, voiceStyle, webVoices, selectedWebVoice]);
+
+  const previewSpeech = useCallback(() => {
+    if (!text.trim()) {
+      toast.error("Ajoutez un texte pour la prévisualisation.");
+      return;
+    }
+
+    const previewText = text.slice(0, 80) + (text.length > 80 ? "..." : "");
+    speak(previewText, speechSettings);
+  }, [text, speechSettings, speak]);
+
+  useEffect(() => {
+    if (speechState.error) {
+      toast.error(speechState.error);
+    }
+  }, [speechState.error]);
 
   useEffect(() => {
     if (!availableVoices.includes(voice)) {
@@ -270,65 +335,147 @@ export default function SpeakyPage() {
             </label>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-xs">
-              Vitesse ({rate.toFixed(2)}x)
-              <input
-                className="mt-1 w-full"
-                max={1.6}
-                min={0.7}
-                onChange={(event) => setRate(Number(event.target.value))}
-                step={0.05}
-                type="range"
-                value={rate}
-              />
-            </label>
+           <div className="grid gap-3 md:grid-cols-2">
+             <label className="text-xs">
+               Vitesse ({rate.toFixed(2)}x)
+               <input
+                 className="mt-1 w-full"
+                 max={1.6}
+                 min={0.7}
+                 onChange={(event) => setRate(Number(event.target.value))}
+                 step={0.05}
+                 type="range"
+                 value={rate}
+               />
+             </label>
 
-            <label className="text-xs">
-              Ton ({tone > 0 ? `+${tone}` : tone})
-              <input
-                className="mt-1 w-full"
-                max={6}
-                min={-6}
-                onChange={(event) => setTone(Number(event.target.value))}
-                step={1}
-                type="range"
-                value={tone}
-              />
-            </label>
-          </div>
+             <label className="text-xs">
+               Ton ({tone > 0 ? `+${tone}` : tone})
+               <input
+                 className="mt-1 w-full"
+                 max={6}
+                 min={-6}
+                 onChange={(event) => setTone(Number(event.target.value))}
+                 step={1}
+                 type="range"
+                 value={tone}
+               />
+             </label>
+           </div>
 
-          <p className="text-[11px] text-muted-foreground">
-            Vitesse/ton appliqués au playback (taux effectif:{" "}
-            {effectiveRate.toFixed(2)}x).
-          </p>
+           <div className="grid gap-3 md:grid-cols-3">
+             <label className="text-xs">
+               Hauteur ({pitch.toFixed(2)})
+               <input
+                 className="mt-1 w-full"
+                 max={1.8}
+                 min={0.5}
+                 onChange={(event) => setPitch(Number(event.target.value))}
+                 step={0.05}
+                 type="range"
+                 value={pitch}
+               />
+             </label>
+             
+             <label className="text-xs">
+               Volume ({Math.round(volume * 100)}%)
+               <input
+                 className="mt-1 w-full"
+                 max={1}
+                 min={0.2}
+                 onChange={(event) => setVolume(Number(event.target.value))}
+                 step={0.05}
+                 type="range"
+                 value={volume}
+               />
+             </label>
+             
+             <label className="text-xs">
+               Style vocal
+               <select
+                 className="mt-1 w-full rounded-lg border border-border/50 bg-background px-2 py-2 text-xs"
+                 onChange={(event) => setVoiceStyle(event.target.value as VoiceStyle)}
+                 value={voiceStyle}
+               >
+                 {VOICE_STYLES.map((style) => (
+                   <option key={style.id} value={style.id}>
+                     {style.label}
+                   </option>
+                 ))}
+               </select>
+             </label>
+           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              className="inline-flex items-center gap-2 rounded-xl bg-black px-3 py-2 text-xs text-white disabled:opacity-60"
-              disabled={isGenerating}
-              onClick={generateCloudAudio}
-              type="button"
-            >
-              {isGenerating ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Play className="size-3.5" />
-              )}
-              Générer audio cloud
-            </button>
-            <button
-              className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
-              onClick={() => {
-                audioRef.current?.pause();
-                setIsPlaying(false);
-              }}
-              type="button"
-            >
-              <Square className="size-3.5" />
-              Stop
-            </button>
-          </div>
+           <div className="grid gap-3">
+             <label className="text-xs flex items-center justify-between">
+               <span>Prévisualisation Web Speech API</span>
+               <button
+                 className="inline-flex items-center gap-1 px-2 py-1 text-xs border rounded hover:bg-accent"
+                 onClick={previewSpeech}
+                 disabled={!text.trim() || speechState.isSpeaking}
+                 type="button"
+               >
+                 <MicVocal className="size-3" />
+                 Prévisualiser
+               </button>
+             </label>
+             
+             {speechState.isSupported && webVoices.length > 0 && (
+               <select
+                 className="w-full rounded-lg border border-border/50 bg-background px-2 py-2 text-xs"
+                 onChange={(event) => setSelectedWebVoice(event.target.value)}
+                 value={selectedWebVoice || ""}
+               >
+                 <option value="">Sélectionner une voix système</option>
+                 {webVoices.map((v) => (
+                   <option key={v.name} value={v.name}>
+                     {v.name} ({v.localService ? "Local" : "Cloud"}) {v.default ? "✓ Défaut" : ""}
+                   </option>
+                 ))}
+               </select>
+             )}
+           </div>
+
+           <p className="text-[11px] text-muted-foreground">
+             Taux effectif: {speechSettings.rate.toFixed(2)}x | Hauteur: {speechSettings.pitch.toFixed(2)} | Volume: {Math.round(speechSettings.volume * 100)}%
+           </p>
+
+           <div className="flex flex-wrap items-center gap-2">
+             <button
+               className="inline-flex items-center gap-2 rounded-xl bg-black px-3 py-2 text-xs text-white disabled:opacity-60"
+               disabled={isGenerating}
+               onClick={generateCloudAudio}
+               type="button"
+             >
+               {isGenerating ? (
+                 <Loader2 className="size-3.5 animate-spin" />
+               ) : (
+                 <Play className="size-3.5" />
+               )}
+               Générer audio cloud
+             </button>
+             <button
+               className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs"
+               onClick={() => {
+                 audioRef.current?.pause();
+                 stopSpeech();
+                 setIsPlaying(false);
+               }}
+               type="button"
+             >
+               <Square className="size-3.5" />
+               Stop tout
+             </button>
+             
+             <label className="inline-flex items-center gap-2 px-2 py-2 text-xs">
+               <input
+                 type="checkbox"
+                 checked={useWebSpeech}
+                 onChange={(e) => setUseWebSpeech(e.target.checked)}
+               />
+               Utiliser Web Speech API en priorité
+             </label>
+           </div>
         </section>
 
         <aside className="liquid-panel rounded-2xl p-4 text-xs text-muted-foreground">

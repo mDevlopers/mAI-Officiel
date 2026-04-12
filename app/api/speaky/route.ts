@@ -27,6 +27,10 @@ const SpeakyRequestSchema = z.object({
   text: z.string().trim().min(1).max(500),
   language: z.string().trim().min(2).max(8).default("fr"),
   voice: z.string().trim().min(2).max(32).optional(),
+  rate: z.number().min(0.5).max(2).optional().default(1),
+  pitch: z.number().min(0.5).max(2).optional().default(1),
+  volume: z.number().min(0.1).max(1).optional().default(1),
+  voiceStyle: z.enum(["neutral", "conversational", "formal", "excited", "calm", "narration"]).optional().default("neutral"),
 });
 
 function resolveVoice(language: string, requestedVoice?: string) {

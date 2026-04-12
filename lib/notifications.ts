@@ -27,14 +27,19 @@ type NotificationVariables = Record<
 const interpolateTemplate = (
   template: string,
   variables?: NotificationVariables
-) =>
-  template.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_fullMatch, key: string) => {
+) => {
+  // Limit template length to prevent DoS
+  if (template.length > 10000) return template.slice(0, 10000);
+  
+  return template.replace(/\{\{\s*([\w.-]{1,50})\s*\}\}/g, (_fullMatch, key: string) => {
     const value = variables?.[key];
     if (value === null || value === undefined) {
       return "";
     }
-    return String(value);
+    // Sanitize output: escape HTML and limit length
+    return String(value).slice(0, 500).replace(/[&<>"']/g, '');
   });
+};
 
 const STORAGE_KEY = "mai.notifications.history.v1";
 const EVENT_NAME = "mai:notifications-updated";
@@ -87,6 +92,16 @@ export function createNotification(input: {
   variables?: NotificationVariables;
   metadata?: AppNotification["metadata"];
 }) {
+  // Validate input level
+  const validLevels: NotificationLevel[] = ["success", "warning", "error", "info"];
+  if (!validLevels.includes(input.level)) {
+    input.level = "info";
+  }
+
+  // Validate source
+  const validSources: Array<"user" | "system"> = ["user", "system"];
+  const source = input.source && validSources.includes(input.source) ? input.source : "system";
+
   const titleByLevel: Record<NotificationLevel, string> = {
     error: "Erreur",
     info: "Information",
@@ -98,15 +113,15 @@ export function createNotification(input: {
     createdAt: new Date().toISOString(),
     id: crypto.randomUUID(),
     level: input.level,
-    message: interpolateTemplate(input.message, input.variables).trim(),
+    message: interpolateTemplate(input.message, input.variables).trim().slice(0, 2000),
     metadata: input.metadata,
     read: false,
-    source: input.source ?? "system",
+    source,
     title:
       interpolateTemplate(
         input.title?.trim() || titleByLevel[input.level],
         input.variables
-      ) || titleByLevel[input.level],
+      ).slice(0, 250) || titleByLevel[input.level],
   };
 
   const current = getNotificationHistory();
