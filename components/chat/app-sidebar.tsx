@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
@@ -80,8 +80,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
-  const [isApplicationsOpen, setIsApplicationsOpen] = useState(false);
-  const closeApplicationsTimeout = useRef<number | null>(null);
   const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const closeMobileSidebar = () => {
@@ -102,15 +100,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     return () => window.removeEventListener("keydown", onShortcut);
   }, []);
 
-  useEffect(
-    () => () => {
-      if (closeApplicationsTimeout.current !== null) {
-        window.clearTimeout(closeApplicationsTimeout.current);
-      }
-    },
-    []
-  );
-
   const quickLinks = useMemo(() => {
     if (!normalizedGlobalQuery) {
       return [];
@@ -127,36 +116,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       .map((label) => QUICK_LINKS.find((item) => item.label === label))
       .filter((item) => item !== undefined);
   }, []);
-
-  const clearApplicationsCloseTimeout = () => {
-    if (closeApplicationsTimeout.current !== null) {
-      window.clearTimeout(closeApplicationsTimeout.current);
-      closeApplicationsTimeout.current = null;
-    }
-  };
-
-  const isWithinApplicationsMenu = (target: EventTarget | null) => {
-    if (!(target instanceof Element)) {
-      return false;
-    }
-
-    return (
-      target.closest("[data-applications-trigger='true']") !== null ||
-      target.closest("[data-slot='dropdown-menu-content']") !== null
-    );
-  };
-
-  const openApplicationsMenu = () => {
-    clearApplicationsCloseTimeout();
-    setIsApplicationsOpen(true);
-  };
-
-  const closeApplicationsMenu = () => {
-    clearApplicationsCloseTimeout();
-    closeApplicationsTimeout.current = window.setTimeout(() => {
-      setIsApplicationsOpen(false);
-    }, 140);
-  };
 
   const handleDeleteAll = async () => {
     setShowDeleteAllDialog(false);
@@ -260,26 +219,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuItem>
                 ))}
                 <SidebarMenuItem>
-                  <DropdownMenu
-                    onOpenChange={(open) => {
-                      if (!open) {
-                        clearApplicationsCloseTimeout();
-                      }
-                      setIsApplicationsOpen(open);
-                    }}
-                    open={isApplicationsOpen}
-                  >
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <SidebarMenuButton
-                        data-applications-trigger="true"
                         className="h-8 rounded-lg border border-sidebar-border/70 text-[13px] text-sidebar-foreground/85 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                        onMouseEnter={openApplicationsMenu}
-                        onMouseLeave={(event) => {
-                          if (isWithinApplicationsMenu(event.relatedTarget)) {
-                            return;
-                          }
-                          closeApplicationsMenu();
-                        }}
                         tooltip="Applications"
                       >
                         <LayoutGridIcon className="size-3.5" />
@@ -289,24 +232,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <DropdownMenuContent
                       align="start"
                       className="w-56"
-                      onMouseEnter={openApplicationsMenu}
-                      onMouseLeave={(event) => {
-                        if (isWithinApplicationsMenu(event.relatedTarget)) {
-                          return;
-                        }
-                        closeApplicationsMenu();
-                      }}
                       side="right"
-                      sideOffset={10}
+                      sideOffset={6}
                     >
                       {APPLICATION_LINKS.map((item) => (
                         <DropdownMenuItem asChild key={`app-${item.href}`}>
                           <Link
                             href={item.href}
-                            onClick={() => {
-                              setIsApplicationsOpen(false);
-                              closeMobileSidebar();
-                            }}
+                            onClick={closeMobileSidebar}
                           >
                             <item.icon className="mr-2 size-3.5" />
                             {item.label}
