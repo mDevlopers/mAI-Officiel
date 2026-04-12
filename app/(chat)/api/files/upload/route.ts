@@ -23,10 +23,13 @@ const FileSchema = z.object({
           "image/png",
           "image/webp",
           "image/gif",
+          "audio/mpeg",
+          "audio/wav",
+          "audio/webm",
         ].includes(file.type),
       {
         message:
-          "File type should be PDF, TXT, DOCX, MD, CSV, JSON, JPEG, PNG, WEBP or GIF",
+          "File type should be PDF, TXT, DOCX, MD, CSV, JSON, JPEG, PNG, WEBP, GIF ou audio (MP3/WAV/WEBM)",
       }
     ),
   projectId: z.string().uuid().optional(),

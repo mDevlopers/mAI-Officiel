@@ -16,6 +16,7 @@ import {
   MessageActions as Actions,
 } from "../ai-elements/message";
 import { CopyIcon, PencilEditIcon, ThumbDownIcon, ThumbUpIcon } from "./icons";
+import { Flag, Pause, Pin, Play, Square } from "lucide-react";
 
 const parseLocalStorageArray = (key: string) => {
   try {
@@ -85,6 +86,21 @@ export function PureMessageActions({
     toast.success("Message épinglé");
   };
 
+
+  const speakText = () => {
+    if (!textFromParts || typeof window === "undefined") {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textFromParts);
+    utterance.onend = () => {
+      window.dispatchEvent(new CustomEvent("mai:speech-ended"));
+    };
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleReportMessage = () => {
     const reports = parseLocalStorageArray("mai.reports.messages");
     const category = getSafetyCategory(textFromParts ?? "");
@@ -133,14 +149,14 @@ export function PureMessageActions({
             onClick={handlePinMessage}
             tooltip="Épingler"
           >
-            📌
+            <Pin className="size-3.5" />
           </Action>
           <Action
             className="size-7 text-muted-foreground/50 hover:text-foreground"
             onClick={handleReportMessage}
             tooltip="Signaler"
           >
-            🚩
+            <Flag className="size-3.5" />
           </Action>
         </div>
       </Actions>
@@ -195,14 +211,35 @@ export function PureMessageActions({
         onClick={handlePinMessage}
         tooltip="Épingler"
       >
-        📌
+        <Pin className="size-3.5" />
       </Action>
       <Action
         className="text-muted-foreground/50 hover:text-foreground"
         onClick={handleReportMessage}
         tooltip="Signaler"
       >
-        🚩
+        <Flag className="size-3.5" />
+      </Action>
+      <Action
+        className="text-muted-foreground/50 hover:text-foreground"
+        onClick={speakText}
+        tooltip="Écouter"
+      >
+        <Play className="size-3.5" />
+      </Action>
+      <Action
+        className="text-muted-foreground/50 hover:text-foreground"
+        onClick={() => window.speechSynthesis.pause()}
+        tooltip="Pause"
+      >
+        <Pause className="size-3.5" />
+      </Action>
+      <Action
+        className="text-muted-foreground/50 hover:text-foreground"
+        onClick={() => window.speechSynthesis.cancel()}
+        tooltip="Stop"
+      >
+        <Square className="size-3.5" />
       </Action>
 
       <Action

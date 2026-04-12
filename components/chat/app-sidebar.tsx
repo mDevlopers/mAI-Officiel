@@ -9,7 +9,9 @@ import {
   PenSquareIcon,
   SearchIcon,
   Settings2Icon,
+  TerminalSquareIcon,
   TrashIcon,
+  Volume2Icon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -54,6 +56,8 @@ const QUICK_LINKS = [
   { href: "/translation", label: "Traduction", icon: LanguagesIcon },
   { href: "/library", label: "Bibliothèque", icon: BookOpenIcon },
   { href: "/projects", label: "Projets", icon: FolderIcon },
+  { href: "/interpreter", label: "Code", icon: TerminalSquareIcon },
+  { href: "/speaky", label: "Speaky", icon: Volume2Icon },
   { href: "/settings", label: "Paramètres", icon: Settings2Icon },
   { href: "/pricing", label: "Tarifs", icon: CreditCardIcon },
 ] as const;
@@ -95,7 +99,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   }, [normalizedGlobalQuery]);
 
   const featuredLinks = useMemo(() => {
-    const order = ["mAIs", "Projets", "Bibliothèque", "Traduction"] as const;
+    const order = ["mAIs", "Projets", "Code", "Speaky", "Bibliothèque"] as const;
     return order
       .map((label) => QUICK_LINKS.find((item) => item.label === label))
       .filter((item) => item !== undefined);
