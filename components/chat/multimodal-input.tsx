@@ -68,10 +68,7 @@ import {
   chatModels,
   DEFAULT_CHAT_MODEL,
 } from "@/lib/ai/models";
-import {
-  parseFileForAi,
-  validateFileBeforeUpload,
-} from "@/lib/file-parser";
+import { parseFileForAi, validateFileBeforeUpload } from "@/lib/file-parser";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn, fetcher } from "@/lib/utils";
 import {
@@ -96,6 +93,7 @@ type UploadSource = "device" | "mai-library";
 type ReflectionLevel = "light" | "moderate" | "deep" | "very-deep";
 type ProjectItem = { id: string; name: string };
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
+const GHOST_CHAT_ID_STORAGE_KEY = "mai.ghost-chat-id";
 const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const reflectionLevels: ReflectionLevel[] = [
   "light",
@@ -337,7 +335,9 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [extractedFiles, setExtractedFiles] = useState<Array<{ name: string; text: string }>>([]);
+  const [extractedFiles, setExtractedFiles] = useState<
+    Array<{ name: string; text: string }>
+  >([]);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIndex, setSlashIndex] = useState(0);
@@ -471,100 +471,152 @@ function PureMultimodalInput({
     [setInput, setLocalStorageInput]
   );
 
-  const submitForm = useCallback(() => {
-    window.history.pushState(
-      {},
-      "",
-      `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
-    );
-
-    // Read current contextual actions state safely (SSR-friendly)
-    const isReasoningEnabled =
-      typeof window === "undefined"
-        ? false
-        : localStorage.getItem("mai-reasoning-enabled") === "true";
-    const reasoningLevel = (() => {
-      if (typeof window === "undefined") {
-        return "moderate" as ReflectionLevel;
+  const sendPrompt = useCallback(
+    ({
+      prompt,
+      promptAttachments,
+    }: {
+      prompt: string;
+      promptAttachments: Attachment[];
+    }) => {
+      if (!prompt.trim() && promptAttachments.length === 0) {
+        return;
       }
-      const storedLevel = localStorage.getItem("mai-reasoning-level");
-      return storedLevel &&
-        reflectionLevels.includes(storedLevel as ReflectionLevel)
-        ? (storedLevel as ReflectionLevel)
-        : "moderate";
-    })();
-    const isWebSearchEnabled =
-      typeof window === "undefined"
-        ? false
-        : localStorage.getItem("mai-websearch-enabled") === "true";
-    const isLearningEnabled =
-      typeof window === "undefined"
-        ? false
-        : localStorage.getItem("mai-learning-enabled") === "true";
-    const isGhostModeEnabled =
-      typeof window === "undefined"
-        ? false
-        : localStorage.getItem("mai.ghost-mode") === "true";
-    const persistentMemory = getPersistentMemoryFromLocalStorage();
 
-    const extractedFileContext = extractedFiles
-      .filter((item) => item.text.trim().length > 0)
-      .map((item) => `### Fichier: ${item.name}\n${item.text}`)
-      .join("\n\n")
-      .trim();
+      window.history.pushState(
+        {},
+        "",
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}`
+      );
 
-    sendMessage({
-      role: "user",
-      parts: [
-        ...attachments.map((attachment) => ({
-          type: "file" as const,
-          url: attachment.url,
-          name: attachment.name,
-          mediaType: attachment.contentType,
-        })),
-        {
-          type: "text",
-          text: extractedFileContext
-            ? `${input}\n\n[Contexte extrait des fichiers]\n${extractedFileContext}`
-            : input,
+      const isReasoningEnabled =
+        typeof window === "undefined"
+          ? false
+          : localStorage.getItem("mai-reasoning-enabled") === "true";
+      const reasoningLevel = (() => {
+        if (typeof window === "undefined") {
+          return "moderate" as ReflectionLevel;
+        }
+
+        const storedLevel = localStorage.getItem("mai-reasoning-level");
+        return storedLevel &&
+          reflectionLevels.includes(storedLevel as ReflectionLevel)
+          ? (storedLevel as ReflectionLevel)
+          : "moderate";
+      })();
+      const isWebSearchEnabled =
+        typeof window === "undefined"
+          ? false
+          : localStorage.getItem("mai-websearch-enabled") === "true";
+      const isLearningEnabled =
+        typeof window === "undefined"
+          ? false
+          : localStorage.getItem("mai-learning-enabled") === "true";
+      const isGhostModeEnabled =
+        typeof window === "undefined"
+          ? false
+          : localStorage.getItem("mai.ghost-mode") === "true";
+      const persistentMemory = getPersistentMemoryFromLocalStorage();
+
+      const extractedFileContext = extractedFiles
+        .filter((item) => item.text.trim().length > 0)
+        .map((item) => `### Fichier: ${item.name}\n${item.text}`)
+        .join("\n\n")
+        .trim();
+
+      sendMessage({
+        role: "user",
+        parts: [
+          ...promptAttachments.map((attachment) => ({
+            type: "file" as const,
+            url: attachment.url,
+            name: attachment.name,
+            mediaType: attachment.contentType,
+          })),
+          {
+            type: "text",
+            text: extractedFileContext
+              ? `${prompt}
+
+[Contexte extrait des fichiers]
+${extractedFileContext}`
+              : prompt,
+          },
+        ],
+        // @ts-expect-error - appending to experimental body to be picked up by useChat
+        experimental_append_body: {
+          contextualActions: {
+            isReasoningEnabled,
+            reasoningLevel,
+            isWebSearchEnabled,
+            isLearningEnabled,
+          },
+          clientGeolocation: geolocationPos,
+          ghostMode: isGhostModeEnabled,
+          uploadSource,
+          persistentMemory,
         },
-      ],
-      // @ts-expect-error - appending to experimental body to be picked up by useChat
-      experimental_append_body: {
-        contextualActions: {
-          isReasoningEnabled,
-          reasoningLevel,
-          isWebSearchEnabled,
-          isLearningEnabled,
-        },
-        clientGeolocation: geolocationPos,
-        ghostMode: isGhostModeEnabled,
-        uploadSource,
-        persistentMemory,
-      },
-    });
+      });
 
-    setAttachments([]);
-    setExtractedFiles([]);
-    setLocalStorageInput("");
-    setInput("");
+      if (isGhostModeEnabled && typeof window !== "undefined") {
+        // One-shot toggle: we consume the switch immediately but keep this chat
+        // flagged as ghost to prevent any later persistence on follow-up requests.
+        sessionStorage.setItem(GHOST_CHAT_ID_STORAGE_KEY, chatId);
+        localStorage.setItem("mai.ghost-mode", "false");
+      }
 
-    if (width && width > 768) {
-      textareaRef.current?.focus();
-    }
-  }, [
-    input,
-    setInput,
-    attachments,
-    sendMessage,
-    setAttachments,
-    setLocalStorageInput,
-    width,
-    chatId,
-    uploadSource,
-    geolocationPos,
-    extractedFiles,
-  ]);
+      setAttachments([]);
+      setExtractedFiles([]);
+      setLocalStorageInput("");
+      setInput("");
+
+      if (width && width > 768) {
+        textareaRef.current?.focus();
+      }
+    },
+    [
+      chatId,
+      extractedFiles,
+      geolocationPos,
+      sendMessage,
+      setAttachments,
+      setInput,
+      setLocalStorageInput,
+      uploadSource,
+      width,
+    ]
+  );
+
+  const submitForm = useCallback(() => {
+    sendPrompt({ prompt: input, promptAttachments: attachments });
+  }, [attachments, input, sendPrompt]);
+
+  useEffect(() => {
+    const handleInlineSuggestion = (event: Event) => {
+      if (status !== "ready" && status !== "error") {
+        toast.error("Veuillez attendre la fin de la réponse du modèle.");
+        return;
+      }
+
+      const customEvent = event as CustomEvent<{ prompt?: string }>;
+      const prompt = customEvent.detail?.prompt?.trim();
+
+      if (!prompt) {
+        return;
+      }
+
+      sendPrompt({ prompt, promptAttachments: [] });
+    };
+
+    window.addEventListener("mai.inline-suggestion", handleInlineSuggestion);
+
+    return () => {
+      window.removeEventListener(
+        "mai.inline-suggestion",
+        handleInlineSuggestion
+      );
+    };
+  }, [sendPrompt, status]);
 
   const uploadFile = useCallback(async (file: File) => {
     const formData = new FormData();
@@ -1396,10 +1448,7 @@ function PureContextualActionsMenu({
           Position
         </Button>
       </PopoverContent>
-      <Dialog
-        onOpenChange={setIsLibraryDialogOpen}
-        open={isLibraryDialogOpen}
-      >
+      <Dialog onOpenChange={setIsLibraryDialogOpen} open={isLibraryDialogOpen}>
         <DialogContent className="liquid-panel max-w-2xl border-white/30 bg-white/85 backdrop-blur-2xl">
           <DialogHeader>
             <DialogTitle>Bibliothèque</DialogTitle>
@@ -1439,7 +1488,8 @@ function PureContextualActionsMenu({
                 >
                   <p className="truncate font-medium">{asset.name}</p>
                   <p className="text-muted-foreground">
-                    {asset.favorite ? "★ Favori" : "☆"} {asset.pinned ? "• 📌" : ""}
+                    {asset.favorite ? "★ Favori" : "☆"}{" "}
+                    {asset.pinned ? "• 📌" : ""}
                   </p>
                 </button>
               ))}
@@ -1451,7 +1501,10 @@ function PureContextualActionsMenu({
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setIsLibraryDialogOpen(false)} variant="ghost">
+            <Button
+              onClick={() => setIsLibraryDialogOpen(false)}
+              variant="ghost"
+            >
               Fermer
             </Button>
           </DialogFooter>

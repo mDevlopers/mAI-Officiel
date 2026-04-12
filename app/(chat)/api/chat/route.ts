@@ -29,6 +29,7 @@ import { createMaiTool } from "@/lib/ai/tools/create-mai";
 import { createProjectTool } from "@/lib/ai/tools/create-project";
 import { createProjectTaskTool } from "@/lib/ai/tools/create-project-task";
 import { editDocument } from "@/lib/ai/tools/edit-document";
+import { followUpSuggestions } from "@/lib/ai/tools/follow-up-suggestions";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
@@ -309,6 +310,7 @@ export async function POST(request: Request) {
       | "editDocument"
       | "updateDocument"
       | "requestSuggestions"
+      | "followUpSuggestions"
       | "createProjectTask"
       | "createProject"
       | "createMai"
@@ -319,6 +321,7 @@ export async function POST(request: Request) {
       "editDocument",
       "updateDocument",
       "requestSuggestions",
+      "followUpSuggestions",
       "createProjectTask",
       "createProject",
       "createMai",
@@ -374,6 +377,7 @@ export async function POST(request: Request) {
               dataStream,
               modelId: chatModel,
             }),
+            followUpSuggestions,
             createProjectTask: createProjectTaskTool(session.user.id),
             createProject: createProjectTool(session.user.id),
             createMai: createMaiTool(session.user.id),

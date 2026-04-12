@@ -50,6 +50,7 @@ type ActiveChatContextValue = {
 };
 
 const ActiveChatContext = createContext<ActiveChatContextValue | null>(null);
+const GHOST_CHAT_ID_STORAGE_KEY = "mai.ghost-chat-id";
 
 function extractChatId(pathname: string): string | null {
   const match = pathname.match(/\/chat\/([^/]+)/);
@@ -74,6 +75,13 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
 
   const chatId = chatIdFromUrl ?? newChatIdRef.current;
   const projectId = searchParams.get("projectId");
+  const getGhostChatId = () => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return sessionStorage.getItem(GHOST_CHAT_ID_STORAGE_KEY);
+  };
 
   const [currentModelId, setCurrentModelId] = useState(DEFAULT_CHAT_MODEL);
   const currentModelIdRef = useRef(currentModelId);
@@ -140,6 +148,24 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             })
           );
 
+        const bodyWithGhost = request.body as
+          | { ghostMode?: boolean; [key: string]: unknown }
+          | undefined;
+        const hasExplicitGhostMode =
+          typeof bodyWithGhost?.ghostMode === "boolean";
+
+        if (hasExplicitGhostMode && typeof window !== "undefined") {
+          if (bodyWithGhost?.ghostMode) {
+            sessionStorage.setItem(GHOST_CHAT_ID_STORAGE_KEY, request.id);
+          } else if (getGhostChatId() === request.id) {
+            sessionStorage.removeItem(GHOST_CHAT_ID_STORAGE_KEY);
+          }
+        }
+
+        const isGhostConversation = hasExplicitGhostMode
+          ? Boolean(bodyWithGhost?.ghostMode)
+          : getGhostChatId() === request.id;
+
         return {
           body: {
             id: request.id,
@@ -150,6 +176,7 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
             selectedVisibilityType: visibility,
             projectId: projectId ?? undefined,
             ...request.body,
+            ghostMode: isGhostConversation,
           },
         };
       },
@@ -158,6 +185,9 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
     },
     onFinish: () => {
+      if (getGhostChatId() === chatId) {
+        return;
+      }
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
     onError: (error) => {
@@ -218,17 +248,23 @@ export function ActiveChatProvider({ children }: { children: ReactNode }) {
     const query = params.get("query");
     if (query && !hasAppendedQueryRef.current) {
       hasAppendedQueryRef.current = true;
+      const isGhostMode = localStorage.getItem("mai.ghost-mode") === "true";
+
       window.history.replaceState(
         {},
         "",
         `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/chat/${chatId}${projectId ? `?projectId=${encodeURIComponent(projectId)}` : ""}`
       );
+      if (isGhostMode) {
+        sessionStorage.setItem(GHOST_CHAT_ID_STORAGE_KEY, chatId);
+        localStorage.setItem("mai.ghost-mode", "false");
+      }
       sendMessage({
         role: "user" as const,
         parts: [{ type: "text", text: query }],
         // @ts-expect-error - appended body for transport request
         experimental_append_body: {
-          ghostMode: localStorage.getItem("mai.ghost-mode") === "true",
+          ghostMode: isGhostMode,
         },
       });
     }
