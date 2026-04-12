@@ -12,6 +12,8 @@ export default async function ProjectsPage() {
   }
 
   const projects = await getProjects(session.user.id);
+  const activeProjects = projects.filter(p => !p.archived);
+  const archivedProjects = projects.filter(p => p.archived);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 text-black md:px-6">
@@ -33,24 +35,54 @@ export default async function ProjectsPage() {
         </div>
       </section>
 
-      {projects.length === 0 ? (
+      {activeProjects.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold">Projets actifs</h2>
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {activeProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={{
+                  id: project.id,
+                  name: project.name,
+                  instructions: project.instructions,
+                  createdAt: project.createdAt.toISOString(),
+                  color: project.color,
+                  icon: project.icon,
+                  archived: project.archived,
+                }}
+              />
+            ))}
+          </section>
+        </>
+      )}
+
+      {archivedProjects.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold mt-4">Projets archivés</h2>
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {archivedProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={{
+                  id: project.id,
+                  name: project.name,
+                  instructions: project.instructions,
+                  createdAt: project.createdAt.toISOString(),
+                  color: project.color,
+                  icon: project.icon,
+                  archived: project.archived,
+                }}
+              />
+            ))}
+          </section>
+        </>
+      )}
+
+      {projects.length === 0 && (
         <section className="liquid-panel rounded-2xl border border-white/30 bg-white/80 p-8 text-sm text-black/75 backdrop-blur-2xl">
           Aucun projet pour le moment. Créez votre premier projet pour
           structurer vos données.
-        </section>
-      ) : (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={{
-                id: project.id,
-                name: project.name,
-                instructions: project.instructions,
-                createdAt: project.createdAt.toISOString(),
-              }}
-            />
-          ))}
         </section>
       )}
     </main>

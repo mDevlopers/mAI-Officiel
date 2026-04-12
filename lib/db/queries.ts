@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -768,6 +769,18 @@ export async function updateAgentByUser(
   } catch (error) {
     console.error("Failed to update agent by user:", error);
     throw new Error("Failed to update agent");
+  }
+}
+
+export async function incrementAgentUsage(id: string) {
+  try {
+    return await db
+      .update(agent)
+      .set({ usageCount: sql`${agent.usageCount} + 1` })
+      .where(eq(agent.id, id))
+      .execute();
+  } catch (error) {
+    console.error("Failed to increment agent usage:", error);
   }
 }
 

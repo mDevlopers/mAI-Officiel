@@ -76,6 +76,9 @@ export default async function ProjectDetailPage({
         projectId={project.id}
         projectInstructions={project.instructions ?? ""}
         projectName={project.name}
+        projectPinnedNote={project.pinnedNote}
+        projectColor={project.color}
+        projectIcon={project.icon}
         projectChats={projectChats.map((chat) => ({
           id: chat.id,
           title: chat.title,

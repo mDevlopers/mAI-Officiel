@@ -94,11 +94,19 @@ export function AppSidebar({ user }: { user: User | undefined }) {
         event.preventDefault();
         document.getElementById("global-sidebar-search")?.focus();
       }
+      
+      // Ctrl + / sidebar toggle
+      if ((event.metaKey || event.ctrlKey) && event.key === "/") {
+        event.preventDefault();
+        if (isMobile) {
+          setOpenMobile((prev) => !prev);
+        }
+      }
     };
 
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
-  }, []);
+  }, [isMobile, setOpenMobile]);
 
   const quickLinks = useMemo(() => {
     if (!normalizedGlobalQuery) {

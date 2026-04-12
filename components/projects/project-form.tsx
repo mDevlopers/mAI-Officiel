@@ -9,8 +9,19 @@ type ProjectFormProps = {
     id: string;
     name: string;
     instructions: string | null;
+    color: string;
+    icon: string;
+    archived: boolean;
+    pinnedNote: string | null;
   };
 };
+
+const DEFAULT_COLORS = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
+  "#3b82f6", "#8b5cf6", "#ec4899", "#78716c", "#171717"
+];
+
+const DEFAULT_ICONS = ["📁", "🚀", "💡", "🎯", "⚡", "📝", "🔧", "🎨", "📊", "💻", "🏗️", "📦"];
 
 export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
   const router = useRouter();
@@ -18,6 +29,10 @@ export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
   const [instructions, setInstructions] = useState(
     initialValues?.instructions ?? ""
   );
+  const [color, setColor] = useState(initialValues?.color ?? "#3b82f6");
+  const [icon, setIcon] = useState(initialValues?.icon ?? "📁");
+  const [archived, setArchived] = useState(initialValues?.archived ?? false);
+  const [pinnedNote, setPinnedNote] = useState(initialValues?.pinnedNote ?? "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +58,14 @@ export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ name, instructions }),
+      body: JSON.stringify({
+        name,
+        instructions,
+        color,
+        icon,
+        archived,
+        pinnedNote
+      }),
     });
 
     if (!response.ok) {
@@ -76,6 +98,43 @@ export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
         />
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">
+            Couleur du projet
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {DEFAULT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`h-8 w-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-cyan-500 scale-110' : 'hover:scale-105'}`}
+                style={{ backgroundColor: c }}
+                onClick={() => setColor(c)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">
+            Icône du projet
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {DEFAULT_ICONS.map((i) => (
+              <button
+                key={i}
+                type="button"
+                className={`h-8 w-8 rounded-xl border border-black/15 bg-white text-xl transition-all ${icon === i ? 'ring-2 ring-offset-2 ring-cyan-500 bg-cyan-100' : 'hover:bg-black/5'}`}
+                onClick={() => setIcon(i)}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium" htmlFor="project-instructions">
           Instructions globales
@@ -89,6 +148,35 @@ export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
           value={instructions}
         />
       </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium" htmlFor="project-pinned-note">
+          Note épinglée
+        </label>
+        <textarea
+          className="min-h-24 rounded-xl border border-black/15 bg-white px-3 py-2 text-sm text-black outline-none transition focus:border-cyan-500"
+          id="project-pinned-note"
+          maxLength={1000}
+          onChange={(event) => setPinnedNote(event.target.value)}
+          placeholder="Note rapide visible en haut de l'espace projet..."
+          value={pinnedNote}
+        />
+      </div>
+
+      {mode === "edit" && (
+        <div className="flex items-center gap-3 rounded-xl border border-black/15 bg-white/70 p-3">
+          <input
+            type="checkbox"
+            id="project-archived"
+            checked={archived}
+            onChange={(e) => setArchived(e.target.checked)}
+            className="h-4 w-4 rounded"
+          />
+          <label className="text-sm font-medium" htmlFor="project-archived">
+            Marquer ce projet comme archivé
+          </label>
+        </div>
+      )}
 
       {error ? <p className="text-sm text-red-300">{error}</p> : null}
 

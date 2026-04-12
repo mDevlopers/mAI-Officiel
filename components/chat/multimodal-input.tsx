@@ -77,6 +77,7 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
+  PromptInputWordCount,
 } from "../ai-elements/prompt-input";
 import { Button } from "../ui/button";
 import { StopIcon } from "./icons";
@@ -1125,6 +1126,8 @@ ${extractedFileContext}`
               selectedModelId={selectedModelId}
             />
           </PromptInputTools>
+
+          <PromptInputWordCount className="hidden sm:block" />
 
           {status === "submitted" ? (
             <StopButton setMessages={setMessages} stop={stop} />

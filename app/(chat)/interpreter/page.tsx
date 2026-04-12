@@ -7,8 +7,19 @@ import {
   SquareTerminal,
   Table,
   Upload,
+  History,
+  Save,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CodeEditor } from "@/components/chat/code-editor";
+import { Console } from "@/components/chat/console";
+import type { ConsoleOutput } from "@/components/chat/console";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 
 type Runtime =
   | "python"

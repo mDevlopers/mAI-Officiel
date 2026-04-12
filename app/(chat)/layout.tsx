@@ -9,6 +9,25 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { auth } from "../(auth)/auth";
+import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
+import { WhatsNewPopup } from "@/components/whats-new-popup";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Kilo",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  themeColor: "#0a0a0a",
+};
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,6 +58,8 @@ async function SidebarShell({ children }: { children: React.ReactNode }) {
               "liquid-panel !text-foreground !shadow-[var(--shadow-float)]",
           }}
         />
+        <OnboardingTour />
+        <WhatsNewPopup />
         {children}
       </SidebarInset>
     </SidebarProvider>

@@ -967,13 +967,38 @@ export type PromptInputFooterProps = Omit<
   "align"
 >;
 
+export type PromptInputWordCountProps = HTMLAttributes<HTMLDivElement>;
+
+export const PromptInputWordCount = ({
+  className,
+  ...props
+}: PromptInputWordCountProps) => {
+  const controller = useOptionalPromptInputController();
+  const text = controller?.textInput.value || "";
+  
+  const characters = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+
+  return (
+    <div
+      className={cn(
+        "text-xs text-muted-foreground select-none pointer-events-none",
+        className
+      )}
+      {...props}
+    >
+      {words} mots · {characters} car.
+    </div>
+  );
+};
+
 export const PromptInputFooter = ({
   className,
   ...props
 }: PromptInputFooterProps) => (
   <InputGroupAddon
     align="block-end"
-    className={cn("justify-between gap-1", className)}
+    className={cn("justify-between items-center gap-1", className)}
     {...props}
   />
 );

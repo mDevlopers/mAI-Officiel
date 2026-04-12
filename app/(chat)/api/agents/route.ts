@@ -29,6 +29,8 @@ export async function GET() {
     model: agent.baseModel,
     avatarUrl: agent.image,
     createdAt: agent.createdAt,
+    usageCount: agent.usageCount,
+    shareToken: agent.shareToken,
   }));
 
   return NextResponse.json(normalized);

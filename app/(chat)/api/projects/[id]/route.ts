@@ -9,6 +9,10 @@ import {
 
 const updateSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
+  color: z.string().regex(/^#(?:[0-9a-fA-F]{3}){1,2}$/).optional(),
+  icon: z.string().max(4).optional(),
+  archived: z.boolean().optional(),
+  pinnedNote: z.string().max(2000).optional(),
   instructions: z.string().trim().max(5000).optional(),
 });
 

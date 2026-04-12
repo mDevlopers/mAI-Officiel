@@ -86,6 +86,9 @@ export const document = pgTable(
     userId: uuid("userId")
       .notNull()
       .references(() => user.id),
+    tags: json("tags").$type<string[]>().default([]),
+    folderId: uuid("folderId"),
+    size: integer("size").default(0),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.id, table.createdAt] }),
@@ -155,6 +158,8 @@ export const agent = pgTable("Agent", {
   languageRegister: integer("languageRegister").default(50),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  usageCount: integer("usageCount").notNull().default(0),
+  shareToken: varchar("shareToken", { length: 32 }).unique(),
 });
 
 export type Agent = InferSelectModel<typeof agent>;
@@ -167,6 +172,10 @@ export const project = pgTable("Project", {
   name: text("name").notNull(),
   description: text("description"),
   image: text("image"),
+  color: varchar("color", { length: 7 }).default("#3b82f6"),
+  icon: varchar("icon", { length: 4 }).default("📁"),
+  archived: boolean("archived").notNull().default(false),
+  pinnedNote: text("pinnedNote"),
   instructions: text("instructions"),
   memory: text("memory"), // plain text knowledge/sources
   files: json("files").default([]), // uploaded files metadata
@@ -230,3 +239,78 @@ export const memoryEntry = pgTable("Memory", {
 });
 
 export type MemoryEntry = InferSelectModel<typeof memoryEntry>;
+
+export const codeSnippet = pgTable("CodeSnippet", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  title: text("title").notNull(),
+  code: text("code").notNull(),
+  language: varchar("language", { length: 32 }).notNull().default("python"),
+  description: text("description"),
+  tags: json("tags").default([]),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  runCount: integer("runCount").notNull().default(0),
+});
+
+export type CodeSnippet = InferSelectModel<typeof codeSnippet>;
+
+export const codeExecutionHistory = pgTable("CodeExecutionHistory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  code: text("code").notNull(),
+  language: varchar("language", { length: 32 }).notNull(),
+  input: text("input"),
+  output: text("output"),
+  error: text("error"),
+  exitCode: integer("exitCode"),
+  success: boolean("success").notNull(),
+  runtime: varchar("runtime", { length: 32 }),
+  durationMs: integer("durationMs"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type CodeExecutionHistory = InferSelectModel<typeof codeExecutionHistory>;
+
+export const speechGeneration = pgTable("SpeechGeneration", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  text: text("text").notNull(),
+  language: varchar("language", { length: 2 }).notNull(),
+  voice: varchar("voice", { length: 32 }).notNull(),
+  voiceStyle: varchar("voiceStyle", { enum: ["narratif", "conversationnel", "énergique"] }).notNull(),
+  voiceGender: varchar("voiceGender", { enum: ["homme", "femme"] }).notNull(),
+  rate: numeric("rate", { precision: 4, scale: 2 }).notNull(),
+  tone: integer("tone").notNull(),
+  audioUrl: text("audioUrl").notNull(),
+  audioDuration: integer("audioDuration"),
+  provider: varchar("provider", { length: 32 }).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type SpeechGeneration = InferSelectModel<typeof speechGeneration>;
+
+export const voicePreset = pgTable("VoicePreset", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  name: varchar("name", { length: 64 }).notNull(),
+  language: varchar("language", { length: 2 }).notNull(),
+  voice: varchar("voice", { length: 32 }).notNull(),
+  voiceStyle: varchar("voiceStyle", { enum: ["narratif", "conversationnel", "énergique"] }).notNull(),
+  voiceGender: varchar("voiceGender", { enum: ["homme", "femme"] }).notNull(),
+  rate: numeric("rate", { precision: 4, scale: 2 }).notNull(),
+  tone: integer("tone").notNull(),
+  isFavorite: boolean("isFavorite").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type VoicePreset = InferSelectModel<typeof voicePreset>;

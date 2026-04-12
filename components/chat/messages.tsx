@@ -1,6 +1,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { ArrowDownIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, memo, useCallback } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -24,7 +24,7 @@ type MessagesProps = {
   onEditMessage?: (message: ChatMessage) => void;
 };
 
-function PureMessages({
+const PureMessages = memo(function PureMessages({
   addToolApprovalResponse,
   chatId,
   status,
@@ -57,6 +57,16 @@ function PureMessages({
     }
   }, [chatId, reset]);
 
+  // Pré-calcul des votes O(n) au lieu de O(n²) dans la boucle
+  const voteMap = useMemo(() => {
+    if (!votes) return new Map<string, Vote>();
+    return new Map(votes.map(vote => [vote.messageId, vote]));
+  }, [votes]);
+
+  const handleScrollToBottom = useCallback(() => {
+    scrollToBottom("smooth");
+  }, [scrollToBottom]);
+
   return (
     <div className="relative flex-1 bg-background">
       {messages.length === 0 && !isLoading && (
@@ -73,29 +83,25 @@ function PureMessages({
         style={isArtifactVisible ? { scrollbarWidth: "none" } : undefined}
       >
         <div className="mx-auto flex min-h-full min-w-0 max-w-4xl flex-col gap-5 px-2 py-6 md:gap-7 md:px-4">
-          {messages.map((message, index) => (
-            <PreviewMessage
-              addToolApprovalResponse={addToolApprovalResponse}
-              chatId={chatId}
-              isLoading={
-                status === "streaming" && messages.length - 1 === index
-              }
-              isReadonly={isReadonly}
-              key={message.id}
-              message={message}
-              onEdit={onEditMessage}
-              regenerate={regenerate}
-              requiresScrollPadding={
-                hasSentMessage && index === messages.length - 1
-              }
-              setMessages={setMessages}
-              vote={
-                votes
-                  ? votes.find((vote) => vote.messageId === message.id)
-                  : undefined
-              }
-            />
-          ))}
+           {messages.map((message, index) => (
+             <PreviewMessage
+               addToolApprovalResponse={addToolApprovalResponse}
+               chatId={chatId}
+               isLoading={
+                 status === "streaming" && messages.length - 1 === index
+               }
+               isReadonly={isReadonly}
+               key={message.id}
+               message={message}
+               onEdit={onEditMessage}
+               regenerate={regenerate}
+               requiresScrollPadding={
+                 hasSentMessage && index === messages.length - 1
+               }
+               setMessages={setMessages}
+               vote={voteMap.get(message.id)}
+             />
+           ))}
 
           {status === "submitted" && messages.at(-1)?.role !== "assistant" && (
             <ThinkingMessage />
@@ -124,4 +130,16 @@ function PureMessages({
   );
 }
 
-export const Messages = PureMessages;
+export const Messages = memo(PureMessages, (prevProps, nextProps) => {
+  // Comparateur personnalisé optimisé : seul les changements pertinents déclenchent un rendu
+  if (prevProps.messages !== nextProps.messages) return false;
+  if (prevProps.status !== nextProps.status) return false;
+  if (prevProps.votes !== nextProps.votes) return false;
+  if (prevProps.isArtifactVisible !== nextProps.isArtifactVisible) return false;
+  if (prevProps.isLoading !== nextProps.isLoading) return false;
+  if (prevProps.chatId !== nextProps.chatId) return false;
+  if (prevProps.isReadonly !== nextProps.isReadonly) return false;
+  
+  // Toutes les autres props sont stables (fonctions référentiellement stables)
+  return true;
+});

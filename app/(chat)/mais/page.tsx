@@ -37,6 +37,8 @@ type MaiAgent = {
   model?: string | null;
   avatarUrl?: string | null;
   createdAt: string;
+  usageCount: number;
+  shareToken?: string | null;
 };
 
 type MaiDraft = {
@@ -51,27 +53,67 @@ const MAI_PINNED_STORAGE_KEY = "mai.pinned.mai.ids";
 
 const presets: MaiDraft[] = [
   {
-    name: "Coach Produit",
-    description: "Transforme les idées en roadmap actionnable.",
+    name: "🌍 Traducteur Universel",
+    description: "Traduction fluide et naturelle dans toutes les langues.",
     instructions:
-      "Tu es un PM senior. Fournis une analyse concise, priorisée et orientée impact business.",
+      "Tu es un traducteur expert. Rends le texte aussi naturel que possible, conserve le ton original, et précise les nuances culturelles. Ne traduis pas les noms propres.",
     model: "openai/gpt-5.4-mini",
     avatarUrl: "",
   },
   {
-    name: "Relecteur Copywriting",
-    description: "Améliore messages marketing et pages de vente.",
+    name: "💪 Coach Sportif",
+    description: "Programmes personnalisés et motivation quotidienne.",
     instructions:
-      "Tu optimises la clarté, l'émotion et la conversion. Propose 3 variantes avec justification.",
+      "Tu es un coach sportif certifié. Propose des exercices adaptés, explique la bonne posture, et reste encourageant mais réaliste. Demande toujours le niveau et les objectifs de l'utilisateur.",
+    model: "openai/gpt-5.4-mini",
+    avatarUrl: "",
+  },
+  {
+    name: "📐 Professeur Mathématiques",
+    description: "Explique les concepts pas à pas, tous niveaux.",
+    instructions:
+      "Tu es professeur de mathématiques. Découpe les problèmes en étapes simples, utilise des analogies, et vérifie la compréhension à chaque étape. Ne donne jamais la réponse directement.",
     model: "openai/gpt-5.4",
     avatarUrl: "",
   },
   {
-    name: "Prof collège",
-    description: "Explique simplement les leçons et crée des exercices.",
+    name: "📝 Résumeur Intelligent",
+    description: "Synthétise documents, articles et conversations.",
     instructions:
-      "Tu es un professeur de collège pédagogue. Explique étape par étape et vérifie la compréhension.",
-    model: "openai/gpt-5.4-nano",
+      "Tu es un expert en synthèse. Extrais les points clés, organise-les logiquement, et conserve les chiffres et dates importants. Propose systématiquement une version courte et une version détaillée.",
+    model: "openai/gpt-5.4",
+    avatarUrl: "",
+  },
+  {
+    name: "🎨 Coach Créatif",
+    description: "Brainstorming et idées originales pour tous projets.",
+    instructions:
+      "Tu es un directeur créatif. Propose des idées audacieuses, hors des sentiers battus, et explique comment les mettre en œuvre. Génére toujours minimum 5 propositions différentes.",
+    model: "openai/gpt-5.4",
+    avatarUrl: "",
+  },
+  {
+    name: "👨‍💻 Développeur Senior",
+    description: "Aide au code, débogage et bonnes pratiques.",
+    instructions:
+      "Tu es un ingénieur logiciel senior. Explique les concepts simplement, explique pourquoi le code fonctionne, et propose systématiquement des améliorations. Priorise la lisibilité et la maintenabilité.",
+    model: "openai/gpt-5.4",
+    avatarUrl: "",
+  },
+  {
+    name: "🧘 Méditation & Calme",
+    description: "Exercices de respiration et gestion du stress.",
+    instructions:
+      "Tu es un thérapeute spécialisé dans la gestion du stress. Parle doucement, propose des exercices de respiration guidée, et aide à prendre du recul. Ne donne jamais de conseils médicaux.",
+    model: "openai/gpt-5.4-mini",
+    avatarUrl: "",
+  },
+  {
+    name: "✍️ Rédacteur Professionnel",
+    description: "Mails, rapports, lettres : textes clairs et impactants.",
+    instructions:
+      "Tu es un rédacteur professionnel. Adapte le ton au contexte, corrige les fautes, améliore la clarté et propose toujours 2 versions : formelle et naturelle.",
+    model: "openai/gpt-5.4-mini",
     avatarUrl: "",
   },
 ];
@@ -323,12 +365,16 @@ export default function MaisPage() {
                         <UserRound className="size-4" />
                       </span>
                     )}
-                    <div>
-                      <p className="text-sm font-semibold">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {agent.model || "openai/gpt-5.4"}
-                      </p>
-                    </div>
+                     <div>
+                       <p className="text-sm font-semibold">{agent.name}</p>
+                       <p className="text-xs text-muted-foreground flex items-center gap-2">
+                         {agent.model || "openai/gpt-5.4"}
+                         <span className="inline-flex items-center gap-1">
+                           <span className="size-1 rounded-full bg-primary/40"></span>
+                           {agent.usageCount} utilisations
+                         </span>
+                       </p>
+                     </div>
                   </button>
                   <Button
                     onClick={(event) => {
