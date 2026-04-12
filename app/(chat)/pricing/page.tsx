@@ -80,6 +80,9 @@ export default function PricingPage() {
   const [activatePlan, setActivatePlan] = useState<Exclude<PlanKey, "free"> | null>(
     null
   );
+  const [recentlyUnlockedPlan, setRecentlyUnlockedPlan] = useState<PlanKey | null>(
+    null
+  );
 
   const plans = useMemo(() => planOrder.map((key) => planDefinitions[key]), []);
 
@@ -102,6 +105,8 @@ export default function PricingPage() {
       text: `Activation réussie : votre forfait est maintenant ${planDefinitions[nextPlan].label}.`,
       type: "success",
     });
+    setRecentlyUnlockedPlan(nextPlan);
+    window.setTimeout(() => setRecentlyUnlockedPlan(null), 2400);
     setActivationCode("");
     setActivatePlan(null);
   };
@@ -132,7 +137,9 @@ export default function PricingPage() {
             <article
               className={cn(
                 "liquid-glass rounded-3xl border p-5 shadow-sm backdrop-blur-xl",
-                isCurrent ? "border-primary/45 bg-primary/10" : "border-border/50 bg-card/70"
+                isCurrent ? "border-primary/45 bg-primary/10" : "border-border/50 bg-card/70",
+                recentlyUnlockedPlan === planItem.key &&
+                  "animate-pulse border-emerald-400/70 bg-emerald-500/10 shadow-[0_0_0_2px_rgba(16,185,129,0.2)]"
               )}
               key={planItem.key}
             >
@@ -261,6 +268,23 @@ export default function PricingPage() {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+      {recentlyUnlockedPlan && (
+        <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+          {Array.from({ length: 18 }).map((_, index) => (
+            <span
+              className="absolute rounded-full bg-primary/40 blur-[1px] animate-pulse"
+              key={`unlock-fx-${index}`}
+              style={{
+                animationDelay: `${index * 70}ms`,
+                height: `${6 + (index % 4) * 3}px`,
+                left: `${(index * 17) % 100}%`,
+                top: `${(index * 29) % 100}%`,
+                width: `${6 + (index % 4) * 3}px`,
+              }}
+            />
+          ))}
         </div>
       )}
     </div>

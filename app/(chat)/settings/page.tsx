@@ -365,6 +365,7 @@ export default function SettingsPage() {
   const [chatBarSize, setChatBarSize] = useState<
     "compact" | "standard" | "large"
   >("compact");
+  const [showWordCounter, setShowWordCounter] = useState(true);
   const [profileName, setProfileName] = useState("");
   const [profileLogoDataUrl, setProfileLogoDataUrl] = useState<
     string | undefined
@@ -951,6 +952,15 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    const raw = window.localStorage.getItem("mai.show-word-counter");
+    if (raw === "false") {
+      setShowWordCounter(false);
+      return;
+    }
+    setShowWordCounter(true);
+  }, []);
+
+  useEffect(() => {
     // Évite d'écraser le stockage avant la première lecture locale.
     if (!tasksHydrated) {
       return;
@@ -1117,6 +1127,11 @@ export default function SettingsPage() {
   const handleChatBarSizeChange = (size: "compact" | "standard" | "large") => {
     setChatBarSize(size);
     window.localStorage.setItem("mai.chatbar.size", size);
+  };
+
+  const handleWordCounterVisibility = (nextValue: boolean) => {
+    setShowWordCounter(nextValue);
+    window.localStorage.setItem("mai.show-word-counter", String(nextValue));
   };
 
   const handleProfileLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1611,6 +1626,31 @@ export default function SettingsPage() {
               placeholder="Ex: Product Designer"
               value={profession}
             />
+          </div>
+        </div>
+
+        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
+          <p className="text-sm font-medium">Affichage du compteur de saisie</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Affiche/masque les mots et caractères dans la barre de chat.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              onClick={() => handleWordCounterVisibility(true)}
+              size="sm"
+              type="button"
+              variant={showWordCounter ? "default" : "outline"}
+            >
+              Afficher
+            </Button>
+            <Button
+              onClick={() => handleWordCounterVisibility(false)}
+              size="sm"
+              type="button"
+              variant={!showWordCounter ? "default" : "outline"}
+            >
+              Masquer
+            </Button>
           </div>
         </div>
       </section>

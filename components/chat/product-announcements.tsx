@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenCheck, Download, Rocket, Sparkles, X } from "lucide-react";
+import { BookOpenCheck, Download, Rocket, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { APP_VERSION } from "@/lib/app-version";
 import { Button } from "../ui/button";
@@ -84,6 +84,14 @@ export function ProductAnnouncements() {
           <Button onClick={handleInstall} size="sm" type="button" variant="secondary">
             Installer
           </Button>
+          <Button
+            onClick={() => setDeferredPrompt(null)}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <X className="size-4" />
+          </Button>
         </div>
       )}
 
@@ -121,8 +129,12 @@ export function ProductAnnouncements() {
                 historique Speaky, bibliothèque améliorée, onboarding et support PWA.
               </p>
             </div>
-            <button className="rounded-full p-1 hover:bg-muted" onClick={closeWhatsNew} type="button">
-              <Sparkles className="size-4" />
+            <button
+              className="rounded-full p-1 hover:bg-muted"
+              onClick={closeWhatsNew}
+              type="button"
+            >
+              <X className="size-4" />
             </button>
           </div>
         </div>

@@ -41,7 +41,8 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
   },
   plus: {
     key: "plus",
-    label: "mAI +",
+    label: "mAI Plus",
+    recommended: true,
     limits: {
       filesPerDay: 10,
       maxFileSizeMb: 50,
@@ -58,7 +59,6 @@ export const planDefinitions: Record<PlanKey, PlanDefinition> = {
   pro: {
     key: "pro",
     label: "mAI Pro",
-    recommended: true,
     limits: {
       filesPerDay: 20,
       maxFileSizeMb: 100,

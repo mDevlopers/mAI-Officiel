@@ -9,6 +9,7 @@ import {
   BrainIcon,
   FilePenLineIcon,
   Ghost,
+  Globe2Icon,
   GraduationCapIcon,
   LockIcon,
   MicIcon,
@@ -432,6 +433,7 @@ function PureMultimodalInput({
     "mai.chatbar.size",
     "compact"
   );
+  const [showWordCounter] = useLocalStorage("mai.show-word-counter", true);
   const [uploadSource] = useLocalStorage<UploadSource>(
     "mai.upload-source",
     "mai-library"
@@ -1184,9 +1186,12 @@ ${extractedFileContext}`
               selectedModelId={selectedModelId}
             />
             </PromptInputTools>
-            <p className="text-[10px] text-muted-foreground">
-              {liveWordCount} mots · {liveCharacterCount} caractères · Entrée envoyer · Ctrl+N nouvelle discussion · Ctrl+/ sidebar
-            </p>
+            {showWordCounter ? (
+              <p className="text-[10px] text-muted-foreground">
+                {liveWordCount} mots · {liveCharacterCount} caractères · Entrée
+                envoyer · Ctrl+N nouvelle discussion · Ctrl+/ sidebar
+              </p>
+            ) : null}
           </div>
 
           {status === "submitted" ? (
@@ -1569,7 +1574,7 @@ function PureContextualActionsMenu({
           onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
           variant="ghost"
         >
-          <SearchIcon
+          <Globe2Icon
             className={
               isWebSearchEnabled ? "text-primary" : "text-muted-foreground"
             }
@@ -1591,13 +1596,13 @@ function PureContextualActionsMenu({
           }}
           variant="ghost"
         >
-          <SearchIcon
+          <Globe2Icon
             className={
               forceWebSearchEnabled ? "text-primary" : "text-muted-foreground"
             }
             size={16}
           />
-          Forcer la recherche web
+          Recherche web
         </Button>
 
         <Button
