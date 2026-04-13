@@ -11,11 +11,8 @@ async function run() {
   const connection = postgres(process.env.POSTGRES_URL, { max: 1 });
   const db = drizzle(connection);
 
-  console.log("Running migrations...");
-
   await migrate(db, { migrationsFolder: "lib/db/migrations" });
 
-  console.log("Migrations completed successfully");
   process.exit(0);
 }
 
