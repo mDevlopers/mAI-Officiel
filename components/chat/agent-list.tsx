@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AgentForm } from "./agent-form";
+import { AgentForm, AgentDTO } from "./agent-form";
 
 export function AgentListDialog({
   open,
@@ -25,7 +25,7 @@ export function AgentListDialog({
   const { data: agents, mutate } = useSWR("/api/agents", (url) =>
     fetch(url).then((res) => res.json())
   );
-  const [editingAgent, setEditingAgent] = useState<any>(null);
+  const [editingAgent, setEditingAgent] = useState<AgentDTO | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -68,7 +68,7 @@ export function AgentListDialog({
                   Vous n'avez pas encore créé de mAI.
                 </p>
               )}
-              {agents?.map((agent: any) => (
+              {agents?.map((agent: AgentDTO) => (
                 <div
                   className="flex items-center justify-between p-3 border rounded-lg"
                   key={agent.id}

@@ -13,6 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+
+export interface AgentDTO {
+  id: string;
+  name: string;
+  description?: string | null;
+  instructions?: string | null;
+  model?: string | null;
+  avatarUrl?: string | null;
+  createdAt?: Date | string;
+}
+
 export function AgentForm({
   open,
   onOpenChange,
@@ -21,7 +32,7 @@ export function AgentForm({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  agent?: any;
+  agent?: AgentDTO | null;
   onSuccess: () => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -86,7 +97,7 @@ export function AgentForm({
           <div className="grid gap-2">
             <Label htmlFor="description">Description</Label>
             <Input
-              defaultValue={agent?.description}
+              defaultValue={agent?.description ?? undefined}
               id="description"
               name="description"
               placeholder="Brève description de ce mAI..."
@@ -96,7 +107,7 @@ export function AgentForm({
           <div className="grid gap-2">
             <Label htmlFor="avatarUrl">Logo (URL)</Label>
             <Input
-              defaultValue={agent?.avatarUrl}
+              defaultValue={agent?.avatarUrl ?? undefined}
               id="avatarUrl"
               name="avatarUrl"
               placeholder="https://..."
@@ -109,7 +120,7 @@ export function AgentForm({
             </Label>
             <Textarea
               className="min-h-[100px]"
-              defaultValue={agent?.instructions}
+              defaultValue={agent?.instructions ?? undefined}
               id="instructions"
               name="instructions"
               placeholder="Tu es un expert en droit des affaires..."
