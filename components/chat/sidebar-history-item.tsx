@@ -1,4 +1,4 @@
-import { FolderIcon } from "lucide-react";
+import { FlagIcon, FolderIcon, PinIcon } from "lucide-react";
 import Link from "next/link";
 import { memo, useEffect, useState } from "react";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
@@ -348,7 +348,12 @@ const PureChatItem = ({
             className="cursor-pointer"
             onSelect={() => onPin(chat.id)}
           >
-            {isPinned ? "Désépingler" : "Épingler"}
+            <span className="inline-flex items-center gap-2">
+              <span className="rounded-md border border-border/60 bg-background/70 p-1">
+                <PinIcon className="size-3" />
+              </span>
+              {isPinned ? "Désépingler" : "Épingler"}
+            </span>
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer">
@@ -377,7 +382,12 @@ const PureChatItem = ({
             className="cursor-pointer"
             onSelect={() => onReport(chat.id)}
           >
-            Signaler
+            <span className="inline-flex items-center gap-2">
+              <span className="rounded-md border border-border/60 bg-background/70 p-1 text-amber-600">
+                <FlagIcon className="size-3" />
+              </span>
+              Signaler
+            </span>
           </DropdownMenuItem>
 
           <DropdownMenuSub>
