@@ -1498,9 +1498,6 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3">
         <Settings2 className="size-8 text-primary" />
         <h1 className="text-3xl font-bold">Paramètres</h1>
-        <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-xs text-muted-foreground">
-          v{APP_VERSION}
-        </span>
       </div>
 
       <section className="rounded-2xl border border-border/50 bg-card/70 p-4 backdrop-blur-xl">

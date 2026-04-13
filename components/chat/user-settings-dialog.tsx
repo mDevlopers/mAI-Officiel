@@ -19,7 +19,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { APP_VERSION } from "@/lib/app-version";
 import {
   defaultShortcuts,
   SHORTCUTS_STORAGE_KEY,
@@ -350,9 +349,6 @@ export function UserSettingsDialog({
           <DialogTitle className="flex items-center gap-2 text-base">
             <BadgeCheck className="size-4 text-blue-500" />
             Paramètres complets
-            <span className="rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              v{APP_VERSION}
-            </span>
           </DialogTitle>
           <DialogDescription>
             Profil, personnalisation IA, projets, ingestion et style de réponse.
@@ -626,10 +622,6 @@ export function UserSettingsDialog({
               </button>
             </section>
           </div>
-        </div>
-        <div className="border-t border-border/50 bg-background/35 px-6 py-3 text-right text-xs text-muted-foreground">
-          Version de l&apos;application :{" "}
-          <span className="font-medium">v{APP_VERSION}</span>
         </div>
       </DialogContent>
     </Dialog>

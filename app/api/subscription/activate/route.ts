@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { type PlanKey, parsePlanKey } from "@/lib/subscription";
+import { getPlanFromActivationCode } from "@/lib/subscription-codes";
+import { parsePlanKey } from "@/lib/subscription";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_ATTEMPTS = 8;
@@ -34,39 +34,6 @@ function registerAttempt(ip: string) {
   attemptsByIp.set(ip, attempts);
 }
 
-function safeCompareCode(input: string, expected: string | undefined): boolean {
-  if (!expected) {
-    return false;
-  }
-
-  const normalizedInput = Buffer.from(input.trim());
-  const normalizedExpected = Buffer.from(expected.trim());
-
-  if (normalizedInput.length !== normalizedExpected.length) {
-    return false;
-  }
-
-  return timingSafeEqual(normalizedInput, normalizedExpected);
-}
-
-function getPlanFromEnvCode(code: string): PlanKey | null {
-  const normalizedCode = code.trim();
-
-  if (safeCompareCode(normalizedCode, process.env.MAI_PLUS)) {
-    return "plus";
-  }
-
-  if (safeCompareCode(normalizedCode, process.env.MAI_PRO)) {
-    return "pro";
-  }
-
-  if (safeCompareCode(normalizedCode, process.env.MAI_MAX)) {
-    return "max";
-  }
-
-  return null;
-}
-
 export async function POST(request: Request) {
   try {
     const clientIp = getClientIp(request);
@@ -85,7 +52,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Code invalide" }, { status: 400 });
     }
 
-    const plan = getPlanFromEnvCode(parsedPayload.data.code);
+    const plan = getPlanFromActivationCode(parsedPayload.data.code);
 
     if (!plan) {
       registerAttempt(clientIp);

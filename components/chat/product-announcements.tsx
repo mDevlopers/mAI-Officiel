@@ -74,7 +74,7 @@ export function ProductAnnouncements() {
           <div className="liquid-glass flex items-start gap-3 rounded-2xl border border-border/60 bg-white p-4 text-black backdrop-blur-xl">
             <Rocket className="mt-0.5 size-5 text-primary" />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold">Quoi de neuf — v{APP_VERSION}</p>
+              <p className="font-semibold">Quoi de neuf</p>
               <p className="text-sm text-muted-foreground">
                 Compteur mots/caractères, templates mAIs, snippets interpreter,
                 historique Speaky, bibliothèque améliorée, onboarding et support PWA.
