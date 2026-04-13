@@ -420,28 +420,36 @@ export async function POST(request: Request) {
         }
 
         if (isToolApprovalFlow) {
+          const updatePromises = [];
+          const newMessages = [];
+
           for (const finishedMsg of finishedMessages) {
             const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);
             if (existingMsg) {
-              await updateMessage({
-                id: finishedMsg.id,
-                parts: finishedMsg.parts,
-              });
+              updatePromises.push(
+                updateMessage({
+                  id: finishedMsg.id,
+                  parts: finishedMsg.parts,
+                })
+              );
             } else {
-              await saveMessages({
-                messages: [
-                  {
-                    id: finishedMsg.id,
-                    role: finishedMsg.role,
-                    parts: finishedMsg.parts,
-                    createdAt: new Date(),
-                    attachments: [],
-                    chatId: id,
-                  },
-                ],
+              newMessages.push({
+                id: finishedMsg.id,
+                role: finishedMsg.role,
+                parts: finishedMsg.parts,
+                createdAt: new Date(),
+                attachments: [],
+                chatId: id,
               });
             }
           }
+
+          const promises = [...updatePromises];
+          if (newMessages.length > 0) {
+            promises.push(saveMessages({ messages: newMessages }));
+          }
+
+          await Promise.all(promises);
         } else if (finishedMessages.length > 0) {
           await saveMessages({
             messages: finishedMessages.map((currentMessage) => ({
