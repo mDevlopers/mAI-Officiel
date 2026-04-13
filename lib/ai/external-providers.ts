@@ -119,15 +119,34 @@ async function withFallback<T>(
   throw new Error(`${errorLabel}: ${message}`);
 }
 
-function extractTextFromGemini(data: any): string {
+interface GeminiCandidate {
+  content?: {
+    parts?: Array<{ text?: string }>;
+  };
+}
+
+interface GeminiResponse {
+  candidates?: GeminiCandidate[];
+}
+
+function extractTextFromGemini(data: GeminiResponse | undefined | null): string {
   const parts = data?.candidates?.[0]?.content?.parts ?? [];
   return parts
-    .map((part: { text?: string }) => part.text ?? "")
+    .map((part) => part.text ?? "")
     .join("\n")
     .trim();
 }
 
-function extractTextFromChatCompletion(data: any): string {
+interface ChatCompletionMessage {
+  content?: string | Array<{ text?: string }>;
+}
+
+interface ChatCompletionResponse {
+  choices?: Array<{ message?: ChatCompletionMessage }>;
+  output_text?: string;
+}
+
+function extractTextFromChatCompletion(data: ChatCompletionResponse | undefined | null): string {
   const content = data?.choices?.[0]?.message?.content;
 
   if (typeof content === "string") {
@@ -144,7 +163,16 @@ function extractTextFromChatCompletion(data: any): string {
   return (data?.output_text ?? "").trim();
 }
 
-function extractImagePayload(data: any): {
+interface ImagePayloadResponse {
+  data?: Array<{
+    url?: string;
+    b64_json?: string;
+  }>;
+  image_url?: string;
+  output?: Array<{ url?: string }>;
+}
+
+function extractImagePayload(data: ImagePayloadResponse | undefined | null): {
   imageUrl?: string;
   imageBase64?: string;
 } {
