@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 
+interface SerpApiOrganicResult {
+  link: string;
+  snippet?: string;
+  source?: string;
+  title: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { query, fileContext } = (await request.json()) as {
@@ -40,7 +47,7 @@ export async function POST(request: Request) {
 
     const organicResults = (data.organic_results ?? [])
       .slice(0, 8)
-      .map((item: any) => ({
+      .map((item: SerpApiOrganicResult) => ({
         link: item.link,
         snippet: item.snippet,
         source: item.source,
@@ -49,7 +56,7 @@ export async function POST(request: Request) {
 
     const report = organicResults
       .map(
-        (result: any, index: number) =>
+        (result: SerpApiOrganicResult, index: number) =>
           `${index + 1}. ${result.title}\nSource: ${result.source ?? "Web"}\nRésumé: ${result.snippet ?? "Aucun extrait disponible."}`
       )
       .join("\n\n");
