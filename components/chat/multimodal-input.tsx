@@ -14,12 +14,14 @@ import {
   LockIcon,
   MicIcon,
   Paperclip,
-  PanelRightIcon,
+  PinIcon,
   PlusIcon,
   Puzzle,
   SearchIcon,
   SparklesIcon,
+  StarIcon,
   Square,
+  ZapIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -66,13 +68,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { resolveModelLogoProvider } from "@/lib/ai/model-brand";
 import {
@@ -1369,6 +1364,18 @@ function PureContextualActionsMenu({
   );
   const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
   const [isPluginPanelOpen, setIsPluginPanelOpen] = useState(false);
+  const [pluginSearch, setPluginSearch] = useState("");
+  const [pluginView, setPluginView] = useState<"all" | "favorites" | "pinned">(
+    "all"
+  );
+  const [favoritePluginIds, setFavoritePluginIds] = useLocalStorage<string[]>(
+    "mai.plugins.favorites.v1",
+    []
+  );
+  const [pinnedPluginIds, setPinnedPluginIds] = useLocalStorage<string[]>(
+    "mai.plugins.pinned.v1",
+    []
+  );
   const [quizDifficulty, setQuizDifficulty] = useState("moyen");
   const [reasoningLevel, setReasoningLevel] = useLocalStorage<ReflectionLevel>(
     "mai-reasoning-level",
@@ -1492,6 +1499,36 @@ function PureContextualActionsMenu({
         Number(b.pinned) - Number(a.pinned) ||
         +new Date(b.createdAt) - +new Date(a.createdAt)
     );
+  const displayedPlugins = sortedPlugins
+    .filter((plugin) => {
+      const query = pluginSearch.trim().toLowerCase();
+      if (!query) return true;
+      const haystack =
+        `${plugin.name} ${plugin.command} ${plugin.category} ${plugin.description}`.toLowerCase();
+      return haystack.includes(query);
+    })
+    .filter((plugin) => {
+      if (pluginView === "favorites") {
+        return favoritePluginIds.includes(plugin.id);
+      }
+      if (pluginView === "pinned") {
+        return pinnedPluginIds.includes(plugin.id);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const pinScore =
+        Number(pinnedPluginIds.includes(b.id)) -
+        Number(pinnedPluginIds.includes(a.id));
+      if (pinScore !== 0) return pinScore;
+
+      const favoriteScore =
+        Number(favoritePluginIds.includes(b.id)) -
+        Number(favoritePluginIds.includes(a.id));
+      if (favoriteScore !== 0) return favoriteScore;
+
+      return a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+    });
 
   const attachFromLibrary = (asset: {
     name: string;
@@ -1601,17 +1638,27 @@ function PureContextualActionsMenu({
             </p>
             <div className="grid gap-1">
               {[
-                { id: "light", label: "⚡ Rapide" },
-                { id: "moderate", label: "⚖️ Standard" },
+                {
+                  id: "light",
+                  label: "Rapide",
+                  icon: <ZapIcon className="size-3.5" />,
+                },
+                {
+                  id: "moderate",
+                  label: "Standard",
+                  icon: <BrainIcon className="size-3.5" />,
+                },
                 {
                   id: "deep",
-                  label: "🔥 Approfondi",
+                  label: "Approfondi",
+                  icon: <SparklesIcon className="size-3.5" />,
                   helper: "Inclus avec le forfait Pro",
                   disabled: !canUseDeepReflection,
                 },
                 {
                   id: "very-deep",
-                  label: "🚀 Extrême",
+                  label: "Extrême",
+                  icon: <BrainIcon className="size-3.5" />,
                   helper: "Inclus avec le forfait Max",
                   disabled: !canUseVeryDeepReflection,
                 },
@@ -1636,7 +1683,17 @@ function PureContextualActionsMenu({
                     }
                     type="button"
                   >
-                    <span>{option.label}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className={cn(
+                          "rounded-md border border-border/60 bg-background/80 p-1",
+                          isActive && "border-primary/45 bg-primary/10"
+                        )}
+                      >
+                        {option.icon}
+                      </span>
+                      {option.label}
+                    </span>
                     {option.helper ? (
                       <span className="text-[10px] text-muted-foreground">
                         {option.helper}
@@ -1745,99 +1802,164 @@ function PureContextualActionsMenu({
             <Puzzle className="text-muted-foreground" size={16} />
             Plugins
           </span>
-          <PanelRightIcon className="size-3.5 text-muted-foreground" />
+          <SearchIcon className="size-3.5 text-muted-foreground" />
         </Button>
       </PopoverContent>
-      <Sheet onOpenChange={setIsPluginPanelOpen} open={isPluginPanelOpen}>
-        <SheetContent
-          className="liquid-panel w-[min(94vw,27rem)] border-l border-white/30 bg-white/88 p-0 backdrop-blur-2xl dark:bg-zinc-950/80"
-          side="right"
-        >
-          <SheetHeader className="border-b border-border/50 pb-4">
-            <SheetTitle className="flex items-center gap-2">
+      <Dialog onOpenChange={setIsPluginPanelOpen} open={isPluginPanelOpen}>
+        <DialogContent className="liquid-panel max-w-3xl border-white/30 bg-white/85 backdrop-blur-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <Puzzle className="size-4" />
               Plugins
-            </SheetTitle>
-            <SheetDescription>
-              Activez/désactivez les extensions et choisissez le plugin utilisé
-              pour la prochaine requête.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="space-y-2 overflow-y-auto px-4 pb-4">
-            <button
-              className={cn(
-                "mt-2 w-full rounded-xl border px-3 py-2 text-left text-xs transition",
-                selectedPlugin === "none"
-                  ? "border-primary/45 bg-primary/10 text-primary"
-                  : "border-border/60 hover:border-primary/35 hover:bg-primary/5"
-              )}
-              onClick={() => setSelectedPlugin("none")}
-              type="button"
-            >
-              Aucun plugin actif
-            </button>
-            {sortedPlugins.map((plugin) => (
-              <article
-                className="liquid-panel rounded-xl border border-border/60 bg-background/60 p-3"
-                key={plugin.id}
+            </DialogTitle>
+            <DialogDescription>
+              Fenêtre contextuelle : recherchez, épinglez et ajoutez des favoris
+              pour accélérer l’usage des fonctionnalités.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                className="h-9 w-full rounded-lg border border-border/60 bg-background/70 px-3 text-sm"
+                onChange={(event) => setPluginSearch(event.target.value)}
+                placeholder="Rechercher un plugin, commande ou catégorie..."
+                value={pluginSearch}
+              />
+              <select
+                className="h-9 rounded-lg border border-border/60 bg-background/70 px-2 text-xs"
+                onChange={(event) =>
+                  setPluginView(
+                    event.target.value as "all" | "favorites" | "pinned"
+                  )
+                }
+                value={pluginView}
               >
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold">
-                    {plugin.name}
-                    {plugin.isNew ? (
-                      <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">
-                        <SparklesIcon className="size-2.5" />
-                        NEW
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {plugin.description}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground/75">
-                    {plugin.command} · {plugin.category}
-                  </p>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button
-                    className={cn(
-                      "rounded-lg border px-2 py-1.5 text-[11px] transition",
-                      selectedPlugin === plugin.id
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/60 hover:border-primary/35"
-                    )}
-                    disabled={!enabledPluginsSet.has(plugin.id)}
-                    onClick={() => setSelectedPlugin(plugin.id)}
-                    type="button"
-                  >
-                    Utiliser
-                  </button>
-                  <button
-                    className={cn(
-                      "rounded-lg border px-2 py-1.5 text-[11px] transition",
-                      enabledPluginsSet.has(plugin.id)
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/60 hover:border-primary/35"
-                    )}
-                    onClick={() =>
-                      setEnabledPluginIds((current) =>
-                        current.includes(plugin.id)
-                          ? current.filter((id) => id !== plugin.id)
-                          : [...current, plugin.id]
-                      )
-                    }
-                    type="button"
-                  >
-                    {enabledPluginsSet.has(plugin.id)
-                      ? "Désactiver"
-                      : "Activer"}
-                  </button>
-                </div>
-              </article>
-            ))}
+                <option value="all">Tous</option>
+                <option value="favorites">Favoris</option>
+                <option value="pinned">Épinglés</option>
+              </select>
+            </div>
+            <div className="max-h-[52dvh] space-y-2 overflow-y-auto pr-1">
+              <button
+                className={cn(
+                  "w-full rounded-xl border px-3 py-2 text-left text-xs transition",
+                  selectedPlugin === "none"
+                    ? "border-primary/45 bg-primary/10 text-primary"
+                    : "border-border/60 hover:border-primary/35 hover:bg-primary/5"
+                )}
+                onClick={() => setSelectedPlugin("none")}
+                type="button"
+              >
+                Aucun plugin actif
+              </button>
+              {displayedPlugins.map((plugin) => (
+                <article
+                  className="liquid-panel rounded-xl border border-border/60 bg-background/60 p-3"
+                  key={plugin.id}
+                >
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold">
+                      {plugin.name}
+                      {plugin.isNew ? (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">
+                          <SparklesIcon className="size-2.5" />
+                          NEW
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {plugin.description}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground/75">
+                      {plugin.command} · {plugin.category}
+                    </p>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-[11px] transition",
+                        selectedPlugin === plugin.id
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/60 hover:border-primary/35"
+                      )}
+                      disabled={!enabledPluginsSet.has(plugin.id)}
+                      onClick={() => setSelectedPlugin(plugin.id)}
+                      type="button"
+                    >
+                      Utiliser
+                    </button>
+                    <button
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-[11px] transition",
+                        enabledPluginsSet.has(plugin.id)
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/60 hover:border-primary/35"
+                      )}
+                      onClick={() =>
+                        setEnabledPluginIds((current) =>
+                          current.includes(plugin.id)
+                            ? current.filter((id) => id !== plugin.id)
+                            : [...current, plugin.id]
+                        )
+                      }
+                      type="button"
+                    >
+                      {enabledPluginsSet.has(plugin.id)
+                        ? "Désactiver"
+                        : "Activer"}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] transition",
+                        favoritePluginIds.includes(plugin.id)
+                          ? "border-primary/45 bg-primary/10 text-primary"
+                          : "border-border/60"
+                      )}
+                      onClick={() =>
+                        setFavoritePluginIds((current) =>
+                          current.includes(plugin.id)
+                            ? current.filter((id) => id !== plugin.id)
+                            : [...current, plugin.id]
+                        )
+                      }
+                      type="button"
+                    >
+                      <StarIcon className="size-3" />
+                      Favori
+                    </button>
+                    <button
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] transition",
+                        pinnedPluginIds.includes(plugin.id)
+                          ? "border-primary/45 bg-primary/10 text-primary"
+                          : "border-border/60"
+                      )}
+                      onClick={() =>
+                        setPinnedPluginIds((current) =>
+                          current.includes(plugin.id)
+                            ? current.filter((id) => id !== plugin.id)
+                            : [...current, plugin.id]
+                        )
+                      }
+                      type="button"
+                    >
+                      <PinIcon className="size-3" />
+                      Épingler
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {displayedPlugins.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+                  Aucun plugin ne correspond à cette recherche/filtre.
+                </p>
+              ) : null}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
       <Dialog onOpenChange={setIsLibraryDialogOpen} open={isLibraryDialogOpen}>
         <DialogContent className="liquid-panel max-w-2xl border-white/30 bg-white/85 backdrop-blur-2xl">
           <DialogHeader>
