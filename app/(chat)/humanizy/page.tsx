@@ -13,6 +13,7 @@ type HumanizyResult = {
 
 export default function HumanizyPage() {
   const [text, setText] = useState("");
+  const [history, setHistory] = useState<HumanizyResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<HumanizyResult | null>(null);
 
@@ -35,6 +36,7 @@ export default function HumanizyPage() {
 
       const payload = (await response.json()) as HumanizyResult;
       setResult(payload);
+      setHistory((prev) => [payload, ...prev].slice(0, 5));
     } catch {
       setResult({
         confidence: 0,
@@ -68,7 +70,7 @@ export default function HumanizyPage() {
           className="mt-2 min-h-[220px] w-full resize-none rounded-xl border border-border/50 bg-background/70 p-3 text-sm"
           id="humanizy-text"
           onChange={(event) => setText(event.target.value)}
-          placeholder="Collez un texte pour obtenir un score de probabilité IA / humain..."
+          placeholder="Collez un texte pour obtenir une estimation IA / humain..."
           value={text}
         />
         <div className="mt-3 flex items-center gap-2">
@@ -80,9 +82,6 @@ export default function HumanizyPage() {
             <ScanText className="mr-2 size-4" />
             {loading ? "Analyse..." : "Analyser"}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Analyse NLP locale + scoring probabiliste
-          </p>
         </div>
       </section>
 
@@ -104,6 +103,19 @@ export default function HumanizyPage() {
           <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
             {result.signals.map((signal) => (
               <li key={signal}>{signal}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {history.length > 0 ? (
+        <section className="liquid-panel rounded-2xl border border-border/60 p-4">
+          <p className="text-sm font-medium">Historique récent</p>
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {history.map((entry, index) => (
+              <li key={`${entry.label}-${entry.confidence}-${index}`}>
+                {entry.label} · {entry.confidence}% — {entry.explanation}
+              </li>
             ))}
           </ul>
         </section>

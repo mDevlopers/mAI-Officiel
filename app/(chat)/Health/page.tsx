@@ -145,8 +145,8 @@ export default function HealthPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-3xl font-bold tracking-tight">mAIHealth</h1>
-              <span className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
-                Bêta
+              <span className="rounded-full border border-violet-400/50 bg-violet-300/25 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:text-violet-200">
+                Accès anticipé
               </span>
             </div>
             <p className="text-sm text-muted-foreground">

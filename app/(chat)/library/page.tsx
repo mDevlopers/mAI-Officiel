@@ -9,7 +9,6 @@ import {
   Pin,
   PinOff,
   Search,
-  ShieldAlert,
   Trash2,
   UploadCloud,
 } from "lucide-react";
@@ -563,17 +562,6 @@ export default function LibraryPage() {
           )}
         </section>
       )}
-
-      <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-300">
-          <ShieldAlert className="size-4" />
-          <p className="text-xs font-medium">Suppression sécurisée activée</p>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Les suppressions demandent une confirmation pour éviter les pertes
-          accidentelles.
-        </p>
-      </section>
 
       <AlertDialog
         onOpenChange={(open) => {

@@ -1,17 +1,20 @@
 "use client";
 
-import { Bell, CheckCheck, Circle, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, Circle, Copy, Pin, PinOff, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   clearNotifications,
+  deleteNotification,
   type AppNotification,
   getNotificationHistory,
   markAllNotificationsRead,
   markNotificationRead,
+  pinNotification,
   subscribeNotifications,
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 
 function levelBadge(level: AppNotification["level"]) {
   if (level === "error") return "bg-rose-500/15 text-rose-700";
@@ -22,6 +25,7 @@ function levelBadge(level: AppNotification["level"]) {
 
 export function NotificationCenter() {
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [activeItem, setActiveItem] = useState<AppNotification | null>(null);
 
   useEffect(() => {
     setItems(getNotificationHistory());
@@ -30,10 +34,13 @@ export function NotificationCenter() {
     });
   }, []);
 
-  const unreadCount = useMemo(
-    () => items.filter((item) => !item.read).length,
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))),
     [items]
   );
+
+  const unreadCount = useMemo(() => items.filter((item) => !item.read).length, [items]);
 
   return (
     <div className="liquid-panel mx-2 mt-2 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/20 p-2 group-data-[collapsible=icon]:hidden">
@@ -72,7 +79,7 @@ export function NotificationCenter() {
             Aucune notification.
           </p>
         ) : (
-          items.map((item) => (
+          sortedItems.map((item) => (
             <button
               className={cn(
                 "w-full rounded-lg border px-2 py-1.5 text-left",
@@ -81,12 +88,13 @@ export function NotificationCenter() {
                   : "border-sidebar-border/70 bg-sidebar/50"
               )}
               key={item.id}
-              onClick={() => markNotificationRead(item.id, !item.read)}
+              onClick={() => setActiveItem(item)}
               type="button"
             >
               <p className="flex items-center gap-1 text-[11px] font-medium text-sidebar-foreground">
                 <Circle className="size-2.5 fill-current" />
                 {item.title}
+                {item.pinned ? <Pin className="size-2.5" /> : null}
                 <span className={cn("rounded px-1", levelBadge(item.level))}>
                   {item.level}
                 </span>
@@ -98,6 +106,67 @@ export function NotificationCenter() {
           ))
         )}
       </div>
+
+      <Dialog onOpenChange={(open) => !open && setActiveItem(null)} open={Boolean(activeItem)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{activeItem?.title}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{activeItem?.message}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => {
+                if (!activeItem) return;
+                navigator.clipboard.writeText(activeItem.message);
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Copy className="mr-1 size-4" /> Copier
+            </Button>
+            <Button
+              onClick={() => {
+                if (!activeItem) return;
+                markNotificationRead(activeItem.id, !activeItem.read);
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <CheckCheck className="mr-1 size-4" />
+              {activeItem?.read ? "Marquer non lu" : "Marquer lu"}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!activeItem) return;
+                pinNotification(activeItem.id, !activeItem.pinned);
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {activeItem?.pinned ? (
+                <><PinOff className="mr-1 size-4" /> Désépingler</>
+              ) : (
+                <><Pin className="mr-1 size-4" /> Épingler</>
+              )}
+            </Button>
+            <Button
+              onClick={() => {
+                if (!activeItem) return;
+                deleteNotification(activeItem.id);
+                setActiveItem(null);
+              }}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              <Trash2 className="mr-1 size-4" /> Supprimer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -10,6 +10,7 @@ export type AppNotification = {
   createdAt: string;
   read: boolean;
   source: "user" | "system";
+  pinned?: boolean;
   metadata?: {
     chatId?: string;
     assistantMessageId?: string;
@@ -168,6 +169,18 @@ export function markNotificationRead(id: string, read: boolean) {
   saveNotificationHistory(
     items.map((item) => (item.id === id ? { ...item, read } : item))
   );
+}
+
+export function pinNotification(id: string, pinned: boolean) {
+  const items = getNotificationHistory();
+  saveNotificationHistory(
+    items.map((item) => (item.id === id ? { ...item, pinned } : item))
+  );
+}
+
+export function deleteNotification(id: string) {
+  const items = getNotificationHistory();
+  saveNotificationHistory(items.filter((item) => item.id !== id));
 }
 
 export function markAllNotificationsRead(read: boolean) {

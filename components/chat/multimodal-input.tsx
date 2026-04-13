@@ -453,7 +453,7 @@ function PureMultimodalInput({
     "mai.chatbar.size",
     "compact"
   );
-  const [showWordCounter] = useLocalStorage("mai.show-word-counter", true);
+  const [showWordCounter] = useLocalStorage("mai.show-word-counter", false);
   const [uploadSource] = useLocalStorage<UploadSource>(
     "mai.upload-source",
     "mai-library"

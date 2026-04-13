@@ -27,7 +27,7 @@ import { PanelLeftIcon } from "lucide-react"
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_MOBILE = "22rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 const SIDEBAR_ALTERNATE_SHORTCUT = "/"
@@ -128,6 +128,7 @@ function SidebarProvider({
           {
             "--sidebar-width": SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+            "--sidebar-width-mobile": SIDEBAR_WIDTH_MOBILE,
             ...style,
           } as React.CSSProperties
         }
@@ -181,15 +182,14 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="liquid-panel inset-x-0 bottom-0 top-auto h-[78dvh] w-full rounded-t-3xl border-t border-white/20 bg-sidebar/96 p-0 text-sidebar-foreground shadow-[var(--glass-shadow)] backdrop-blur-2xl [will-change:transform] [&>button]:hidden"
+          className="inset-y-0 left-0 h-dvh w-[min(88vw,var(--sidebar-width-mobile))] border-r border-white/10 bg-sidebar p-0 text-sidebar-foreground shadow-[var(--glass-shadow)] [&>button]:hidden"
           showCloseButton={false}
-          side="bottom"
+          side="left"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>
-          <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-sidebar-foreground/20" />
           <div className="flex h-full w-full touch-pan-y flex-col overflow-y-auto pt-2">{children}</div>
         </SheetContent>
       </Sheet>

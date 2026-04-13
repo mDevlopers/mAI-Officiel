@@ -3,9 +3,9 @@
 import {
   BookOpenIcon,
   BotIcon,
-  BrainCircuitIcon,
   CreditCardIcon,
   FolderIcon,
+  FingerprintIcon,
   LanguagesIcon,
   PanelsTopLeftIcon,
   PenSquareIcon,
@@ -71,7 +71,7 @@ const APPLICATION_LINKS = [
   { href: "/translation", label: "Traduction", icon: LanguagesIcon },
   { href: "/interpreter", label: "Code", icon: TerminalSquareIcon },
   { href: "/speaky", label: "Speaky", icon: Volume2Icon },
-  { href: "/humanizy", label: "Humanizy", icon: BrainCircuitIcon },
+  { href: "/humanizy", label: "Humanizy", icon: FingerprintIcon },
 ] as const;
 
 export function AppSidebar({ user }: { user: User | undefined }) {

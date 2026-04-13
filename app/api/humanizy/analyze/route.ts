@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  text: z.string().trim().min(40).max(15_000),
+  text: z.string().trim().min(5).max(15_000),
 });
 
 const aiPhrases = [
@@ -19,6 +19,15 @@ function analyzeHumanVsAi(text: string) {
   const normalized = text.toLowerCase();
   const sentences = text.split(/[.!?]+/).filter(Boolean);
   const words = text.split(/\s+/).filter(Boolean);
+  if (words.length < 3) {
+    return {
+      label: "Humain" as const,
+      confidence: 35,
+      explanation:
+        "Texte très court: ajoutez au moins une phrase complète pour une estimation plus fiable.",
+      signals: ["Échantillon trop faible pour une classification robuste."],
+    };
+  }
 
   const avgSentenceLength = words.length / Math.max(1, sentences.length);
   const punctuationDensity =

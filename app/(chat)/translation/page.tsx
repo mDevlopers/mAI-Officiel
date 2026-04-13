@@ -27,6 +27,10 @@ const languageOptions = [
   { code: "ja", label: "Japonais" },
   { code: "ko", label: "Coréen" },
   { code: "zh", label: "Chinois" },
+  { code: "hi", label: "Hindi" },
+  { code: "uk", label: "Ukrainien" },
+  { code: "id", label: "Indonésien" },
+  { code: "vi", label: "Vietnamien" },
 ] as const;
 
 const synonymsMap: Record<string, string[]> = {
@@ -35,6 +39,8 @@ const synonymsMap: Record<string, string[]> = {
   code: ["script", "source", "implémentation"],
   sécurité: ["protection", "fiabilité", "robustesse"],
   translation: ["traduction", "interprétation", "localisation"],
+  améliorer: ["optimiser", "renforcer", "perfectionner", "bonifier"],
+  projet: ["initiative", "programme", "mission", "chantier"],
 };
 
 const detectorPatterns = {
@@ -64,6 +70,13 @@ function detectLanguage(text: string) {
   }
 
   return topScore <= 0 ? "en" : topCode;
+}
+
+function normalizeWord(input: string) {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
 }
 
 export default function TranslationPage() {
@@ -97,7 +110,10 @@ export default function TranslationPage() {
           `https://api.mymemory.translated.net/get?q=${encodeURIComponent(sourceText)}&langpair=${langPair}`
         );
         const payload = await response.json();
-        setTranslatedText(payload?.responseData?.translatedText ?? "");
+        const bestMatch = payload?.matches?.[0]?.translation;
+        setTranslatedText(
+          (bestMatch || payload?.responseData?.translatedText || "").trim()
+        );
       } catch {
         setTranslatedText("La traduction a échoué. Vérifiez votre connexion.");
       } finally {
@@ -175,8 +191,18 @@ export default function TranslationPage() {
   };
 
   const synonyms = useMemo(() => {
-    const list = synonymsMap[lexicalAnalysis.keyWord] ?? [];
-    return list.length > 0 ? list : ["Aucun synonyme suggéré pour ce terme."];
+    const keyWord = normalizeWord(lexicalAnalysis.keyWord);
+    const exactList = synonymsMap[keyWord] ?? [];
+    if (exactList.length > 0) {
+      return exactList;
+    }
+
+    const fuzzy = Object.entries(synonymsMap).find(([key]) =>
+      keyWord.includes(normalizeWord(key))
+    )?.[1];
+    return fuzzy?.length
+      ? fuzzy
+      : ["Aucun synonyme suggéré pour ce terme. Essayez un mot plus précis."];
   }, [lexicalAnalysis.keyWord]);
 
   const swapLanguages = () => {

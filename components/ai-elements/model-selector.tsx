@@ -177,7 +177,7 @@ export const ModelSelectorLogo = ({
   if (provider === "mai-star") {
     return (
       <span className={className} style={props.style} title={props.title} role="img" aria-label="mai-star logo">
-        <StarIcon className="size-4 text-black" strokeWidth={2.2} />
+        <StarIcon className="size-4 text-black dark:text-white" strokeWidth={2.2} />
       </span>
     );
   }
@@ -191,7 +191,7 @@ export const ModelSelectorLogo = ({
     <img
       {...props}
       alt={`${provider} logo`}
-      className={cn("size-4", className)}
+      className={cn("size-4 dark:brightness-0 dark:invert", className)}
       decoding="async"
       height={16}
       loading="lazy"

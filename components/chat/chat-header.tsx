@@ -27,15 +27,16 @@ function PureChatHeader({
   }
 
   return (
-    <header className="liquid-glass sticky top-0 z-20 mx-2 mt-2 flex h-14 items-center gap-2 rounded-2xl px-3 md:mx-3">
+    <>
       <Button
-        className="md:hidden"
+        className="fixed top-3 left-3 z-50 border border-border/60 bg-background/75 shadow-sm backdrop-blur md:top-4 md:left-4"
         onClick={toggleSidebar}
         size="icon-sm"
         variant="ghost"
       >
         <PanelLeftIcon className="size-4" />
       </Button>
+      <header className="liquid-glass sticky top-0 z-20 mx-2 mt-2 flex h-14 items-center gap-2 rounded-2xl px-3 md:mx-3">
 
       <div className="ml-1 flex items-center gap-2">
         <Image
@@ -55,10 +56,11 @@ function PureChatHeader({
         />
       )}
 
-      <span className="ml-auto rounded-full border border-blue-500/25 bg-blue-500/10 px-2 py-0.5 font-medium text-[10px] text-blue-600 dark:text-blue-300">
-        Bêta
-      </span>
-    </header>
+        <span className="ml-auto rounded-full border border-violet-400/50 bg-violet-300/25 px-2 py-0.5 font-medium text-[10px] text-violet-700 dark:text-violet-200">
+          Accès anticipé
+        </span>
+      </header>
+    </>
   );
 }
 

@@ -19,6 +19,10 @@ export const suggestionPool = [
   "Écris un template de compte-rendu de réunion actionnable.",
   "Propose un workflow no-code pour automatiser mes tâches répétitives.",
   "Aide-moi à clarifier la proposition de valeur de mon produit.",
+  "Traduis ce message en allemand avec un ton professionnel et chaleureux.",
+  "Prépare une routine quotidienne d'étude de 45 minutes pour progresser vite.",
+  "Crée un plan anti-procrastination sur 7 jours avec objectifs mesurables.",
+  "Donne 8 accroches publicitaires A/B testables pour mon offre.",
 ] as string[];
 
 export function pickRandomSuggestions(count = 4): string[] {

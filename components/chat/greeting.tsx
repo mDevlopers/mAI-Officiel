@@ -30,11 +30,11 @@ export const Greeting = () => {
     >
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        className="mb-3 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-300"
+        className="mb-3 rounded-full border border-violet-400/50 bg-violet-300/25 px-3 py-1 text-[11px] font-medium text-violet-700 dark:text-violet-200"
         initial={{ opacity: 0, y: 10 }}
         transition={{ delay: 0.2, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
-        Bêta
+        Accès anticipé
       </motion.div>
       <motion.div
         animate={{ opacity: 1, y: 0 }}

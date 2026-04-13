@@ -45,7 +45,7 @@ import { planDefinitions } from "@/lib/subscription";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 
-const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v017";
+const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v018";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
@@ -56,9 +56,11 @@ const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
 const schedulerModels = [
   "openai/gpt-5.4",
   "openai/gpt-5.4-mini",
+  "openai/gpt-5.4-nano",
   "openai/gpt-5.2",
   "openai/gpt-5.1",
   "openai/gpt-5",
+  "openrouter/openai/gpt-oss-120b",
   "azure/deepseek-v3.2",
   "azure/kimi-k2.5",
   "azure/mistral-large-3",
@@ -132,6 +134,8 @@ type BeforeInstallPromptEvent = Event & {
 
 type ParentalSettings = {
   advancedSettingsLocked: boolean;
+  bedtimeMode: boolean;
+  weekendBonusMinutes: number;
   dailyLimitMinutes: number;
   enabled: boolean;
   extensions: Record<ExtensionKey, boolean>;
@@ -142,6 +146,8 @@ type ParentalSettings = {
 
 const defaultParentalSettings: ParentalSettings = {
   advancedSettingsLocked: true,
+  bedtimeMode: false,
+  weekendBonusMinutes: 20,
   dailyLimitMinutes: 90,
   enabled: false,
   extensions: {
@@ -370,7 +376,8 @@ export default function SettingsPage() {
   const [chatBarSize, setChatBarSize] = useState<
     "compact" | "standard" | "large"
   >("compact");
-  const [showWordCounter, setShowWordCounter] = useState(true);
+  const [showWordCounter, setShowWordCounter] = useState(false);
+  const [interfaceLanguage, setInterfaceLanguage] = useState("fr");
   const [profileName, setProfileName] = useState("");
   const [profileLogoDataUrl, setProfileLogoDataUrl] = useState<
     string | undefined
@@ -780,6 +787,10 @@ export default function SettingsPage() {
           typeof parsed.advancedSettingsLocked === "boolean"
             ? parsed.advancedSettingsLocked
             : defaultParentalSettings.advancedSettingsLocked,
+        bedtimeMode:
+          typeof parsed.bedtimeMode === "boolean"
+            ? parsed.bedtimeMode
+            : defaultParentalSettings.bedtimeMode,
         dailyLimitMinutes:
           typeof parsed.dailyLimitMinutes === "number" &&
           Number.isFinite(parsed.dailyLimitMinutes)
@@ -813,6 +824,11 @@ export default function SettingsPage() {
           typeof parsed.usageMinutes === "number"
             ? Math.max(0, Math.round(parsed.usageMinutes))
             : 0,
+        weekendBonusMinutes:
+          typeof parsed.weekendBonusMinutes === "number" &&
+          Number.isFinite(parsed.weekendBonusMinutes)
+            ? Math.max(0, Math.min(180, Math.round(parsed.weekendBonusMinutes)))
+            : defaultParentalSettings.weekendBonusMinutes,
       });
     } catch {
       // Fallback: on garde les paramètres parentaux par défaut en cas de JSON corrompu.
@@ -960,11 +976,24 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const raw = window.localStorage.getItem("mai.show-word-counter");
+    if (raw === "true") {
+      setShowWordCounter(true);
+      return;
+    }
     if (raw === "false") {
       setShowWordCounter(false);
       return;
     }
-    setShowWordCounter(true);
+    setShowWordCounter(false);
+  }, []);
+
+  useEffect(() => {
+    const rawLanguage = window.localStorage.getItem("mai.language");
+    if (rawLanguage) {
+      setInterfaceLanguage(rawLanguage);
+    } else {
+      setInterfaceLanguage("fr");
+    }
   }, []);
 
   useEffect(() => {
@@ -2139,6 +2168,44 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <button
+            className="flex items-center justify-between rounded-xl border border-border/60 bg-background/60 p-3 text-left"
+            onClick={() =>
+              setParentalSettings((prev) => ({
+                ...prev,
+                bedtimeMode: !prev.bedtimeMode,
+              }))
+            }
+            type="button"
+          >
+            <span className="text-sm font-medium">Mode coucher (21h-7h)</span>
+            <Badge variant="secondary">
+              {parentalSettings.bedtimeMode ? "Actif" : "Inactif"}
+            </Badge>
+          </button>
+          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
+            <p className="text-sm font-medium">Bonus week-end</p>
+            <div className="mt-2 flex items-center gap-2">
+              <Input
+                min={0}
+                onChange={(event) =>
+                  setParentalSettings((prev) => ({
+                    ...prev,
+                    weekendBonusMinutes: Math.max(
+                      0,
+                      Math.min(180, Number(event.target.value) || 0)
+                    ),
+                  }))
+                }
+                type="number"
+                value={parentalSettings.weekendBonusMinutes}
+              />
+              <span className="text-xs text-muted-foreground">min</span>
+            </div>
+          </div>
+        </div>
+
         {parentalFeedback && (
           <p
             className={cn(
@@ -2704,6 +2771,35 @@ export default function SettingsPage() {
           <MessageCircle className="size-5" />
           Communauté & support
         </h2>
+        <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
+          <label className="text-sm font-medium" htmlFor="language-selector">
+            Langue
+          </label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Langue d&apos;interface par défaut: Français.
+          </p>
+          <select
+            className="mt-2 w-full rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm"
+            id="language-selector"
+            onChange={(event) => {
+              const nextLanguage = event.target.value;
+              setInterfaceLanguage(nextLanguage);
+              window.localStorage.setItem("mai.language", nextLanguage);
+              createNotification({
+                level: "success",
+                message: `Langue appliquée: ${nextLanguage.toUpperCase()}`,
+                title: "Préférences",
+              });
+            }}
+            value={interfaceLanguage}
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="it">Italiano</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </div>
         <p className="mt-2 text-sm text-muted-foreground">
           Rejoignez le serveur Discord officiel pour poser vos questions,
           remonter des bugs et suivre les nouveautés.
