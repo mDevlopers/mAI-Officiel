@@ -98,6 +98,7 @@ export function AgentListDialog({
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
+                      aria-label="Edit agent"
                       onClick={() => {
                         setEditingAgent(agent);
                         setIsFormOpen(true);
@@ -109,6 +110,7 @@ export function AgentListDialog({
                       <PenSquareIcon size={14} />
                     </Button>
                     <Button
+                      aria-label="Delete agent"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => handleDelete(agent.id)}
                       size="icon"
