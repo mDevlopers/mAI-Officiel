@@ -1645,7 +1645,7 @@ function PureContextualActionsMenu({
             }
             size={16}
           />
-          Recherche web forcée
+          Recherche sur le web
         </Button>
 
         <Button
@@ -1664,7 +1664,7 @@ function PureContextualActionsMenu({
           className="flex h-8 w-full items-center justify-start gap-2 text-xs font-normal"
           onClick={() => {
             onInsertTemplate(
-              "Ouvre un canevas structuré pour ce travail, avec sections, objectifs et plan d'édition ciblé. Ensuite, commence par la section d'introduction."
+              "Ouvre un canevas structuré pour ce travail."
             );
             setOpen(false);
           }}
