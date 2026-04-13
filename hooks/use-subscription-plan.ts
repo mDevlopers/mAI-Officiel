@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  LEGACY_PLAN_STORAGE_KEYS,
   PLAN_STORAGE_KEY,
   type PlanDefinition,
   type PlanKey,
@@ -16,9 +17,26 @@ export function useSubscriptionPlan() {
   const [isActivating, setIsActivating] = useState(false);
 
   useEffect(() => {
-    const savedPlan = window.localStorage.getItem(PLAN_STORAGE_KEY);
-    setPlan(parsePlanKey(savedPlan));
+    const storageKeys = [PLAN_STORAGE_KEY, ...LEGACY_PLAN_STORAGE_KEYS];
+    const savedPlan = storageKeys
+      .map((storageKey) => window.localStorage.getItem(storageKey))
+      .find((value) => value !== null);
+    const parsedPlan = parsePlanKey(savedPlan);
+
+    setPlan(parsedPlan);
+    window.localStorage.setItem(PLAN_STORAGE_KEY, parsedPlan);
     setIsHydrated(true);
+
+    const onStorage = (event: StorageEvent) => {
+      if (!event.key || !storageKeys.includes(event.key as typeof storageKeys[number])) {
+        return;
+      }
+
+      setPlan(parsePlanKey(event.newValue));
+    };
+
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   const updatePlan = useCallback((nextPlan: PlanKey) => {

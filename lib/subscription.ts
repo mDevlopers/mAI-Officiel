@@ -21,6 +21,10 @@ export type PlanDefinition = {
 };
 
 export const PLAN_STORAGE_KEY = "mai.subscription.plan.v014";
+export const LEGACY_PLAN_STORAGE_KEYS = [
+  "mai.subscription.plan.v013",
+  "mai.subscription.plan.v012",
+] as const;
 
 export const planDefinitions: Record<PlanKey, PlanDefinition> = {
   free: {
@@ -102,13 +106,27 @@ export function parsePlanKey(value: string | null | undefined): PlanKey {
     return "free";
   }
 
+  const normalizedValue = value.trim().toLowerCase();
+
   if (
-    value === "free" ||
-    value === "plus" ||
-    value === "pro" ||
-    value === "max"
+    normalizedValue === "free" ||
+    normalizedValue === "plus" ||
+    normalizedValue === "pro" ||
+    normalizedValue === "max"
   ) {
-    return value;
+    return normalizedValue;
+  }
+
+  if (normalizedValue.includes("maimax") || normalizedValue.includes("max")) {
+    return "max";
+  }
+
+  if (normalizedValue.includes("mai pro") || normalizedValue === "pro") {
+    return "pro";
+  }
+
+  if (normalizedValue.includes("mai plus") || normalizedValue === "plus") {
+    return "plus";
   }
 
   return "free";

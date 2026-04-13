@@ -80,6 +80,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
   const { mutate } = useSWRConfig();
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [isHistoryReady, setIsHistoryReady] = useState(false);
   const normalizedGlobalQuery = globalSearchQuery.trim().toLowerCase();
 
   const closeMobileSidebar = () => {
@@ -98,6 +99,28 @@ export function AppSidebar({ user }: { user: User | undefined }) {
 
     window.addEventListener("keydown", onShortcut);
     return () => window.removeEventListener("keydown", onShortcut);
+  }, []);
+
+  useEffect(() => {
+    const browserWindow = window as Window & {
+      cancelIdleCallback?: (handle: number) => void;
+      requestIdleCallback?: (
+        callback: IdleRequestCallback,
+        options?: IdleRequestOptions
+      ) => number;
+    };
+    const idleCallback = browserWindow.requestIdleCallback?.(
+      () => setIsHistoryReady(true),
+      { timeout: 800 }
+    );
+    const timeoutId = window.setTimeout(() => setIsHistoryReady(true), 350);
+
+    return () => {
+      if (idleCallback !== undefined) {
+        browserWindow.cancelIdleCallback?.(idleCallback);
+      }
+      window.clearTimeout(timeoutId);
+    };
   }, []);
 
   const quickLinks = useMemo(() => {
@@ -289,7 +312,13 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <SidebarHistory globalSearchQuery={globalSearchQuery} user={user} />
+          {isHistoryReady ? (
+            <SidebarHistory globalSearchQuery={globalSearchQuery} user={user} />
+          ) : (
+            <div className="px-2 py-3 text-xs text-sidebar-foreground/55">
+              Chargement de l&apos;historique…
+            </div>
+          )}
         </SidebarContent>
         <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
           {user && <SidebarUserNav user={user} />}

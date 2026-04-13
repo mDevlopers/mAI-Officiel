@@ -112,7 +112,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="liquid-glass flex h-full w-full flex-col gap-6 overflow-y-auto p-6 md:p-10">
+    <div className="liquid-glass flex h-full w-full flex-col gap-4 overflow-y-auto p-4 sm:gap-6 sm:p-6 md:p-10">
       <header className="rounded-2xl border border-border/50 bg-card/70 p-6 backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-3">
           <BadgeCheck className="size-7 text-primary" />
@@ -136,7 +136,7 @@ export default function PricingPage() {
           return (
             <article
               className={cn(
-                "liquid-glass rounded-3xl border p-5 shadow-sm backdrop-blur-xl",
+                "liquid-glass rounded-3xl border p-4 shadow-sm backdrop-blur-xl sm:p-5",
                 isCurrent ? "border-primary/45 bg-primary/10" : "border-border/50 bg-card/70",
                 recentlyUnlockedPlan === planItem.key &&
                   "animate-pulse border-emerald-400/70 bg-emerald-500/10 shadow-[0_0_0_2px_rgba(16,185,129,0.2)]"
@@ -144,7 +144,7 @@ export default function PricingPage() {
               key={planItem.key}
             >
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-2xl font-bold">{planItem.label.replace("mAI ", "")}</h2>
+                <h2 className="text-xl font-bold sm:text-2xl">{planItem.label.replace("mAI ", "")}</h2>
                 {planItem.recommended && (
                   <Badge className="rounded-full bg-violet-500/90 text-white hover:bg-violet-500/90">
                     Populaire
@@ -153,7 +153,7 @@ export default function PricingPage() {
               </div>
 
               <div className="mt-4 flex items-end gap-2">
-                <p className="text-5xl font-bold tracking-tight">{price.amount}</p>
+                <p className="text-4xl font-bold tracking-tight sm:text-5xl">{price.amount}</p>
                 <p className="pb-2 text-xs text-muted-foreground">{price.subtitle}</p>
               </div>
 
@@ -207,8 +207,8 @@ export default function PricingPage() {
                     </Button>
                   </>
                 ) : (
-                  <Button className="w-full" variant="outline">
-                    Revenir à mAI Free
+                  <Button className="w-full" disabled variant="outline">
+                    Forfait inférieur
                   </Button>
                 )}
               </div>
@@ -219,9 +219,9 @@ export default function PricingPage() {
 
       {explainPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-xl rounded-2xl border border-border/60 bg-white p-5 text-black">
+          <div className="w-full max-w-xl rounded-2xl border border-border/70 bg-white p-5 text-black shadow-2xl">
             <h3 className="text-lg font-semibold">Pourquoi choisir {planDefinitions[explainPlan].label} ?</h3>
-            <p className="mt-3 text-sm text-muted-foreground">{explainByPlan[explainPlan]}</p>
+            <p className="mt-3 text-sm leading-6 text-zinc-600">{explainByPlan[explainPlan]}</p>
             <div className="mt-4 flex justify-end">
               <Button onClick={() => setExplainPlan(null)} type="button" variant="outline">
                 Fermer
@@ -233,9 +233,9 @@ export default function PricingPage() {
 
       {activatePlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-          <div className="liquid-glass w-full max-w-lg rounded-2xl border border-border/60 bg-white p-5 text-black">
+          <div className="w-full max-w-lg rounded-2xl border border-border/70 bg-white p-5 text-black shadow-2xl">
             <h3 className="text-lg font-semibold">Activer {planDefinitions[activatePlan].label}</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-zinc-600">
               Entrez votre code officiel pour débloquer le forfait.
             </p>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
