@@ -102,7 +102,8 @@ function executeProcess(command: string, args: string[], cwd: string) {
       const child = spawn(command, args, {
         cwd,
         env: {
-          ...process.env,
+          NODE_ENV: process.env.NODE_ENV,
+          PATH: process.env.PATH,
           HOME: cwd,
           LANG: "C.UTF-8",
           PYTHONNOUSERSITE: "1",
