@@ -48,7 +48,7 @@ import {
   saveChat,
   saveMessages,
   updateChatTitleById,
-  updateMessage,
+  upsertMessages,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
@@ -434,36 +434,18 @@ export async function POST(request: Request) {
         }
 
         if (isToolApprovalFlow) {
-          const updatePromises = [];
-          const newMessages = [];
-
-          for (const finishedMsg of finishedMessages) {
-            const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);
-            if (existingMsg) {
-              updatePromises.push(
-                updateMessage({
-                  id: finishedMsg.id,
-                  parts: finishedMsg.parts,
-                })
-              );
-            } else {
-              newMessages.push({
+          if (finishedMessages.length > 0) {
+            await upsertMessages({
+              messages: finishedMessages.map((finishedMsg) => ({
                 id: finishedMsg.id,
                 role: finishedMsg.role,
                 parts: finishedMsg.parts,
                 createdAt: new Date(),
                 attachments: [],
                 chatId: id,
-              });
-            }
+              })),
+            });
           }
-
-          const promises = [...updatePromises];
-          if (newMessages.length > 0) {
-            promises.push(saveMessages({ messages: newMessages }));
-          }
-
-          await Promise.all(promises);
         } else if (finishedMessages.length > 0) {
           await saveMessages({
             messages: finishedMessages.map((currentMessage) => ({

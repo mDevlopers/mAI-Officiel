@@ -16,3 +16,6 @@
 ## 2026-04-13 - Batched DB Queries for Subtasks
 **Learning:** Avoid N+1 queries when fetching related entities (e.g. subtasks for a list of tasks). Using Promise.all with db queries inside a .map() loop creates unnecessary database round-trips and connection overhead.
 **Action:** Use Drizzle ORM's inArray operator to fetch all related entities in a single batched query, then group them in-memory by their foreign key.
+## 2024-04-14 - Bulk Upsert with Drizzle ORM
+**Learning:** When using Drizzle's `.onConflictDoUpdate()` for bulk upserts on an array of objects, passing an empty array to `values()` will result in a PostgreSQL error (`syntax error at or near "ON"` or `empty values`).
+**Action:** Always verify the array is not empty (e.g., `if (!messages || messages.length === 0) return;`) before executing the query.

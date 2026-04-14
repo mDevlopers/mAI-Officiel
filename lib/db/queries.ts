@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -289,6 +290,20 @@ export async function saveMessages({ messages }: { messages: DBMessage[] }) {
     return await db.insert(message).values(messages);
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save messages");
+  }
+}
+
+export async function upsertMessages({ messages }: { messages: DBMessage[] }) {
+  if (!messages || messages.length === 0) return;
+  try {
+    return await db.insert(message).values(messages).onConflictDoUpdate({
+      target: message.id,
+      set: {
+        parts: sql`excluded.parts`,
+      },
+    });
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to upsert messages");
   }
 }
 
