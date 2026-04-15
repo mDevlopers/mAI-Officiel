@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { APP_VERSION } from "@/lib/app-version";
+import { LANGUAGE_STORAGE_KEY, resolveLanguage, setLanguageInStorage } from "@/lib/i18n";
 import {
   CHAT_TAGS_STORAGE_KEY,
   TAG_DEFINITIONS_STORAGE_KEY,
@@ -41,6 +42,14 @@ import {
   type TagDefinition,
 } from "@/lib/chat-preferences";
 import { createNotification } from "@/lib/notifications";
+import {
+  defaultSecuritySettings,
+  hashPinCode,
+  parseSecuritySettings,
+  SECURITY_LOCKED_FLAG_KEY,
+  SECURITY_SETTINGS_STORAGE_KEY,
+  type SecuritySettings,
+} from "@/lib/security-settings";
 import { planDefinitions } from "@/lib/subscription";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
@@ -60,14 +69,10 @@ const schedulerModels = [
   "openai/gpt-5.2",
   "openai/gpt-5.1",
   "openai/gpt-5",
-  "openrouter/openai/gpt-oss-120b",
+  "openai/gpt-oss-120b",
   "azure/deepseek-v3.2",
   "azure/kimi-k2.5",
   "azure/mistral-large-3",
-  "anthropic/claude-opus-4-6",
-  "anthropic/claude-sonnet-4-20250514",
-  "anthropic/claude-sonnet-4-6",
-  "anthropic/claude-haiku-4-5",
 ] as const;
 const schedulerFrequencies = [
   "quotidienne",
@@ -444,6 +449,14 @@ export default function SettingsPage() {
   const [webSearchUsage, setWebSearchUsage] = useState(0);
   const [deferredPwaPrompt, setDeferredPwaPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
+  const [securitySettings, setSecuritySettings] =
+    useState<SecuritySettings>(defaultSecuritySettings);
+  const [securityPinDraft, setSecurityPinDraft] = useState("");
+  const [securityPinConfirmDraft, setSecurityPinConfirmDraft] = useState("");
+  const [securityFeedback, setSecurityFeedback] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
 
   const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
   const maxMemoryEntries = getMemoryEntriesLimitForPlan(plan);
@@ -784,6 +797,48 @@ export default function SettingsPage() {
   }, [notifications]);
 
   useEffect(() => {
+    setInterfaceLanguage(
+      resolveLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY))
+    );
+
+    const syncLanguage = () => {
+      setInterfaceLanguage(
+        resolveLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY))
+      );
+    };
+
+    window.addEventListener("storage", syncLanguage);
+    window.addEventListener("mai:language-updated", syncLanguage);
+    return () => {
+      window.removeEventListener("storage", syncLanguage);
+      window.removeEventListener("mai:language-updated", syncLanguage);
+    };
+  }, []);
+
+  useEffect(() => {
+    const parsed = parseSecuritySettings(
+      window.localStorage.getItem(SECURITY_SETTINGS_STORAGE_KEY)
+    );
+    setSecuritySettings(parsed);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      SECURITY_SETTINGS_STORAGE_KEY,
+      JSON.stringify(securitySettings)
+    );
+    window.dispatchEvent(
+      new CustomEvent("mai:security-settings-updated", {
+        detail: securitySettings,
+      })
+    );
+
+    if (!securitySettings.enablePinLock) {
+      window.localStorage.removeItem(SECURITY_LOCKED_FLAG_KEY);
+    }
+  }, [securitySettings]);
+
+  useEffect(() => {
     const rawParentalSettings = window.localStorage.getItem(
       PARENTAL_SETTINGS_STORAGE_KEY
     );
@@ -1013,15 +1068,6 @@ export default function SettingsPage() {
       return;
     }
     setShowWordCounter(false);
-  }, []);
-
-  useEffect(() => {
-    const rawLanguage = window.localStorage.getItem("mai.language");
-    if (rawLanguage) {
-      setInterfaceLanguage(rawLanguage);
-    } else {
-      setInterfaceLanguage("fr");
-    }
   }, []);
 
   useEffect(() => {
@@ -1555,6 +1601,56 @@ export default function SettingsPage() {
     setParentalFeedback({
       text: "Section avancée déverrouillée pour 15 minutes.",
       type: "success",
+    });
+  };
+
+
+  const handleSaveSecurityPin = () => {
+    const nextPin = securityPinDraft.trim();
+    const confirmPin = securityPinConfirmDraft.trim();
+
+    if (!/^\d{4,8}$/.test(nextPin)) {
+      setSecurityFeedback({
+        type: "error",
+        text: "Le PIN doit contenir entre 4 et 8 chiffres.",
+      });
+      return;
+    }
+
+    if (nextPin !== confirmPin) {
+      setSecurityFeedback({
+        type: "error",
+        text: "Les deux codes PIN ne correspondent pas.",
+      });
+      return;
+    }
+
+    setSecuritySettings((current) => ({
+      ...current,
+      enablePinLock: true,
+      lockOnReturn: true,
+      pinCodeHash: hashPinCode(nextPin),
+    }));
+    setSecurityPinDraft("");
+    setSecurityPinConfirmDraft("");
+    setSecurityFeedback({
+      type: "success",
+      text: "PIN enregistré. Le verrouillage à la reprise est actif.",
+    });
+  };
+
+  const handleDisableSecurityPin = () => {
+    setSecuritySettings((current) => ({
+      ...current,
+      enablePinLock: false,
+      lockOnReturn: false,
+      pinCodeHash: "",
+    }));
+    setSecurityPinDraft("");
+    setSecurityPinConfirmDraft("");
+    setSecurityFeedback({
+      type: "success",
+      text: "Verrouillage PIN désactivé.",
     });
   };
 
@@ -2370,6 +2466,109 @@ export default function SettingsPage() {
           )}
         </div>
 
+        <div className="liquid-glass mt-4 rounded-2xl border border-border/60 bg-background/60 p-4 backdrop-blur-2xl">
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <Lock className="size-4 text-cyan-400" />
+            Sécurité de session
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Protégez votre session sans vous reconnecter : vérification au chargement, PIN de reprise et déconnexion régulière.
+          </p>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
+              <input
+                checked={securitySettings.securityCheckOnLoad}
+                onChange={(event) =>
+                  setSecuritySettings((current) => ({
+                    ...current,
+                    securityCheckOnLoad: event.target.checked,
+                  }))
+                }
+                type="checkbox"
+              />
+              Vérification de sécurité au chargement
+            </label>
+            <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
+              <input
+                checked={securitySettings.lockOnReturn}
+                disabled={!securitySettings.enablePinLock}
+                onChange={(event) =>
+                  setSecuritySettings((current) => ({
+                    ...current,
+                    lockOnReturn: event.target.checked,
+                  }))
+                }
+                type="checkbox"
+              />
+              Verrouiller la session au retour sur le site
+            </label>
+          </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-3">
+            <Input
+              inputMode="numeric"
+              maxLength={8}
+              onChange={(event) =>
+                setSecurityPinDraft(event.target.value.replace(/\D+/g, "").slice(0, 8))
+              }
+              placeholder="Nouveau PIN (4-8)"
+              type="password"
+              value={securityPinDraft}
+            />
+            <Input
+              inputMode="numeric"
+              maxLength={8}
+              onChange={(event) =>
+                setSecurityPinConfirmDraft(event.target.value.replace(/\D+/g, "").slice(0, 8))
+              }
+              placeholder="Confirmer PIN"
+              type="password"
+              value={securityPinConfirmDraft}
+            />
+            <Button onClick={handleSaveSecurityPin} type="button" variant="outline">
+              Enregistrer PIN
+            </Button>
+          </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto]">
+            <label className="rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
+              Déconnexion régulière automatique (minutes, 0 = désactivée)
+              <Input
+                className="mt-2"
+                min={0}
+                onChange={(event) =>
+                  setSecuritySettings((current) => ({
+                    ...current,
+                    autoLogoutMinutes: Math.max(
+                      0,
+                      Math.min(1440, Number(event.target.value) || 0)
+                    ),
+                  }))
+                }
+                type="number"
+                value={securitySettings.autoLogoutMinutes}
+              />
+            </label>
+            <Button onClick={handleDisableSecurityPin} type="button" variant="ghost">
+              Désactiver PIN
+            </Button>
+          </div>
+
+          {securityFeedback ? (
+            <p
+              className={cn(
+                "mt-2 text-xs",
+                securityFeedback.type === "success"
+                  ? "text-emerald-500"
+                  : "text-rose-500"
+              )}
+            >
+              {securityFeedback.text}
+            </p>
+          ) : null}
+        </div>
+
         <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-4">
           <h3 className="text-sm font-semibold">Compteur de tokens (hors chat fantôme)</h3>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -2866,9 +3065,9 @@ export default function SettingsPage() {
             className="mt-2 w-full rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm"
             id="language-selector"
             onChange={(event) => {
-              const nextLanguage = event.target.value;
+              const nextLanguage = resolveLanguage(event.target.value);
               setInterfaceLanguage(nextLanguage);
-              window.localStorage.setItem("mai.language", nextLanguage);
+              setLanguageInStorage(nextLanguage);
               createNotification({
                 level: "success",
                 message: `Langue appliquée: ${nextLanguage.toUpperCase()}`,
@@ -2880,8 +3079,6 @@ export default function SettingsPage() {
             <option value="fr">Français</option>
             <option value="en">English</option>
             <option value="es">Español</option>
-            <option value="it">Italiano</option>
-            <option value="de">Deutsch</option>
           </select>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">

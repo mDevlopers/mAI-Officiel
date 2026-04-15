@@ -102,9 +102,9 @@
 }
 
 .dark {
-  --background: oklch(0.12 0 0);
+  --background: oklch(0.15 0.01 255);
   --foreground: oklch(0.94 0 0);
-  --card: oklch(0.16 0 0);
+  --card: oklch(0.2 0.01 255);
   --card-foreground: oklch(0.94 0 0);
   --popover: oklch(0.225 0 0);
   --popover-foreground: oklch(0.94 0 0);
@@ -112,12 +112,12 @@
   --primary-foreground: oklch(0.195 0 0);
   --secondary: oklch(0.26 0 0);
   --secondary-foreground: oklch(0.75 0 0);
-  --muted: oklch(0.19 0 0);
+  --muted: oklch(0.24 0.01 255);
   --muted-foreground: oklch(0.6 0 0);
   --accent: oklch(0.26 0 0);
   --accent-foreground: oklch(0.94 0 0);
   --destructive: oklch(0.7 0.15 25);
-  --border: oklch(0.27 0 0);
+  --border: oklch(0.31 0.01 255);
   --input: oklch(0.27 0 0);
   --ring: oklch(0.45 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -146,8 +146,8 @@
     0 0 0 1px oklch(1 0 0 / 0.1), 0 4px 16px -4px oklch(0 0 0 / 0.3),
     inset 0 1px 0 oklch(1 0 0 / 0.04);
   --glass-border: oklch(1 0 0 / 0.1);
-  --glass-surface: oklch(0.18 0 0 / 0.72);
-  --glass-surface-strong: oklch(0.22 0 0 / 0.88);
+  --glass-surface: oklch(0.22 0.02 255 / 0.74);
+  --glass-surface-strong: oklch(0.27 0.02 255 / 0.9);
   --glass-highlight: oklch(1 0 0 / 0.09);
   --glass-shadow:
     0 20px 48px -28px oklch(0 0 0 / 0.75), 0 2px 12px -4px oklch(0 0 0 / 0.4);
@@ -185,9 +185,9 @@
 
   .dark body {
     background-image:
-      radial-gradient(circle at 12% 4%, oklch(0.22 0 0 / 0.2) 0%, transparent 40%),
-      radial-gradient(circle at 85% 8%, oklch(0.18 0 0 / 0.15) 0%, transparent 38%),
-      linear-gradient(180deg, oklch(0.11 0 0), oklch(0.09 0 0));
+      radial-gradient(circle at 12% 4%, oklch(0.34 0.06 255 / 0.22) 0%, transparent 42%),
+      radial-gradient(circle at 85% 8%, oklch(0.3 0.08 310 / 0.18) 0%, transparent 40%),
+      linear-gradient(180deg, oklch(0.14 0.01 255), oklch(0.1 0.01 255));
   }
 }
 

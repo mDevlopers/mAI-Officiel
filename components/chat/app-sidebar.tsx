@@ -255,8 +255,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                     <DropdownMenuContent
                       align="start"
                       className="w-56"
-                      side="right"
-                      sideOffset={6}
+                      side={isMobile ? "bottom" : "right"}
+                      sideOffset={isMobile ? 10 : 6}
                     >
                       {APPLICATION_LINKS.map((item) => (
                         <DropdownMenuItem asChild key={`app-${item.href}`}>
