@@ -41,6 +41,39 @@ const STORAGE_KEY = "mai.notifications.history.v1";
 const EVENT_NAME = "mai:notifications-updated";
 const DUPLICATE_WINDOW_MS = 30_000;
 
+async function deliverSystemNotification(notification: AppNotification) {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return;
+  }
+
+  if (Notification.permission !== "granted") {
+    return;
+  }
+
+  const body = notification.message;
+
+  // PWA / iOS: on privilégie showNotification via Service Worker lorsqu'il est disponible.
+  const registration = await navigator.serviceWorker
+    ?.getRegistration()
+    .catch(() => undefined);
+
+  if (registration) {
+    await registration.showNotification(notification.title, {
+      body,
+      data: notification.metadata,
+      icon: "/images/logo.png",
+      tag: `mai-${notification.level}`,
+    });
+    return;
+  }
+
+  new Notification(notification.title, {
+    body,
+    icon: "/images/logo.png",
+  });
+}
+
+
 function emitUpdate() {
   if (typeof window === "undefined") {
     return;
@@ -127,6 +160,7 @@ export function createNotification(input: {
     }
   }
   saveNotificationHistory([next, ...current]);
+  void deliverSystemNotification(next);
 }
 
 export function createAiResponseNotification(input: {

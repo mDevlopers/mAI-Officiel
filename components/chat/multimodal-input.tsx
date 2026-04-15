@@ -291,6 +291,30 @@ function PureMultimodalInput({
     }
   }, [setAttachments]);
 
+
+  useEffect(() => {
+    const voiceSubmitHandler = (event: Event) => {
+      const customEvent = event as CustomEvent<{ chatId?: string; text?: string }>;
+      const text = customEvent.detail?.text?.trim();
+      if (!text || status !== "ready") {
+        return;
+      }
+
+      setInput(text);
+      void (sendMessage as UseChatHelpers<ChatMessage>["sendMessage"])({
+        role: "user",
+        parts: [{ type: "text", text }],
+      });
+    };
+
+    window.addEventListener("mai:voice-submit", voiceSubmitHandler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "mai:voice-submit",
+        voiceSubmitHandler as EventListener
+      );
+  }, [sendMessage, setInput, status]);
+
   const handleInput = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = event.target.value;
     setInput(val);

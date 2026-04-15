@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { RegisterServiceWorker } from "@/components/pwa/register-sw";
+import { SessionGuard } from "@/components/security/session-guard";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
@@ -82,7 +84,11 @@ export default function RootLayout({
           <SessionProvider
             basePath={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/auth`}
           >
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <RegisterServiceWorker />
+              <SessionGuard />
+              {children}
+            </TooltipProvider>
           </SessionProvider>
         </ThemeProvider>
       </body>
