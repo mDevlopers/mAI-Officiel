@@ -25,6 +25,7 @@ export type ChatModel = {
 
 // Catalogue volontairement limité aux modèles connectés via FS_API_KEY.
 export const chatModels: ChatModel[] = [
+  // ── OpenAI ────────────────────────────────────────────────────────────
   {
     id: "openai/gpt-5.4",
     name: "GPT-5.4",
@@ -43,7 +44,8 @@ export const chatModels: ChatModel[] = [
     id: "openai/gpt-5.4-nano",
     name: "GPT-5.4 Nano",
     provider: "openai",
-    description: "Ultra fast lightweight model.",
+    description:
+      "Ultra-lightweight frontier model optimized for speed and efficiency.",
     reasoningEffort: "minimal",
   },
   {
@@ -69,6 +71,16 @@ export const chatModels: ChatModel[] = [
     reasoningEffort: "medium",
   },
   {
+    id: "openai/gpt-oss-120b",
+    name: "GPT-OSS-120b",
+    provider: "openai",
+    description:
+      "OpenAI open-source 120B parameter model for high-performance reasoning tasks.",
+    reasoningEffort: "high",
+  },
+
+  // ── Azure (DeepSeek, Kimi, Mistral) ───────────────────────────────────
+  {
     id: "azure/deepseek-v3.2",
     name: "DeepSeek-V3.2",
     provider: "azure",
@@ -84,19 +96,46 @@ export const chatModels: ChatModel[] = [
       "Open-source, multimodal model from Moonshot AI built for agentic workflows.",
   },
   {
-    id: "openai/gpt-oss-120b",
-    name: "GPT-OSS-120b",
-    provider: "openai",
-    description: "Open source large model.",
-    reasoningEffort: "high",
-  },
-  {
     id: "azure/mistral-large-3",
     name: "Mistral-Large-3",
     provider: "azure",
     description:
       "Large Mistral model deployed on Azure OpenAI for advanced chat and reasoning tasks.",
     reasoningEffort: "medium",
+  },
+
+  // ── Anthropic / Claude ────────────────────────────────────────────────
+  {
+    id: "anthropic/claude-opus-4-6",
+    name: "Claude Opus 4-6",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "high",
+  },
+  {
+    id: "claude/claude-sonnet-4-20250514",
+    name: "Claude Sonnet 4",
+    provider: "claude",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "anthropic/claude-sonnet-4-6",
+    name: "Claude Sonnet 4-6",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "medium",
+  },
+  {
+    id: "anthropic/claude-haiku-4-5",
+    name: "Claude Haiku 4-5",
+    provider: "anthropic",
+    description:
+      "Anthropic Claude model accessed through OAuth-backed Messages API.",
+    reasoningEffort: "low",
   },
 ];
 
@@ -132,11 +171,14 @@ function buildLocalCapabilities(): Record<string, ModelCapabilities> {
           m.id.includes("vision") ||
           m.id.includes("flash") ||
           m.id.includes("4o") ||
-          m.id.includes("gemini"),
+          m.id.includes("gemini") ||
+          m.id.includes("claude-opus") ||
+          m.id.includes("claude-sonnet"),
         reasoning:
           m.id.includes("oss") ||
           m.id.includes("reasoning") ||
-          m.id.includes("r1"),
+          m.id.includes("r1") ||
+          m.id.includes("claude-opus"),
       },
     ])
   );
@@ -147,7 +189,6 @@ export async function getCapabilities(): Promise<
 > {
   const localCapabilities = buildLocalCapabilities();
 
-  // Latence minimale par défaut: on évite des dizaines de requêtes distantes au chargement.
   if (!ENABLE_REMOTE_MODEL_CAPABILITIES) {
     return localCapabilities;
   }
