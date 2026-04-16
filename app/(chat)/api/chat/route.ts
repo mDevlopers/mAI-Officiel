@@ -272,13 +272,18 @@ export async function POST(request: Request) {
         return new ChatbotError("bad_request:api").toResponse();
       }
 
+      const externalMessages = [
+        { role: "developer", content: 'Reply in the same language as the user\'s latest message. For health topics, include the exact disclaimer: "mAIHealth ne remplace pas un professionnel de santé".' },
+        ...modelMessages.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: Array.isArray(msg.content) ? msg.content.filter((c: any) => c.type === 'text').map((c: any) => c.text).join('\n') : msg.content
+        }))
+      ];
+
       const externalResult = await runExternalTextModel(
         chatModel,
-        sanitizedLatestUserText,
-        {
-          systemInstruction:
-            'Reply in the same language as the user\'s latest message. For health topics, include the exact disclaimer: "mAIHealth ne remplace pas un professionnel de santé".',
-        }
+        externalMessages,
+        { reasoningEffort: openaiReasoningEffort }
       );
       const assistantMessageId = generateUUID();
       const textPartId = generateUUID();

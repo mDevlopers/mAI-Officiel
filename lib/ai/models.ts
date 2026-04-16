@@ -47,28 +47,6 @@ export const chatModels: ChatModel[] = [
     reasoningEffort: "minimal",
   },
   {
-    id: "openai/gpt-5.2",
-    name: "GPT-5.2",
-    provider: "openai",
-    description:
-      "Latest frontier model with improvements across knowledge, reasoning and coding.",
-    reasoningEffort: "medium",
-  },
-  {
-    id: "openai/gpt-5.1",
-    name: "GPT-5.1",
-    provider: "openai",
-    description: "Broad world knowledge with strong general reasoning.",
-    reasoningEffort: "medium",
-  },
-  {
-    id: "openai/gpt-5",
-    name: "GPT-5",
-    provider: "openai",
-    description: "Broad world knowledge with strong general reasoning.",
-    reasoningEffort: "medium",
-  },
-  {
     id: "azure/deepseek-v3.2",
     name: "DeepSeek-V3.2",
     provider: "azure",

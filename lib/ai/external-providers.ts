@@ -3,7 +3,7 @@ import OpenAI from "openai";
 const FS_API_BASE_URL =
   process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1";
 const FS_TIMEOUT_MS = Number.parseInt(
-  process.env.FS_API_TIMEOUT_MS ?? "10000",
+  process.env.FS_API_TIMEOUT_MS ?? "45000",
   10
 );
 const FS_MAX_RETRIES = Number.parseInt(
@@ -17,9 +17,6 @@ const fsModelMapping: Record<string, string> = {
   "openai/gpt-5.4": "gpt-5.4",
   "openai/gpt-5.4-mini": "gpt-5.4-mini",
   "openai/gpt-5.4-nano": "gpt-5.4-nano",
-  "openai/gpt-5.2": "gpt-5.2",
-  "openai/gpt-5.1": "gpt-5.1",
-  "openai/gpt-5": "gpt-5",
   "openai/gpt-oss-120b": "gpt-oss-120b",
   "azure/deepseek-v3.2": "DeepSeek-V3.2",
   "azure/kimi-k2.5": "Kimi-K2.5",
@@ -188,9 +185,9 @@ export function createClientWithFallback(options?: {
 
 export async function generateResponse(input: {
   model: string;
-  prompt: string;
-  systemInstruction?: string;
+  messages: Array<{ role: string; content: string }>;
   timeoutMs?: number;
+  reasoningEffort?: string;
 }): Promise<{ provider: string; text: string }> {
   const fallbackClient = createClientWithFallback({ timeoutMs: input.timeoutMs });
 
@@ -198,12 +195,8 @@ export async function generateResponse(input: {
     const completion = await client.chat.completions.create(
       {
         model: input.model,
-        messages: [
-          ...(input.systemInstruction
-            ? [{ role: "developer" as const, content: input.systemInstruction }]
-            : []),
-          { role: "user" as const, content: input.prompt },
-        ],
+        messages: input.messages as any,
+        ...(input.reasoningEffort ? { reasoning_effort: input.reasoningEffort } : {}),
       },
       { signal }
     );
@@ -224,8 +217,8 @@ export function isExternalTextModel(modelId: string): boolean {
 
 export async function runExternalTextModel(
   modelId: string,
-  prompt: string,
-  options?: { systemInstruction?: string }
+  messages: Array<{ role: string; content: string }>,
+  options?: { reasoningEffort?: string }
 ): Promise<{ provider: string; text: string }> {
   const providerModelId = fsModelMapping[modelId];
 
@@ -235,8 +228,8 @@ export async function runExternalTextModel(
 
   return generateResponse({
     model: providerModelId,
-    prompt,
-    systemInstruction: options?.systemInstruction?.trim(),
+    messages,
+    reasoningEffort: options?.reasoningEffort,
   });
 }
 

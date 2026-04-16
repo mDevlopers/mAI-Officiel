@@ -413,6 +413,8 @@ export default function SettingsPage() {
   const [aiMemoryEntries, setAiMemoryEntries] = useState<string[]>([]);
   const [memoryEntryIds, setMemoryEntryIds] = useState<string[]>([]);
   const [isMemoryLoading, setIsMemoryLoading] = useState(false);
+  const [isReasoningEnabled, setIsReasoningEnabled] = useState(false);
+  const [reasoningLevel, setReasoningLevel] = useState<"light" | "moderate" | "deep" | "very-deep">("moderate");
   const [memoryError, setMemoryError] = useState<string | null>(null);
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryEditingIndex, setMemoryEditingIndex] = useState<number | null>(
@@ -504,6 +506,14 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    setIsReasoningEnabled(window.localStorage.getItem("mai-reasoning-enabled") === "true");
+    const storedReasoningLevel = window.localStorage.getItem("mai-reasoning-level");
+    if (storedReasoningLevel && ["light", "moderate", "deep", "very-deep"].includes(storedReasoningLevel)) {
+      setReasoningLevel(storedReasoningLevel as "light" | "moderate" | "deep" | "very-deep");
+    }
+  }, []);
+
+  useEffect(() => {
     const rawTags = window.localStorage.getItem(TAG_DEFINITIONS_STORAGE_KEY);
     if (!rawTags) {
       return;
@@ -517,6 +527,14 @@ export default function SettingsPage() {
       setConversationTags([]);
     }
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("mai-reasoning-enabled", String(isReasoningEnabled));
+  }, [isReasoningEnabled]);
+
+  useEffect(() => {
+    window.localStorage.setItem("mai-reasoning-level", reasoningLevel);
+  }, [reasoningLevel]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -1979,6 +1997,45 @@ export default function SettingsPage() {
               value={aiPersonality}
             />
           </div>
+          <div className="liquid-glass space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4 md:col-span-2">
+            <h3 className="text-base font-semibold">Réflexion de l'IA</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <span className="text-sm font-medium">Activer la réflexion</span>
+                  <p className="text-xs text-muted-foreground">Permet à l'IA de planifier et réfléchir avant de répondre.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-pressed={isReasoningEnabled}
+                  className="relative inline-flex items-center cursor-pointer"
+                  onClick={() => setIsReasoningEnabled(!isReasoningEnabled)}
+                >
+                  <div className={`w-11 h-6 bg-border rounded-full transition-colors ${isReasoningEnabled ? 'bg-primary' : ''}`}>
+                    <div className={`absolute top-[2px] left-[2px] bg-white w-5 h-5 rounded-full transition-transform ${isReasoningEnabled ? 'translate-x-full' : ''}`} />
+                  </div>
+                </button>
+              </div>
+
+              {isReasoningEnabled && (
+                <div className="space-y-2">
+                  <label htmlFor="reasoning-level-select" className="text-xs text-muted-foreground">Niveau de réflexion</label>
+                  <select
+                    id="reasoning-level-select"
+                    className="w-full rounded-md border border-border/50 bg-background/80 p-2 text-sm outline-none"
+                    value={reasoningLevel}
+                    onChange={(e) => setReasoningLevel(e.target.value as "light" | "moderate" | "deep" | "very-deep")}
+                  >
+                    <option value="light">Rapide (Minimal)</option>
+                    <option value="moderate">Standard (Modéré)</option>
+                    <option value="deep">Approfondi</option>
+                    <option value="very-deep">Extrême (Haute précision)</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="liquid-glass space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4 md:col-span-2">
             <h3 className="text-base font-semibold">
               Personnalisation du comportement
