@@ -212,6 +212,24 @@ const reasoningLevelByPreference: Record<
   high: "deep",
 };
 
+function resolveReasoningPreferenceFromStorage(
+  enabled: string | null,
+  level: string | null
+): ReasoningPreference {
+  if (enabled !== "true") {
+    return "none";
+  }
+
+  // Compat: "very-deep" hérité doit rester mappé au niveau le plus proche.
+  if (level === "deep" || level === "very-deep") {
+    return "high";
+  }
+  if (level === "moderate") {
+    return "medium";
+  }
+  return "light";
+}
+
 function clampPercentage(value: number): number {
   if (!Number.isFinite(value)) {
     return 50;
@@ -426,6 +444,8 @@ export default function SettingsPage() {
   const [personalContext, setPersonalContext] = useState("");
   const [reasoningPreference, setReasoningPreference] =
     useState<ReasoningPreference>("none");
+  const [isReasoningPreferenceHydrated, setIsReasoningPreferenceHydrated] =
+    useState(false);
   const [aiMemoryEntries, setAiMemoryEntries] = useState<string[]>([]);
   const [memoryEntryIds, setMemoryEntryIds] = useState<string[]>([]);
   const [isMemoryLoading, setIsMemoryLoading] = useState(false);
@@ -1107,21 +1127,8 @@ export default function SettingsPage() {
   useEffect(() => {
     const enabled = window.localStorage.getItem("mai-reasoning-enabled");
     const level = window.localStorage.getItem("mai-reasoning-level");
-
-    if (enabled !== "true") {
-      setReasoningPreference("none");
-      return;
-    }
-
-    if (level === "deep") {
-      setReasoningPreference("high");
-      return;
-    }
-    if (level === "moderate") {
-      setReasoningPreference("medium");
-      return;
-    }
-    setReasoningPreference("light");
+    setReasoningPreference(resolveReasoningPreferenceFromStorage(enabled, level));
+    setIsReasoningPreferenceHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -1135,6 +1142,10 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (!isReasoningPreferenceHydrated) {
+      return;
+    }
+
     if (!allowedReasoningPreferences.includes(reasoningPreference)) {
       setReasoningPreference(
         allowedReasoningPreferences[allowedReasoningPreferences.length - 1] ??
@@ -1153,7 +1164,11 @@ export default function SettingsPage() {
       "mai-reasoning-level",
       reasoningLevelByPreference[reasoningPreference]
     );
-  }, [allowedReasoningPreferences, reasoningPreference]);
+  }, [
+    allowedReasoningPreferences,
+    isReasoningPreferenceHydrated,
+    reasoningPreference,
+  ]);
 
   useEffect(() => {
     // Évite d'écraser le stockage avant la première lecture locale.

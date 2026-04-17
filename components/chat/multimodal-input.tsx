@@ -121,6 +121,8 @@ type MentionItem =
     };
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const GHOST_CHAT_ID_STORAGE_KEY = "mai.ghost-chat-id";
+const GHOST_MODE_STORAGE_KEY = "mai.ghost-mode";
+const GHOST_MODE_UPDATED_EVENT = "mai:ghost-mode-updated";
 const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const TOKEN_USAGE_STORAGE_KEY = "mai.token-usage.v1";
 const PLUGIN_MODE_STORAGE_KEY = "mai.plugin-mode";
@@ -584,7 +586,7 @@ function PureMultimodalInput({
     }
 
     const syncGhostState = () => {
-      setIsGhostModeArmed(localStorage.getItem("mai.ghost-mode") === "true");
+      setIsGhostModeArmed(localStorage.getItem(GHOST_MODE_STORAGE_KEY) === "true");
       setIsGhostConversation(
         sessionStorage.getItem(GHOST_CHAT_ID_STORAGE_KEY) === chatId
       );
@@ -593,10 +595,12 @@ function PureMultimodalInput({
     syncGhostState();
     window.addEventListener("storage", syncGhostState);
     window.addEventListener("focus", syncGhostState);
+    window.addEventListener(GHOST_MODE_UPDATED_EVENT, syncGhostState);
 
     return () => {
       window.removeEventListener("storage", syncGhostState);
       window.removeEventListener("focus", syncGhostState);
+      window.removeEventListener(GHOST_MODE_UPDATED_EVENT, syncGhostState);
     };
   }, [chatId]);
 
@@ -802,7 +806,7 @@ function PureMultimodalInput({
       const isGhostModeEnabled =
         typeof window === "undefined"
           ? false
-          : localStorage.getItem("mai.ghost-mode") === "true";
+          : localStorage.getItem(GHOST_MODE_STORAGE_KEY) === "true";
       const persistentMemory = getPersistentMemoryFromLocalStorage();
 
       const extractedFileContext = extractedFiles
@@ -879,7 +883,8 @@ ${extractedFileContext}`
         // One-shot toggle: we consume the switch immediately but keep this chat
         // flagged as ghost to prevent any later persistence on follow-up requests.
         sessionStorage.setItem(GHOST_CHAT_ID_STORAGE_KEY, chatId);
-        localStorage.setItem("mai.ghost-mode", "false");
+        localStorage.setItem(GHOST_MODE_STORAGE_KEY, "false");
+        window.dispatchEvent(new Event(GHOST_MODE_UPDATED_EVENT));
         setIsGhostModeArmed(false);
         setIsGhostConversation(true);
       } else {
@@ -1560,7 +1565,9 @@ function PureContextualActionsMenu({
 
     // Bugfix: évite de conserver un niveau non autorisé après un downgrade de forfait.
     if (reasoningLevel === "very-deep" && !canUseVeryDeepReflection) {
-      setReasoningLevel(canUseDeepReflection ? "deep" : "light");
+      setReasoningLevel(
+        canUseDeepReflection ? "deep" : plan === "pro" ? "moderate" : "light"
+      );
       return;
     }
 

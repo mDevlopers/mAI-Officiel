@@ -6,6 +6,7 @@ import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const GHOST_MODE_STORAGE_KEY = "mai.ghost-mode";
+const GHOST_MODE_UPDATED_EVENT = "mai:ghost-mode-updated";
 
 export function VoiceTopActions({
   chatId: _chatId,
@@ -26,10 +27,12 @@ export function VoiceTopActions({
     syncGhostState();
     window.addEventListener("storage", syncGhostState);
     window.addEventListener("focus", syncGhostState);
+    window.addEventListener(GHOST_MODE_UPDATED_EVENT, syncGhostState);
 
     return () => {
       window.removeEventListener("storage", syncGhostState);
       window.removeEventListener("focus", syncGhostState);
+      window.removeEventListener(GHOST_MODE_UPDATED_EVENT, syncGhostState);
     };
   }, []);
 
@@ -47,6 +50,7 @@ export function VoiceTopActions({
           const nextValue = !isGhostModeEnabled;
           setIsGhostModeEnabled(nextValue);
           localStorage.setItem(GHOST_MODE_STORAGE_KEY, String(nextValue));
+          window.dispatchEvent(new Event(GHOST_MODE_UPDATED_EVENT));
         }}
         type="button"
       >
