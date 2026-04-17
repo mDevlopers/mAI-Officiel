@@ -386,54 +386,17 @@ function parseTaskCommand(command: string): {
 }
 
 export default function SettingsPage() {
-  const { data, status } = useSession();
-  const {
-    activateByCode,
-    currentPlanDefinition,
-    isActivating,
-    isHydrated,
-    plan,
-  } = useSubscriptionPlan();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+  const { isHydrated, plan } = useSubscriptionPlan();
+  const currentPlanDefinition = planDefinitions[plan];
 
-  const [activationCode, setActivationCode] = useState("");
-  const [conversationTags, setConversationTags] = useState<TagDefinition[]>([]);
-  const [newTagName, setNewTagName] = useState("");
-  const [newTagColor, setNewTagColor] = useState<string>(TAG_PALETTE[0]);
-  const [editingTagId, setEditingTagId] = useState<string | null>(null);
-  const [editingTagName, setEditingTagName] = useState("");
-  const [editingTagColor, setEditingTagColor] = useState<string>(
-    TAG_PALETTE[0]
-  );
-  const [activationMessage, setActivationMessage] = useState<{
-    type: "error" | "success";
-    text: string;
-  } | null>(null);
-  const [tasks, setTasks] = useState<ScheduledTask[]>([]);
-  const [taskError, setTaskError] = useState<string | null>(null);
-  const [taskCommand, setTaskCommand] = useState("");
-  const [tasksHydrated, setTasksHydrated] = useState(false);
-  const [taskForm, setTaskForm] = useState<{
-    frequency: ScheduledTask["frequency"];
-    model: ScheduledTask["model"];
-    nextRunAt: string;
-    notes: string;
-    title: string;
-  }>({
-    frequency: "quotidienne",
-    model: "openai/gpt-5.4",
-    nextRunAt: "",
-    notes: "",
-    title: "",
-  });
-  const [chatBarSize, setChatBarSize] = useState<
-    "compact" | "standard" | "large"
-  >("compact");
-  const [showWordCounter, setShowWordCounter] = useState(false);
-  const [interfaceLanguage, setInterfaceLanguage] = useState("fr");
+  const [activeSettingsSection, setActiveSettingsSection] =
+    useState<string>("compte");
   const [profileName, setProfileName] = useState("");
   const [profileLogoDataUrl, setProfileLogoDataUrl] = useState<
     string | undefined
-  >();
+  >(undefined);
   const [profession, setProfession] = useState("");
   const [aiBehavior, setAiBehavior] = useState({
     concision: 50,
@@ -442,29 +405,38 @@ export default function SettingsPage() {
   });
   const [aiPersonality, setAiPersonality] = useState("");
   const [personalContext, setPersonalContext] = useState("");
-  const [reasoningPreference, setReasoningPreference] =
-    useState<ReasoningPreference>("none");
-  const [isReasoningPreferenceHydrated, setIsReasoningPreferenceHydrated] =
-    useState(false);
   const [aiMemoryEntries, setAiMemoryEntries] = useState<string[]>([]);
   const [memoryEntryIds, setMemoryEntryIds] = useState<string[]>([]);
-  const [isMemoryLoading, setIsMemoryLoading] = useState(false);
-  const [memoryError, setMemoryError] = useState<string | null>(null);
+  const [aiName, setAiName] = useState("mAI");
+
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
   const [memoryDraft, setMemoryDraft] = useState("");
   const [memoryEditingIndex, setMemoryEditingIndex] = useState<number | null>(
     null
   );
-  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-  const [aiName, setAiName] = useState("mAI");
-  const [activeSettingsSection, setActiveSettingsSection] = useState("compte");
-  const [positionEnabled, setPositionEnabled] = useState(false);
-  const [positionLabel, setPositionLabel] = useState("");
-  const [isResolvingPosition, setIsResolvingPosition] = useState(false);
-  const [notifications, setNotifications] = useState({
-    projectUpdates: true,
-    responseReady: true,
-    scheduledTasks: true,
+  const [isMemoryLoading, setIsMemoryLoading] = useState(false);
+  const [memoryError, setMemoryError] = useState<string | null>(null);
+
+  const [tasks, setTasks] = useState<ScheduledTask[]>([]);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const [tasksHydrated, setTasksHydrated] = useState(false);
+  const [taskCommand, setTaskCommand] = useState("");
+  const [taskForm, setTaskForm] = useState<
+    Omit<ScheduledTask, "createdAt" | "id" | "isEnabled" | "lastRunAt">
+  >({
+    frequency: "ponctuelle",
+    model: "openai/gpt-5.4-mini",
+    nextRunAt: formatDateTimeLocalInput(),
+    notes: "",
+    title: "",
   });
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    email: true,
+    push: true,
+    usageAlerts: true,
+  });
+
   const [parentalSettings, setParentalSettings] = useState<ParentalSettings>(
     defaultParentalSettings
   );
@@ -475,20 +447,10 @@ export default function SettingsPage() {
     text: string;
     type: "error" | "success";
   } | null>(null);
-  const [tokenUsage, setTokenUsage] = useState({
-    inputTokens: 0,
-    outputTokens: 0,
-  });
-  const [fileUsageToday, setFileUsageToday] = useState(0);
-  const [tierUsage, setTierUsage] = useState<Record<ModelTier, number>>({
-    tier1: 0,
-    tier2: 0,
-    tier3: 0,
-  });
-  const [deferredPwaPrompt, setDeferredPwaPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [securitySettings, setSecuritySettings] =
-    useState<SecuritySettings>(defaultSecuritySettings);
+
+  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(
+    defaultSecuritySettings
+  );
   const [securityPinDraft, setSecurityPinDraft] = useState("");
   const [securityPinConfirmDraft, setSecurityPinConfirmDraft] = useState("");
   const [securityFeedback, setSecurityFeedback] = useState<{
@@ -496,9 +458,40 @@ export default function SettingsPage() {
     type: "error" | "success";
   } | null>(null);
 
-  const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
+  const [tokenUsage, setTokenUsage] = useState({
+    inputTokens: 0,
+    outputTokens: 0,
+  });
+
+  const [conversationTags, setConversationTags] = useState<TagDefinition[]>([]);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState(TAG_PALETTE[0]);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState("");
+  const [editingTagColor, setEditingTagColor] = useState(TAG_PALETTE[0]);
+
+  const [activationCode, setActivationCode] = useState("");
+  const [isActivating, setIsActivating] = useState(false);
+  const [activationMessage, setActivationMessage] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
+
+  const [interfaceLanguage, setInterfaceLanguage] = useState("fr");
+  const [fileUsageToday, setFileUsageToday] = useState(0);
+  const [tierUsage, setTierUsage] = useState({
+    tier1: 0,
+    tier2: 0,
+    tier3: 0,
+  });
+
+  const [pwaInstallPrompt, setPwaInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const maxMemoryEntries = getMemoryEntriesLimitForPlan(plan);
-  const isAuthenticated = status === "authenticated" && Boolean(data?.user?.id);
+  const maxScheduledTasks = currentPlanDefinition.limits.taskSchedules;
+
   const allowedReasoningPreferences = useMemo<ReasoningPreference[]>(() => {
     if (plan === "max") {
       return ["none", "light", "medium", "high"];
@@ -578,8 +571,6 @@ export default function SettingsPage() {
       JSON.stringify(conversationTags)
     );
 
-    // Synchronise les références de tags dans les conversations pour éviter
-    // les IDs orphelins après suppression/édition.
     const rawAssignments = window.localStorage.getItem(CHAT_TAGS_STORAGE_KEY);
     if (rawAssignments) {
       try {
@@ -671,7 +662,6 @@ export default function SettingsPage() {
       );
       setAiName(parsed.aiName ?? "mAI");
     } catch {
-      // Ignore un éventuel JSON invalide pour ne pas bloquer l'écran.
       setProfileName(defaultProfileSettings.displayName);
       setProfileLogoDataUrl(defaultProfileSettings.avatarDataUrl);
       setProfession(defaultProfileSettings.profession);
@@ -712,7 +702,9 @@ export default function SettingsPage() {
         if (!isMounted) {
           return;
         }
-        setMemoryError("Impossible de synchroniser la mémoire serveur.");
+        setMemoryError(
+          "Impossible de charger la mémoire cloud. Mode local actif."
+        );
       } finally {
         if (isMounted) {
           setIsMemoryLoading(false);
@@ -721,775 +713,323 @@ export default function SettingsPage() {
     };
 
     loadMemoryEntries();
-
     return () => {
       isMounted = false;
     };
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-    const savedProfile = window.localStorage.getItem(
-      PROFILE_SETTINGS_STORAGE_KEY
+    const rawSecurity = window.localStorage.getItem(
+      SECURITY_SETTINGS_STORAGE_KEY
     );
-    try {
-      const parsed = savedProfile
-        ? (JSON.parse(savedProfile) as Record<string, unknown>)
-        : {};
-      const toneDirective =
-        aiBehavior.tone < 35
-          ? "Ton créatif et libre."
-          : aiBehavior.tone > 65
-            ? "Ton strict et professionnel."
-            : "Ton équilibré.";
-      const concisionDirective =
-        aiBehavior.concision < 35
-          ? "Réponses très détaillées."
-          : aiBehavior.concision > 65
-            ? "Réponses ultra concises."
-            : "Réponses de longueur équilibrée.";
-      const registerDirective =
-        aiBehavior.register < 35
-          ? "Registre familier."
-          : aiBehavior.register > 65
-            ? "Registre soutenu."
-            : "Registre linguistique neutre.";
-      const behaviorDirective = [
-        toneDirective,
-        concisionDirective,
-        registerDirective,
-      ].join(" ");
-      const nextSettings: ProfileSettingsShape = {
-        ...(defaultProfileSettings as unknown as Record<string, unknown>),
-        ...(parsed as Record<string, unknown>),
-        aiMemory: aiMemoryEntries.join("\n"),
-        aiMemoryEntries,
-        aiBehavior,
-        aiName: aiName.trim() || "mAI",
-        aiPersonality,
-        avatarDataUrl: profileLogoDataUrl,
-        avatarId:
-          typeof parsed.avatarId === "string" && parsed.avatarId.length > 0
-            ? parsed.avatarId
-            : defaultProfileSettings.avatarId,
-        displayName: profileName.trim(),
-        personalContext,
-        profession,
-        stylisticDirectives: [aiPersonality.trim(), behaviorDirective]
-          .filter(Boolean)
-          .join(" "),
-        projectDescription:
-          typeof parsed.projectDescription === "string"
-            ? parsed.projectDescription
-            : "",
-        projectIconColor:
-          typeof parsed.projectIconColor === "string"
-            ? parsed.projectIconColor
-            : "#60a5fa",
-        projectTitle:
-          typeof parsed.projectTitle === "string" ? parsed.projectTitle : "",
-      };
-      window.localStorage.setItem(
-        PROFILE_SETTINGS_STORAGE_KEY,
-        JSON.stringify(nextSettings)
-      );
-    } catch {
-      // Si le stockage est corrompu, on le régénère proprement.
-      window.localStorage.setItem(
-        PROFILE_SETTINGS_STORAGE_KEY,
-        JSON.stringify({
-          ...defaultProfileSettings,
-          aiMemory: aiMemoryEntries.join("\n"),
-          aiMemoryEntries,
-          aiBehavior,
-          aiName: aiName.trim() || "mAI",
-          aiPersonality,
-          avatarDataUrl: profileLogoDataUrl,
-          displayName: profileName.trim(),
-          personalContext,
-          profession,
-          stylisticDirectives: aiPersonality.trim(),
-        })
-      );
+    if (rawSecurity) {
+      setSecuritySettings(parseSecuritySettings(rawSecurity));
     }
-  }, [
-    aiMemoryEntries,
-    aiBehavior,
-    aiName,
-    aiPersonality,
-    isHydrated,
-    personalContext,
-    profession,
-    profileLogoDataUrl,
-    profileName,
-  ]);
 
-  useEffect(() => {
-    const rawNotificationSettings = window.localStorage.getItem(
+    const rawNotifications = window.localStorage.getItem(
       NOTIFICATIONS_SETTINGS_STORAGE_KEY
     );
-    if (!rawNotificationSettings) {
-      return;
+    if (rawNotifications) {
+      try {
+        setNotificationSettings(JSON.parse(rawNotifications));
+      } catch {
+        // ignore
+      }
     }
-    try {
-      const parsed = JSON.parse(rawNotificationSettings) as Partial<
-        typeof notifications
-      >;
-      setNotifications((prev) => ({ ...prev, ...parsed }));
-    } catch {
-      // Silence: on conserve les valeurs par défaut.
-    }
-  }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem(
-      NOTIFICATIONS_SETTINGS_STORAGE_KEY,
-      JSON.stringify(notifications)
-    );
-  }, [notifications]);
-
-  useEffect(() => {
-    setInterfaceLanguage(
-      resolveLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY))
-    );
-
-    const syncLanguage = () => {
-      setInterfaceLanguage(
-        resolveLanguage(window.localStorage.getItem(LANGUAGE_STORAGE_KEY))
-      );
-    };
-
-    window.addEventListener("storage", syncLanguage);
-    window.addEventListener("mai:language-updated", syncLanguage);
-    return () => {
-      window.removeEventListener("storage", syncLanguage);
-      window.removeEventListener("mai:language-updated", syncLanguage);
-    };
-  }, []);
-
-  useEffect(() => {
-    const parsed = parseSecuritySettings(
-      window.localStorage.getItem(SECURITY_SETTINGS_STORAGE_KEY)
-    );
-    setSecuritySettings(parsed);
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      SECURITY_SETTINGS_STORAGE_KEY,
-      JSON.stringify(securitySettings)
-    );
-    window.dispatchEvent(
-      new CustomEvent("mai:security-settings-updated", {
-        detail: securitySettings,
-      })
-    );
-
-    if (!securitySettings.enablePinLock) {
-      window.localStorage.removeItem(SECURITY_LOCKED_FLAG_KEY);
-    }
-  }, [securitySettings]);
-
-  useEffect(() => {
-    const rawParentalSettings = window.localStorage.getItem(
+    const rawParental = window.localStorage.getItem(
       PARENTAL_SETTINGS_STORAGE_KEY
     );
-    if (!rawParentalSettings) {
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(
-        rawParentalSettings
-      ) as Partial<ParentalSettings>;
-      const parsedExtensions =
-        (parsed.extensions as Partial<Record<ExtensionKey, boolean>>) ?? {};
-      setParentalSettings({
-        advancedSettingsLocked:
-          typeof parsed.advancedSettingsLocked === "boolean"
-            ? parsed.advancedSettingsLocked
-            : defaultParentalSettings.advancedSettingsLocked,
-        bedtimeMode:
-          typeof parsed.bedtimeMode === "boolean"
-            ? parsed.bedtimeMode
-            : defaultParentalSettings.bedtimeMode,
-        bedtimeWindowEndHour:
-          typeof parsed.bedtimeWindowEndHour === "number" &&
-          Number.isFinite(parsed.bedtimeWindowEndHour)
-            ? Math.max(0, Math.min(23, Math.round(parsed.bedtimeWindowEndHour)))
-            : defaultParentalSettings.bedtimeWindowEndHour,
-        bedtimeWindowStartHour:
-          typeof parsed.bedtimeWindowStartHour === "number" &&
-          Number.isFinite(parsed.bedtimeWindowStartHour)
-            ? Math.max(
-                0,
-                Math.min(23, Math.round(parsed.bedtimeWindowStartHour))
-              )
-            : defaultParentalSettings.bedtimeWindowStartHour,
-        dailyLimitMinutes:
-          typeof parsed.dailyLimitMinutes === "number" &&
-          Number.isFinite(parsed.dailyLimitMinutes)
-            ? Math.max(15, Math.min(720, Math.round(parsed.dailyLimitMinutes)))
-            : defaultParentalSettings.dailyLimitMinutes,
-        enabled:
-          typeof parsed.enabled === "boolean"
-            ? parsed.enabled
-            : defaultParentalSettings.enabled,
-        extensions: {
-          library:
-            typeof parsedExtensions.library === "boolean"
-              ? parsedExtensions.library
-              : defaultParentalSettings.extensions.library,
-          projects:
-            typeof parsedExtensions.projects === "boolean"
-              ? parsedExtensions.projects
-              : defaultParentalSettings.extensions.projects,
-          translation:
-            typeof parsedExtensions.translation === "boolean"
-              ? parsedExtensions.translation
-              : defaultParentalSettings.extensions.translation,
-        },
-        lockCodeHash:
-          typeof parsed.lockCodeHash === "string" ? parsed.lockCodeHash : "",
-        sessionUnlockedUntil:
-          typeof parsed.sessionUnlockedUntil === "number"
-            ? parsed.sessionUnlockedUntil
-            : 0,
-        usageMinutes:
-          typeof parsed.usageMinutes === "number"
-            ? Math.max(0, Math.round(parsed.usageMinutes))
-            : 0,
-        weekendBonusMinutes:
-          typeof parsed.weekendBonusMinutes === "number" &&
-          Number.isFinite(parsed.weekendBonusMinutes)
-            ? Math.max(0, Math.min(180, Math.round(parsed.weekendBonusMinutes)))
-            : defaultParentalSettings.weekendBonusMinutes,
-      });
-    } catch {
-      // Fallback: on garde les paramètres parentaux par défaut en cas de JSON corrompu.
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      PARENTAL_SETTINGS_STORAGE_KEY,
-      JSON.stringify(parentalSettings)
-    );
-  }, [parentalSettings]);
-
-  useEffect(() => {
-    const raw = window.localStorage.getItem(POSITION_SETTINGS_STORAGE_KEY);
-    if (!raw) {
-      setPositionEnabled(
-        localStorage.getItem("mai.geolocation-enabled") === "true"
-      );
-      setPositionLabel(localStorage.getItem("mai.geolocation-label") ?? "");
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(raw) as { enabled?: boolean; label?: string };
-      setPositionEnabled(Boolean(parsed.enabled));
-      setPositionLabel(typeof parsed.label === "string" ? parsed.label : "");
-    } catch {
-      setPositionEnabled(false);
-      setPositionLabel("");
-    }
-  }, []);
-
-  useEffect(() => {
-    const refreshTokenUsage = () => {
-      const raw = window.localStorage.getItem(TOKEN_USAGE_STORAGE_KEY);
-      if (!raw) {
-        setTokenUsage({ inputTokens: 0, outputTokens: 0 });
-        return;
-      }
+    if (rawParental) {
       try {
-        const parsed = JSON.parse(raw) as {
-          inputTokens?: number;
-          outputTokens?: number;
-        };
-        setTokenUsage({
-          inputTokens: Math.max(0, Math.floor(parsed.inputTokens ?? 0)),
-          outputTokens: Math.max(0, Math.floor(parsed.outputTokens ?? 0)),
-        });
+        setParentalSettings(JSON.parse(rawParental));
       } catch {
-        setTokenUsage({ inputTokens: 0, outputTokens: 0 });
+        // ignore
       }
-    };
-
-    refreshTokenUsage();
-    window.addEventListener("storage", refreshTokenUsage);
-    window.addEventListener("mai:token-usage-updated", refreshTokenUsage);
-    return () => {
-      window.removeEventListener("storage", refreshTokenUsage);
-      window.removeEventListener("mai:token-usage-updated", refreshTokenUsage);
-    };
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      POSITION_SETTINGS_STORAGE_KEY,
-      JSON.stringify({ enabled: positionEnabled, label: positionLabel.trim() })
-    );
-    window.localStorage.setItem(
-      "mai.geolocation-enabled",
-      String(positionEnabled)
-    );
-    window.localStorage.setItem("mai.geolocation-label", positionLabel.trim());
-  }, [positionEnabled, positionLabel]);
-
-  const resolveBrowserLocation = async () => {
-    if (!navigator.geolocation) {
-      createNotification({
-        level: "warning",
-        message: "La géolocalisation n'est pas disponible sur ce navigateur.",
-        source: "system",
-        title: "Position",
-      });
-      return null;
     }
 
-    return new Promise<{ latitude: number; longitude: number } | null>(
-      (resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          (position) =>
-            resolve({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            }),
-          () => resolve(null),
-          { enableHighAccuracy: true, timeout: 10_000 }
-        );
+    const rawTokens = window.localStorage.getItem(TOKEN_USAGE_STORAGE_KEY);
+    if (rawTokens) {
+      try {
+        setTokenUsage(JSON.parse(rawTokens));
+      } catch {
+        // ignore
       }
-    );
-  };
-
-  const handleTogglePosition = async () => {
-    if (positionEnabled) {
-      setPositionEnabled(false);
-      setPositionLabel("");
-      return;
     }
 
-    setIsResolvingPosition(true);
-    const position = await resolveBrowserLocation();
-    setIsResolvingPosition(false);
-
-    if (!position) {
-      createNotification({
-        level: "error",
-        message:
-          "Accès à la position refusé ou indisponible. Autorisez la localisation dans le navigateur.",
-        source: "system",
-        title: "Position",
-      });
-      return;
+    const rawLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (rawLanguage) {
+      setInterfaceLanguage(resolveLanguage(rawLanguage));
     }
 
-    const nextLabel = `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`;
-    setPositionEnabled(true);
-    setPositionLabel(nextLabel);
-    createNotification({
-      level: "success",
-      message: `Position activée: ${nextLabel}`,
-      source: "system",
-      title: "Position",
-    });
-  };
-
-  useEffect(() => {
-    const storedChatBarSize = window.localStorage.getItem("mai.chatbar.size");
-    if (
-      storedChatBarSize === "compact" ||
-      storedChatBarSize === "standard" ||
-      storedChatBarSize === "large"
-    ) {
-      setChatBarSize(storedChatBarSize);
-    }
-  }, []);
-
-  useEffect(() => {
-    const raw = window.localStorage.getItem("mai.show-word-counter");
-    if (raw === "true") {
-      setShowWordCounter(true);
-      return;
-    }
-    if (raw === "false") {
-      setShowWordCounter(false);
-      return;
-    }
-    setShowWordCounter(false);
-  }, []);
-
-  useEffect(() => {
-    const enabled = window.localStorage.getItem("mai-reasoning-enabled");
-    const level = window.localStorage.getItem("mai-reasoning-level");
-    setReasoningPreference(resolveReasoningPreferenceFromStorage(enabled, level));
-    setIsReasoningPreferenceHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    const onBeforeInstallPrompt = (event: Event) => {
+    const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
-      setDeferredPwaPrompt(event as BeforeInstallPromptEvent);
+      setPwaInstallPrompt(event as BeforeInstallPromptEvent);
     };
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    return () =>
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+    };
   }, []);
 
   useEffect(() => {
-    if (!isReasoningPreferenceHydrated) {
-      return;
+    if (tasksHydrated) {
+      window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
     }
-
-    if (!allowedReasoningPreferences.includes(reasoningPreference)) {
-      setReasoningPreference(
-        allowedReasoningPreferences[allowedReasoningPreferences.length - 1] ??
-          "none"
-      );
-      return;
-    }
-
-    if (reasoningPreference === "none") {
-      window.localStorage.setItem("mai-reasoning-enabled", "false");
-      return;
-    }
-
-    window.localStorage.setItem("mai-reasoning-enabled", "true");
-    window.localStorage.setItem(
-      "mai-reasoning-level",
-      reasoningLevelByPreference[reasoningPreference]
-    );
-  }, [
-    allowedReasoningPreferences,
-    isReasoningPreferenceHydrated,
-    reasoningPreference,
-  ]);
-
-  useEffect(() => {
-    // Évite d'écraser le stockage avant la première lecture locale.
-    if (!tasksHydrated) {
-      return;
-    }
-    window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks, tasksHydrated]);
 
-  useEffect(() => {
-    if (!parentalSettings.enabled) {
+  const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
       return;
     }
 
-    // Incrément local du temps d'usage pour le contrôle parental (1 minute = 60_000 ms).
-    const timerId = window.setInterval(() => {
-      setParentalSettings((prev) => ({
-        ...prev,
-        usageMinutes: prev.usageMinutes + 1,
-      }));
-    }, 60_000);
-
-    return () => {
-      window.clearInterval(timerId);
-    };
-  }, [parentalSettings.enabled]);
-
-  const handleActivation = async () => {
-    const nextPlan = await activateByCode(activationCode);
-
-    if (!nextPlan) {
-      setActivationMessage({
-        type: "error",
-        text: "Code invalide. Utilisez un code officiel mAI (MAIPLUS26, MAIPRO26 ou MAIMAX26).",
+    if (file.size > 2 * 1024 * 1024) {
+      createNotification({
+        level: "error",
+        message: "L'image ne doit pas dépasser 2 Mo.",
+        title: "Avatar",
       });
       return;
     }
 
-    setActivationMessage({
-      type: "success",
-      text: `Activation réussie : vous êtes maintenant sur le forfait ${planDefinitions[nextPlan].label}.`,
-    });
-    setActivationCode("");
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const result = readerEvent.target?.result;
+      if (typeof result === "string") {
+        setProfileLogoDataUrl(result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleCreateTask = () => {
-    if (tasks.length >= maxScheduledTasks) {
-      setTaskError(
-        `Limite atteinte (${maxScheduledTasks} tâches) pour votre forfait ${currentPlanDefinition.label}.`
-      );
-      return;
-    }
-
-    if (!taskForm.title.trim()) {
-      setTaskError("Ajoutez un titre avant de créer la tâche.");
-      return;
-    }
-
-    if (!taskForm.nextRunAt) {
-      setTaskError("Choisissez la date du prochain déclenchement.");
-      return;
-    }
-
-    const taskDate = new Date(taskForm.nextRunAt);
-    if (Number.isNaN(taskDate.getTime())) {
-      setTaskError("Date invalide pour le programmateur.");
-      return;
-    }
-
-    const nextTask: ScheduledTask = {
-      createdAt: new Date().toISOString(),
-      frequency: taskForm.frequency,
-      id: crypto.randomUUID(),
-      isEnabled: true,
-      notes: taskForm.notes.trim(),
-      model: taskForm.model,
-      nextRunAt: taskForm.nextRunAt,
-      title: taskForm.title.trim(),
+  const handleSaveProfile = () => {
+    const payload: ProfileSettingsShape = {
+      aiBehavior,
+      aiMemory: "",
+      aiMemoryEntries,
+      aiName: aiName.trim() || "mAI",
+      aiPersonality,
+      avatarDataUrl: profileLogoDataUrl,
+      avatarId: "custom",
+      displayName: profileName.trim(),
+      personalContext,
+      profession,
+      projectDescription: "",
+      projectIconColor: "#60a5fa",
+      projectTitle: "",
+      stylisticDirectives: "",
     };
 
-    setTasks((prev) =>
-      [nextTask, ...prev].sort(
-        (a, b) => +new Date(a.nextRunAt) - +new Date(b.nextRunAt)
-      )
+    window.localStorage.setItem(
+      PROFILE_SETTINGS_STORAGE_KEY,
+      JSON.stringify(payload)
     );
-    setTaskForm((prev) => ({ ...prev, notes: "", title: "" }));
-    setTaskError(null);
+    window.localStorage.setItem(NOTIFICATIONS_SETTINGS_STORAGE_KEY, JSON.stringify(notificationSettings));
+    window.localStorage.setItem(PARENTAL_SETTINGS_STORAGE_KEY, JSON.stringify(parentalSettings));
+    window.localStorage.setItem(SECURITY_SETTINGS_STORAGE_KEY, JSON.stringify(securitySettings));
+
     createNotification({
       level: "success",
-      message: `Tâche planifiée créée: ${nextTask.title}`,
-      source: "user",
-      title: "Tâches",
+      message: "Vos paramètres ont été enregistrés localement.",
+      title: "Paramètres",
     });
+    window.dispatchEvent(new CustomEvent("mai:profile-updated"));
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId));
-    createNotification({
-      level: "info",
-      message: "Tâche planifiée supprimée.",
-      source: "user",
-      title: "Tâches",
-    });
-  };
-
-  const computeNextRun = (
-    sourceDateIso: string,
-    frequency: ScheduledTask["frequency"]
-  ): string => {
-    const nextDate = new Date(sourceDateIso);
-    if (frequency === "quotidienne") {
-      nextDate.setDate(nextDate.getDate() + 1);
-    } else if (frequency === "hebdomadaire") {
-      nextDate.setDate(nextDate.getDate() + 7);
-    } else if (frequency === "mensuelle") {
-      nextDate.setMonth(nextDate.getMonth() + 1);
+  const handleActivation = async () => {
+    const code = activationCode.trim();
+    if (!code) {
+      return;
     }
-    return nextDate.toISOString().slice(0, 16);
-  };
 
-  const handleRunTaskNow = (taskId: string) => {
-    const nowIso = new Date().toISOString();
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              lastRunAt: nowIso,
-              nextRunAt:
-                task.frequency === "ponctuelle"
-                  ? task.nextRunAt
-                  : computeNextRun(task.nextRunAt, task.frequency),
-            }
-          : task
-      )
-    );
-  };
+    setIsActivating(true);
+    setActivationMessage(null);
 
-  const handleToggleTaskEnabled = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId ? { ...task, isEnabled: !task.isEnabled } : task
-      )
-    );
+    try {
+      const response = await fetch("/api/subscription/activate", {
+        body: JSON.stringify({ code }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setActivationMessage({
+          text: `Forfait ${data.plan.toUpperCase()} activé avec succès !`,
+          type: "success",
+        });
+        setActivationCode("");
+        window.location.reload();
+      } else {
+        setActivationMessage({
+          text: data.error || "Code invalide ou déjà utilisé.",
+          type: "error",
+        });
+      }
+    } catch {
+      setActivationMessage({
+        text: "Erreur lors de l'activation. Vérifiez votre connexion.",
+        type: "error",
+      });
+    } finally {
+      setIsActivating(false);
+    }
   };
 
   const handleTaskCommand = () => {
     const parsed = parseTaskCommand(taskCommand);
     if (!parsed) {
-      setTaskError(
-        "Commande vide. Essayez : créer une tâche planifiée demain à 18h."
-      );
       return;
     }
 
     setTaskForm((prev) => ({
       ...prev,
       frequency: parsed.frequency,
-      nextRunAt: parsed.date ?? prev.nextRunAt,
+      nextRunAt: parsed.date || prev.nextRunAt,
       title: parsed.title,
     }));
     setTaskCommand("");
+  };
+
+  const handleCreateTask = () => {
+    if (!taskForm.title.trim()) {
+      setTaskError("Le titre de la tâche est requis.");
+      return;
+    }
+
+    if (tasks.length >= maxScheduledTasks) {
+      setTaskError(`Limite de tâches atteinte (${maxScheduledTasks}).`);
+      return;
+    }
+
+    const newTask: ScheduledTask = {
+      ...taskForm,
+      createdAt: new Date().toISOString(),
+      id: crypto.randomUUID(),
+      isEnabled: true,
+      title: taskForm.title.trim(),
+    };
+
+    setTasks((prev) => [newTask, ...prev]);
+    setTaskForm({
+      frequency: "ponctuelle",
+      model: "openai/gpt-5.4-mini",
+      nextRunAt: formatDateTimeLocalInput(),
+      notes: "",
+      title: "",
+    });
     setTaskError(null);
   };
 
-  const handleChatBarSizeChange = (size: "compact" | "standard" | "large") => {
-    setChatBarSize(size);
-    window.localStorage.setItem("mai.chatbar.size", size);
+  const handleDeleteTask = (id: string) => {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
-  const handleWordCounterVisibility = (nextValue: boolean) => {
-    setShowWordCounter(nextValue);
-    window.localStorage.setItem("mai.show-word-counter", String(nextValue));
+  const handleToggleTaskEnabled = (id: string) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, isEnabled: !task.isEnabled } : task
+      )
+    );
   };
 
-  const handleInstallPwa = async () => {
-    if (!deferredPwaPrompt) {
-      return;
-    }
-    await deferredPwaPrompt.prompt();
-    await deferredPwaPrompt.userChoice;
-    setDeferredPwaPrompt(null);
-  };
-
-  const handleProfileLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (!selectedFile) {
+  const handleRunTaskNow = async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) {
       return;
     }
 
-    const fileReader = new FileReader();
-    fileReader.onload = () => {
-      if (typeof fileReader.result === "string") {
-        setProfileLogoDataUrl(fileReader.result);
-      }
-    };
-    fileReader.readAsDataURL(selectedFile);
-  };
+    createNotification({
+      level: "info",
+      message: `Exécution manuelle de "${task.title}" lancée...`,
+      title: "Tâches",
+    });
 
-  const handleNotificationToggle = (
-    key: keyof typeof notifications,
-    value: boolean
-  ) => {
-    setNotifications((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const resetMemoryEditor = () => {
-    setMemoryDraft("");
-    setMemoryEditingIndex(null);
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, lastRunAt: new Date().toISOString() } : t
+      )
+    );
   };
 
   const handleSaveMemoryEntry = async () => {
-    const sanitizedDraft = memoryDraft.trim().slice(0, MAX_MEMORY_ENTRY_LENGTH);
-    if (!sanitizedDraft) {
+    const content = memoryDraft.trim();
+    if (!content) {
       return;
     }
 
     setMemoryError(null);
 
-    if (!isAuthenticated) {
+    if (isAuthenticated) {
+      try {
+        const isEditing = memoryEditingIndex !== null;
+        const memoryId = isEditing ? memoryEntryIds[memoryEditingIndex] : null;
+
+        const response = await fetch(
+          isEditing ? `/api/memory/${memoryId}` : "/api/memory",
+          {
+            body: JSON.stringify({ content }),
+            headers: { "Content-Type": "application/json" },
+            method: isEditing ? "PATCH" : "POST",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Erreur serveur mémoire");
+        }
+
+        const savedEntry = (await response.json()) as PersistedMemoryEntry;
+
+        if (isEditing) {
+          setAiMemoryEntries((prev) =>
+            prev.map((entry, index) =>
+              index === memoryEditingIndex ? savedEntry.content : entry
+            )
+          );
+        } else {
+          setAiMemoryEntries((prev) => [savedEntry.content, ...prev]);
+          setMemoryEntryIds((prev) => [savedEntry.id, ...prev]);
+        }
+
+        resetMemoryEditor();
+      } catch {
+        setMemoryError("Impossible de sauvegarder sur le serveur.");
+      }
+    } else {
       if (memoryEditingIndex !== null) {
         setAiMemoryEntries((prev) =>
           prev.map((entry, index) =>
-            index === memoryEditingIndex ? sanitizedDraft : entry
+            index === memoryEditingIndex ? content : entry
           )
         );
-        resetMemoryEditor();
-        return;
+      } else {
+        setAiMemoryEntries((prev) => [content, ...prev]);
+        setMemoryEntryIds((prev) => [
+          `local-${crypto.randomUUID()}`,
+          ...prev,
+        ]);
       }
-
-      if (aiMemoryEntries.length >= maxMemoryEntries) {
-        return;
-      }
-
-      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
-      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
       resetMemoryEditor();
-      return;
     }
-
-    if (memoryEditingIndex !== null) {
-      const memoryId = memoryEntryIds[memoryEditingIndex];
-      if (!memoryId) {
-        return;
-      }
-
-      const response = await fetch(`/api/memory/${memoryId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: sanitizedDraft,
-          type: "manual",
-        }),
-      });
-
-      if (!response.ok) {
-        // Fallback local pour éviter de bloquer l'utilisateur si l'API échoue.
-        setAiMemoryEntries((prev) =>
-          prev.map((entry, index) =>
-            index === memoryEditingIndex ? sanitizedDraft : entry
-          )
-        );
-        setMemoryError(
-          "API indisponible : modification enregistrée localement uniquement."
-        );
-        return;
-      }
-
-      setAiMemoryEntries((prev) =>
-        prev.map((entry, index) =>
-          index === memoryEditingIndex ? sanitizedDraft : entry
-        )
-      );
-      resetMemoryEditor();
-      return;
-    }
-
-    if (aiMemoryEntries.length >= maxMemoryEntries) {
-      return;
-    }
-
-    const response = await fetch("/api/memory", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: sanitizedDraft,
-        type: "manual",
-      }),
-    });
-
-    if (!response.ok) {
-      // Fallback local pour continuer à utiliser la mémoire même en cas d'erreur API.
-      setAiMemoryEntries((prev) => [...prev, sanitizedDraft]);
-      setMemoryEntryIds((prev) => [...prev, `local-memory-${Date.now()}`]);
-      setMemoryError("API indisponible : entrée sauvegardée localement.");
-      resetMemoryEditor();
-      return;
-    }
-
-    const created = (await response.json()) as PersistedMemoryEntry;
-    setAiMemoryEntries((prev) => [...prev, created.content]);
-    setMemoryEntryIds((prev) => [...prev, created.id]);
-    resetMemoryEditor();
   };
 
   const handleEditMemoryEntry = (index: number) => {
     setMemoryEditingIndex(index);
-    setMemoryDraft(aiMemoryEntries[index] ?? "");
+    setMemoryDraft(aiMemoryEntries[index]);
+  };
+
+  const resetMemoryEditor = () => {
+    setMemoryEditingIndex(null);
+    setMemoryDraft("");
   };
 
   const handleDeleteMemoryEntry = async (index: number) => {
-    const memoryId = memoryEntryIds[index];
-    if (!memoryId) {
-      return;
-    }
-
-    if (!isAuthenticated || memoryId.startsWith("local-memory-")) {
+    if (!isAuthenticated) {
       setAiMemoryEntries((prev) =>
         prev.filter((_, current) => current !== index)
       );
@@ -1499,6 +1039,11 @@ export default function SettingsPage() {
       if (memoryEditingIndex === index) {
         resetMemoryEditor();
       }
+      return;
+    }
+
+    const memoryId = memoryEntryIds[index];
+    if (!memoryId) {
       return;
     }
 
@@ -1569,13 +1114,6 @@ export default function SettingsPage() {
         period: "month",
         title: "Tâches",
         used: tasks.length,
-      },
-      {
-        key: "quiz",
-        limit: -1,
-        period: "day",
-        title: "Quiz",
-        used: 0,
       },
     ];
   }, [
@@ -1689,7 +1227,6 @@ export default function SettingsPage() {
     });
   };
 
-
   const handleSaveSecurityPin = () => {
     const nextPin = securityPinDraft.trim();
     const confirmPin = securityPinConfirmDraft.trim();
@@ -1740,39 +1277,34 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="liquid-glass flex h-full w-full flex-col gap-6 overflow-y-auto p-6 md:p-10">
-      <div className="flex items-center gap-3">
-        <Settings2 className="size-8 text-primary" />
-        <h1 className="text-3xl font-bold">Paramètres</h1>
-      </div>
+    <div className="liquid-glass flex h-full w-full flex-col gap-6 overflow-y-auto p-4 md:p-8">
+      <header className="flex flex-col gap-2">
+        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight">
+          <Settings2 className="size-8 text-primary" />
+          Paramètres
+        </h1>
+        <p className="text-muted-foreground">
+          Personnalisez votre expérience mAI, gérez vos crédits et vos données.
+        </p>
+      </header>
 
-      <section className="rounded-2xl border border-border/50 bg-card/70 p-4 backdrop-blur-xl">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          Navigation des paramètres
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {settingsSections.map((item) => (
-            <a
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs transition-colors",
-                activeSettingsSection === item.key
-                  ? "border-primary/40 bg-primary/10 text-foreground"
-                  : "border-border/60 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-              )}
-              href={item.href}
-              key={item.href}
-              onClick={() => setActiveSettingsSection(item.key)}
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Mode contextuel : la section active adapte les droits d&apos;accès.
-          Pendant la consultation des notifications, les actions sensibles sur
-          les données sont limitées.
-        </p>
-      </section>
+      <nav className="sticky top-0 z-50 flex flex-wrap gap-2 rounded-2xl border border-border/50 bg-background/60 p-1.5 backdrop-blur-2xl">
+        {settingsSections.map((section) => (
+          <button
+            className={cn(
+              "rounded-xl px-4 py-2 text-sm font-medium transition-all",
+              activeSettingsSection === section.key
+                ? "bg-primary text-primary-foreground shadow-lg"
+                : "hover:bg-accent hover:text-accent-foreground"
+            )}
+            key={section.key}
+            onClick={() => setActiveSettingsSection(section.key)}
+            type="button"
+          >
+            {section.label}
+          </button>
+        ))}
+      </nav>
 
       <section
         className={cn(
@@ -1781,175 +1313,120 @@ export default function SettingsPage() {
         )}
         id="compte"
       >
-        <h2 className="text-lg font-semibold">Compte</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Connecté en tant que : {data?.user?.email ?? "Invité"}
-        </p>
-
-        <div className="mt-4 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background/60 to-primary/5 p-4 shadow-sm backdrop-blur-xl">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Forfait actuel
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full bg-primary/90 px-3 py-1 text-white hover:bg-primary/90">
-              {isHydrated ? currentPlanDefinition.label : "Chargement..."}
-            </Badge>
-            {currentPlanDefinition.recommended && (
-              <Badge className="rounded-full bg-violet-500/90 px-3 py-1 text-white hover:bg-violet-500/90">
-                Recommandé
-              </Badge>
-            )}
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {isHydrated
-              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j • Quiz illimités`
-              : "Chargement du forfait..."}
-          </p>
-
-          {isHydrated && plan !== "max" && (
-            <div className="mt-4 flex justify-center">
-              <Button asChild className="rounded-full" variant="outline">
-                <a href="/pricing">
-                  {plan === "free"
-                    ? "Obtenir Plus"
-                    : plan === "plus"
-                      ? "Obtenir Pro"
-                      : "Obtenir Max"}
-                </a>
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-white p-3 text-black">
-          <p className="text-sm font-medium">Installation PWA</p>
-          <p className="mt-1 text-xs text-black/70">
-            Installez mAI sur l&apos;écran d&apos;accueil pour un usage natif.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button
-              disabled={!deferredPwaPrompt}
-              onClick={handleInstallPwa}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Download className="mr-2 size-4" />
-              Installer mAI en PWA
-            </Button>
-            {deferredPwaPrompt ? (
-              <Button
-                onClick={() => setDeferredPwaPrompt(null)}
-                size="sm"
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <UserCircle2 className="size-5" />
+          Compte & Profil
+        </h2>
+        <div className="mt-6 flex flex-col gap-8 md:flex-row">
+          <div className="flex flex-col items-center gap-4">
+            <div className="group relative h-32 w-32 overflow-hidden rounded-3xl border-4 border-background shadow-2xl">
+              {profileLogoDataUrl ? (
+                <img
+                  alt="Avatar"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                  src={profileLogoDataUrl}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                  <UserCircle2 className="size-12 text-primary/40" />
+                </div>
+              )}
+              <button
+                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                onClick={() => logoInputRef.current?.click()}
                 type="button"
-                variant="ghost"
               >
-                Fermer
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-[auto_1fr]">
-          <div className="flex flex-col items-center gap-2">
-            <div
-              className="size-16 rounded-full border border-border/50 bg-cover bg-center shadow-sm"
-              style={{
-                backgroundImage: profileLogoDataUrl
-                  ? `url(${profileLogoDataUrl})`
-                  : "linear-gradient(135deg, oklch(0.72 0.19 248), oklch(0.66 0.15 168))",
-              }}
-            />
-            <label
-              className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border/60 bg-background/60 px-2 py-1 text-xs"
-              htmlFor="profile-logo-input"
-            >
-              <Camera className="size-3.5" />
-              Changer le logo
-            </label>
+                <Camera className="size-6 text-white" />
+              </button>
+            </div>
             <input
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/*"
               className="hidden"
-              id="profile-logo-input"
-              onChange={handleProfileLogoUpload}
+              onChange={handleLogoUpload}
+              ref={logoInputRef}
               type="file"
             />
-          </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="profile-name-input"
+            <Button
+              onClick={() => logoInputRef.current?.click()}
+              size="sm"
+              variant="outline"
             >
-              Nom de profil
-            </label>
-            <Input
-              id="profile-name-input"
-              maxLength={40}
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Ex: Dr. Lemaire"
-              value={profileName}
-            />
-            <p className="text-xs text-muted-foreground">
-              Ce nom est utilisé dans les en-têtes et interactions
-              personnalisées.
-            </p>
+              Changer l&apos;avatar
+            </Button>
+          </div>
+
+          <div className="flex-1 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="display-name">
+                  Nom d&apos;affichage
+                </label>
+                <Input
+                  id="display-name"
+                  onChange={(event) => setProfileName(event.target.value)}
+                  placeholder="Votre nom"
+                  value={profileName}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium" htmlFor="profession">
+                  Profession / Études
+                </label>
+                <Input
+                  id="profession"
+                  onChange={(event) => setProfession(event.target.value)}
+                  placeholder="Ex: Développeur Fullstack"
+                  value={profession}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Forfait actuel</label>
+              <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Badge className="capitalize" variant="secondary">
+                    {plan}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="font-semibold capitalize">{plan}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {currentPlanDefinition.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {pwaInstallPrompt && (
+              <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                  Application disponible
+                </p>
+                <p className="mt-1 text-xs text-emerald-600/80 dark:text-emerald-400/80">
+                  Installez mAI sur votre écran d&apos;accueil pour un accès rapide.
+                </p>
+                <Button
+                  className="mt-3 bg-emerald-600 hover:bg-emerald-700"
+                  onClick={async () => {
+                    if (!pwaInstallPrompt) return;
+                    await pwaInstallPrompt.prompt();
+                    const { outcome } = await pwaInstallPrompt.userChoice;
+                    if (outcome === "accepted") setPwaInstallPrompt(null);
+                  }}
+                  size="sm"
+                >
+                  Installer l&apos;application
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="ai-call-name"
-            >
-              Nom (comment l&apos;IA doit vous appeler)
-            </label>
-            <Input
-              id="ai-call-name"
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Ex: Alex"
-              value={profileName}
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="profession"
-            >
-              Profession
-            </label>
-            <Input
-              id="profession"
-              onChange={(event) => setProfession(event.target.value)}
-              placeholder="Ex: Product Designer"
-              value={profession}
-            />
-          </div>
-        </div>
-
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-          <p className="text-sm font-medium">Affichage du compteur de saisie</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Affiche/masque les mots et caractères dans la barre de chat.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              onClick={() => handleWordCounterVisibility(true)}
-              size="sm"
-              type="button"
-              variant={showWordCounter ? "default" : "outline"}
-            >
-              Afficher
-            </Button>
-            <Button
-              onClick={() => handleWordCounterVisibility(false)}
-              size="sm"
-              type="button"
-              variant={!showWordCounter ? "default" : "outline"}
-            >
-              Masquer
-            </Button>
-          </div>
+        <div className="mt-8 flex justify-end gap-3 border-t border-border/50 pt-6">
+          <Button onClick={handleSaveProfile} size="lg">
+            Enregistrer les modifications
+          </Button>
         </div>
       </section>
 
@@ -1961,52 +1438,67 @@ export default function SettingsPage() {
         id="notifications"
       >
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Bell className="size-4 text-primary" />
+          <Bell className="size-5" />
           Notifications
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Choisissez les alertes que vous souhaitez recevoir dans l&apos;app.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {[
-            {
-              description: "Être alerté quand une réponse IA est prête.",
-              key: "responseReady" as const,
-              label: "Réponses",
-            },
-            {
-              description: "Recevoir les rappels des tâches automatiques.",
-              key: "scheduledTasks" as const,
-              label: "Tâches",
-            },
-            {
-              description: "Être notifié des mises à jour de la plateforme.",
-              key: "projectUpdates" as const,
-              label: "Plateforme",
-            },
-          ].map((notificationItem) => (
-            <button
-              className={cn(
-                "rounded-xl border p-3 text-left text-sm transition-colors",
-                notifications[notificationItem.key]
-                  ? "border-primary/40 bg-primary/10"
-                  : "border-border/50 bg-background/50"
-              )}
-              key={notificationItem.key}
-              onClick={() =>
-                handleNotificationToggle(
-                  notificationItem.key,
-                  !notifications[notificationItem.key]
-                )
-              }
-              type="button"
-            >
-              <p className="font-medium">{notificationItem.label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {notificationItem.description}
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Alertes par email</p>
+              <p className="text-xs text-muted-foreground">
+                Recevez des récapitulatifs et des alertes importantes.
               </p>
-            </button>
-          ))}
+            </div>
+            <input
+              checked={notificationSettings.email}
+              className="size-5 rounded border-gray-300 text-primary focus:ring-primary"
+              onChange={(event) =>
+                setNotificationSettings((prev) => ({
+                  ...prev,
+                  email: event.target.checked,
+                }))
+              }
+              type="checkbox"
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Notifications Push</p>
+              <p className="text-xs text-muted-foreground">
+                Notifications en temps réel sur votre navigateur ou mobile.
+              </p>
+            </div>
+            <input
+              checked={notificationSettings.push}
+              className="size-5 rounded border-gray-300 text-primary focus:ring-primary"
+              onChange={(event) =>
+                setNotificationSettings((prev) => ({
+                  ...prev,
+                  push: event.target.checked,
+                }))
+              }
+              type="checkbox"
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/40 p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Alertes de consommation</p>
+              <p className="text-xs text-muted-foreground">
+                Prévenir quand j&apos;approche de la limite de mes crédits.
+              </p>
+            </div>
+            <input
+              checked={notificationSettings.usageAlerts}
+              className="size-5 rounded border-gray-300 text-primary focus:ring-primary"
+              onChange={(event) =>
+                setNotificationSettings((prev) => ({
+                  ...prev,
+                  usageAlerts: event.target.checked,
+                }))
+              }
+              type="checkbox"
+            />
+          </div>
         </div>
       </section>
 
@@ -2017,193 +1509,139 @@ export default function SettingsPage() {
         )}
         id="personnalisation"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <UserCircle2 className="size-4 text-primary" />
-            Personnalisation
-          </h2>
-        </div>
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <SlidersHorizontal className="size-5" />
+          Personnalisation de mAI
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Personnalisez l&apos;IA et vos informations pour adapter ses réponses.
+          Ajustez le comportement, le ton et les connaissances de votre IA.
         </p>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="ai-name">
-              Nom de l&apos;assistant IA
-            </label>
-            <Input
-              id="ai-name"
-              onChange={(event) => setAiName(event.target.value)}
-              placeholder="Ex: mAI Copilot"
-              value={aiName}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="personality"
-            >
-              Personnalité (champ libre)
-            </label>
-            <textarea
-              className="min-h-24 w-full rounded-md border border-border/50 bg-background/80 p-3 text-sm outline-none"
-              id="personality"
-              onChange={(event) => setAiPersonality(event.target.value)}
-              placeholder="Ex: Ton rassurant, structuré, orienté solution et pédagogie."
-              value={aiPersonality}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <p className="text-xs text-muted-foreground">Réflexion</p>
-            <div className="rounded-xl border border-border/60 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                Disponible selon votre forfait : Free/Plus (Aucun, Léger), Pro
-                (+ Moyen), Max (+ Approfondi).
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  {
-                    id: "none" as const,
-                    label: "Aucun",
-                    helper: "Par défaut",
-                  },
-                  {
-                    id: "light" as const,
-                    label: "Léger",
-                    helper: "Forfaits Free et +",
-                  },
-                  {
-                    id: "medium" as const,
-                    label: "Moyen",
-                    helper: "Forfaits Pro et Max",
-                  },
-                  {
-                    id: "high" as const,
-                    label: "Approfondi",
-                    helper: "Forfait Max",
-                  },
-                ].map((option) => {
-                  const isActive = reasoningPreference === option.id;
-                  const disabled = !allowedReasoningPreferences.includes(
-                    option.id
-                  );
-
-                  return (
-                    <button
-                      className={cn(
-                        "rounded-lg border px-3 py-2 text-left text-xs transition",
-                        isActive
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : "border-border/50 bg-background/60",
-                        disabled &&
-                          "cursor-not-allowed border-dashed opacity-60"
-                      )}
-                      disabled={disabled}
-                      key={option.id}
-                      onClick={() => setReasoningPreference(option.id)}
-                      type="button"
-                    >
-                      <p className="font-medium">{option.label}</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {option.helper}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="liquid-glass space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4 md:col-span-2">
-            <h3 className="text-base font-semibold">
-              Personnalisation du comportement
+        <div className="mt-6 space-y-8">
+          <div className="space-y-4">
+            <h3 className="flex items-center gap-2 text-sm font-medium">
+              <Badge variant="outline">Comportement</Badge>
             </h3>
-            {[
-              {
-                id: "tone",
-                label: "Ton",
-                left: "Créatif / Libre",
-                right: "Strict / Pro",
-                value: aiBehavior.tone,
-              },
-              {
-                id: "concision",
-                label: "Concision",
-                left: "Très détaillé",
-                right: "Ultra concis",
-                value: aiBehavior.concision,
-              },
-              {
-                id: "register",
-                label: "Registre Linguistique",
-                left: "Familier",
-                right: "Soutenu",
-                value: aiBehavior.register,
-              },
-            ].map((behaviorItem) => (
-              <div className="space-y-2" key={behaviorItem.id}>
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm text-muted-foreground">
-                  <span>{behaviorItem.left}</span>
-                  <span className="text-center">
-                    {behaviorItem.label} ({behaviorItem.value}%)
-                  </span>
-                  <span className="text-right">{behaviorItem.right}</span>
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="space-y-3">
+                <div className="flex justify-between text-xs">
+                  <span>Détaillé</span>
+                  <span>Concis</span>
                 </div>
                 <input
-                  className="w-full accent-foreground"
-                  max={100}
-                  min={0}
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-primary/20 accent-primary"
+                  max="100"
+                  min="0"
                   onChange={(event) =>
                     setAiBehavior((prev) => ({
                       ...prev,
-                      [behaviorItem.id]: clampPercentage(
-                        Number(event.target.value)
-                      ),
+                      concision: Number(event.target.value),
                     }))
                   }
-                  step={1}
                   type="range"
-                  value={behaviorItem.value}
+                  value={aiBehavior.concision}
                 />
               </div>
-            ))}
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="personal-context"
-            >
-              Informations personnelles (champ libre)
-            </label>
-            <textarea
-              className="min-h-24 w-full rounded-md border border-border/50 bg-background/80 p-3 text-sm outline-none"
-              id="personal-context"
-              onChange={(event) => setPersonalContext(event.target.value)}
-              placeholder="Ex: 34 ans, passionné de randonnée, préfère des plans d'action concrets."
-              value={personalContext}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <p className="text-xs text-muted-foreground">Mémoire IA</p>
-            <div className="rounded-xl border border-border/60 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                {aiMemoryEntries.length}/{maxMemoryEntries} entrée
-                {maxMemoryEntries > 1 ? "s" : ""} utilisée
-                {maxMemoryEntries > 1 ? "s" : ""}. 500 caractères max par
-                entrée.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  onClick={() => setIsMemoryModalOpen(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <ListPlus className="mr-1 size-4" />
-                  Ouvrir la mémoire
-                </Button>
+              <div className="space-y-3">
+                <div className="flex justify-between text-xs">
+                  <span>Familier</span>
+                  <span>Soutenu</span>
+                </div>
+                <input
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-primary/20 accent-primary"
+                  max="100"
+                  min="0"
+                  onChange={(event) =>
+                    setAiBehavior((prev) => ({
+                      ...prev,
+                      register: Number(event.target.value),
+                    }))
+                  }
+                  type="range"
+                  value={aiBehavior.register}
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-xs">
+                  <span>Sérieux</span>
+                  <span>Créatif</span>
+                </div>
+                <input
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-primary/20 accent-primary"
+                  max="100"
+                  min="0"
+                  onChange={(event) =>
+                    setAiBehavior((prev) => ({
+                      ...prev,
+                      tone: Number(event.target.value),
+                    }))
+                  }
+                  type="range"
+                  value={aiBehavior.tone}
+                />
               </div>
             </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="ai-name">
+                Nom de l&apos;IA
+              </label>
+              <Input
+                id="ai-name"
+                onChange={(event) => setAiName(event.target.value)}
+                placeholder="mAI"
+                value={aiName}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium" htmlFor="ai-personality">
+                Personnalité / Rôle
+              </label>
+              <Input
+                id="ai-personality"
+                onChange={(event) => setAiPersonality(event.target.value)}
+                placeholder="Ex: Un mentor bienveillant et expert en tech"
+                value={aiPersonality}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Mémoire de l&apos;IA
+              <Badge className="ml-2" variant="secondary">
+                {aiMemoryEntries.length} / {maxMemoryEntries}
+              </Badge>
+            </label>
+            <div className="flex flex-col gap-3 rounded-2xl border border-border/50 bg-background/40 p-4">
+              <p className="text-xs text-muted-foreground">
+                La mémoire permet à mAI de se souvenir d&apos;informations clés sur
+                vous au fil des conversations.
+              </p>
+              <Button
+                className="w-fit"
+                onClick={() => setIsMemoryModalOpen(true)}
+                variant="outline"
+              >
+                <Database className="mr-2 size-4" />
+                Gérer la mémoire
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="personal-context">
+              Contexte personnel (Instructions personnalisées)
+            </label>
+            <textarea
+              className="min-h-32 w-full rounded-2xl border border-border/50 bg-background/40 p-4 text-sm outline-none transition focus:ring-2 focus:ring-primary/20"
+              id="personal-context"
+              onChange={(event) => setPersonalContext(event.target.value)}
+              placeholder="Ex: Je travaille principalement sur des projets React. J'aime que les explications soient accompagnées d'exemples de code."
+              value={personalContext}
+            />
           </div>
         </div>
       </section>
@@ -2211,303 +1649,205 @@ export default function SettingsPage() {
       <section
         className={cn(
           "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("personnalisation")
-        )}
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <SlidersHorizontal className="size-4 text-primary" />
-          Ergonomie de la barre de dialogue
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Définissez la hauteur par défaut de la barre de saisie. Le mode
-          compact est désormais recommandé pour une interface plus dense.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {[
-            { label: "Compacte", value: "compact" as const },
-            { label: "Standard", value: "standard" as const },
-            { label: "Confort", value: "large" as const },
-          ].map((option) => (
-            <Button
-              className={cn(
-                "justify-start rounded-xl border border-border/50 bg-background/40",
-                chatBarSize === option.value &&
-                  "border-primary/40 bg-primary/10 text-primary"
-              )}
-              key={option.value}
-              onClick={() => handleChatBarSizeChange(option.value)}
-              variant="ghost"
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "liquid-glass rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
           sectionVisibility("parental")
         )}
         id="parental"
       >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <ShieldAlert className="size-4 text-primary" />
-          Contrôle parental
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Définissez un code de verrouillage, contrôlez le temps
-          d&apos;utilisation et limitez les options avancées.
-        </p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Sécurisation
-            </p>
-            <div className="mt-2 space-y-2">
-              <Input
-                maxLength={8}
-                onChange={(event) => setNewLockCode(event.target.value)}
-                placeholder="Nouveau code (4 à 8 caractères)"
-                type="password"
-                value={newLockCode}
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <ShieldAlert className="size-5 text-rose-500" />
+            Contrôle parental
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium">
+              {parentalSettings.enabled ? "Activé" : "Désactivé"}
+            </span>
+            <button
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                parentalSettings.enabled ? "bg-primary" : "bg-muted"
+              )}
+              disabled={isAdvancedAccessRestricted}
+              onClick={() =>
+                setParentalSettings((prev) => ({
+                  ...prev,
+                  enabled: !prev.enabled,
+                }))
+              }
+              type="button"
+            >
+              <span
+                className={cn(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  parentalSettings.enabled ? "translate-x-6" : "translate-x-1"
+                )}
               />
-              <Input
-                maxLength={8}
-                onChange={(event) => setConfirmLockCode(event.target.value)}
-                placeholder="Confirmer le code"
-                type="password"
-                value={confirmLockCode}
-              />
-              <Button
-                onClick={handleSetLockCode}
-                type="button"
-                variant="outline"
-              >
-                <Lock className="mr-2 size-4" />
-                Enregistrer le code
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Protection active : {parentalSettings.enabled ? "Oui" : "Non"}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Déverrouillage temporaire
-            </p>
-            <div className="mt-2 space-y-2">
-              <Input
-                maxLength={8}
-                onChange={(event) => setUnlockCode(event.target.value)}
-                placeholder="Entrer le code"
-                type="password"
-                value={unlockCode}
-              />
-              <Button
-                onClick={handleUnlockParentalSection}
-                type="button"
-                variant="outline"
-              >
-                <ShieldCheck className="mr-2 size-4" />
-                Déverrouiller 15 min
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Session avancée :{" "}
-                {isParentalSessionUnlocked
-                  ? `active jusqu'à ${formatDateTime(
-                      new Date(parentalSettings.sessionUnlockedUntil)
-                    )}`
-                  : "verrouillée"}
-              </p>
-            </div>
+            </button>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Clock3 className="size-4" />
-              Temps d&apos;utilisation
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <Input
-                min={15}
-                onChange={(event) =>
-                  setParentalSettings((prev) => ({
-                    ...prev,
-                    dailyLimitMinutes: Math.max(
-                      15,
-                      Math.min(720, Number(event.target.value) || 15)
-                    ),
-                  }))
-                }
-                type="number"
-                value={parentalSettings.dailyLimitMinutes}
-              />
-              <span className="text-xs text-muted-foreground">min/jour</span>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Utilisé aujourd&apos;hui : {parentalSettings.usageMinutes} min
-            </p>
-            <Button
-              className="mt-2"
-              onClick={() =>
-                setParentalSettings((prev) => ({ ...prev, usageMinutes: 0 }))
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <TimerReset className="mr-2 size-4" />
-              Réinitialiser le compteur
-            </Button>
-          </div>
-
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Puzzle className="size-4" />
-              Modules actifs
-            </p>
-            <div className="mt-2 grid gap-2">
-              {(Object.keys(extensionLabels) as ExtensionKey[]).map(
-                (extensionKey) => (
-                  <button
-                    className={cn(
-                      "flex items-center justify-between rounded-lg border px-3 py-2 text-sm",
-                      parentalSettings.extensions[extensionKey]
-                        ? "border-primary/40 bg-primary/10"
-                        : "border-border/50 bg-background/60"
-                    )}
-                    disabled={isAdvancedAccessRestricted}
-                    key={extensionKey}
-                    onClick={() =>
-                      setParentalSettings((prev) => ({
-                        ...prev,
-                        extensions: {
-                          ...prev.extensions,
-                          [extensionKey]: !prev.extensions[extensionKey],
-                        },
-                      }))
+        <div className="mt-4 grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Sécurité & Accès</h3>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">
+                  {parentalSettings.lockCodeHash
+                    ? "Changer le code parental (4-8 chiffres)"
+                    : "Définir un code parental (4-8 chiffres)"}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    maxLength={8}
+                    onChange={(event) =>
+                      setNewLockCode(event.target.value.replace(/\D/g, ""))
                     }
-                    type="button"
-                  >
-                    <span>{extensionLabels[extensionKey]}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {parentalSettings.extensions[extensionKey]
-                        ? "Activée"
-                        : "Bloquée"}
-                    </span>
-                  </button>
-                )
+                    placeholder="Nouveau code"
+                    type="password"
+                    value={newLockCode}
+                  />
+                  <Input
+                    maxLength={8}
+                    onChange={(event) =>
+                      setConfirmLockCode(event.target.value.replace(/\D/g, ""))
+                    }
+                    placeholder="Confirmer"
+                    type="password"
+                    value={confirmLockCode}
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={handleSetLockCode}
+                  size="sm"
+                  variant="outline"
+                >
+                  Enregistrer le code
+                </Button>
+              </div>
+
+              {isAdvancedAccessRestricted && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                    Section verrouillée
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      className="h-8"
+                      onChange={(event) =>
+                        setUnlockCode(event.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="Code"
+                      type="password"
+                      value={unlockCode}
+                    />
+                    <Button
+                      className="h-8"
+                      onClick={handleUnlockParentalSection}
+                      size="sm"
+                    >
+                      Déverrouiller
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Limites de temps</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs">Limite quotidienne (minutes)</label>
+                <Input
+                  className="h-8 w-20"
+                  disabled={isAdvancedAccessRestricted}
+                  min={0}
+                  onChange={(event) =>
+                    setParentalSettings((prev) => ({
+                      ...prev,
+                      dailyLimitMinutes: Math.max(0, Number(event.target.value) || 0),
+                    }))
+                  }
+                  type="number"
+                  value={parentalSettings.dailyLimitMinutes}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-xs">Bonus week-end (minutes)</label>
+                <Input
+                  className="h-8 w-20"
+                  disabled={isAdvancedAccessRestricted}
+                  min={0}
+                  onChange={(event) =>
+                    setParentalSettings((prev) => ({
+                      ...prev,
+                      weekendBonusMinutes: Math.max(0, Number(event.target.value) || 0),
+                    }))
+                  }
+                  type="number"
+                  value={parentalSettings.weekendBonusMinutes}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-          <button
-            className="flex w-full items-center justify-between gap-2 text-left"
-            onClick={() =>
-              setParentalSettings((prev) => ({
-                ...prev,
-                advancedSettingsLocked: !prev.advancedSettingsLocked,
-              }))
-            }
-            type="button"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <Settings2 className="size-4" />
-              Limiter les paramètres avancés
-            </span>
-            <Badge variant="secondary">
-              {parentalSettings.advancedSettingsLocked ? "Actif" : "Inactif"}
-            </Badge>
-          </button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Quand cette option est active, les actions sensibles sont bloquées
-            tant qu&apos;un déverrouillage parental n&apos;est pas validé.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <button
-            className="flex items-center justify-between rounded-xl border border-border/60 bg-background/60 p-3 text-left"
-            onClick={() =>
-              setParentalSettings((prev) => ({
-                ...prev,
-                bedtimeMode: !prev.bedtimeMode,
-              }))
-            }
-            type="button"
-          >
-            <span className="text-sm font-medium">
-              Mode coucher ({parentalSettings.bedtimeWindowStartHour}h-
-              {parentalSettings.bedtimeWindowEndHour}h)
-            </span>
-            <Badge variant="secondary">
-              {parentalSettings.bedtimeMode ? "Actif" : "Inactif"}
-            </Badge>
-          </button>
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Bonus week-end</p>
-            <div className="mt-2 flex items-center gap-2">
+        <div className="mt-6 space-y-4 border-t border-border/50 pt-4">
+          <h3 className="text-sm font-medium">Mode Coucher</h3>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                checked={parentalSettings.bedtimeMode}
+                disabled={isAdvancedAccessRestricted}
+                onChange={(event) =>
+                  setParentalSettings((prev) => ({
+                    ...prev,
+                    bedtimeMode: event.target.checked,
+                  }))
+                }
+                type="checkbox"
+              />
+              Activer le mode coucher
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-xs">De</span>
               <Input
+                className="h-8 w-16"
+                disabled={isAdvancedAccessRestricted}
+                max={23}
                 min={0}
                 onChange={(event) =>
                   setParentalSettings((prev) => ({
                     ...prev,
-                    weekendBonusMinutes: Math.max(
+                    bedtimeWindowStartHour: Math.max(
                       0,
-                      Math.min(180, Number(event.target.value) || 0)
+                      Math.min(23, Number(event.target.value) || 0)
                     ),
                   }))
                 }
                 type="number"
-                value={parentalSettings.weekendBonusMinutes}
+                value={parentalSettings.bedtimeWindowStartHour}
               />
-              <span className="text-xs text-muted-foreground">min</span>
+              <span className="text-xs">à</span>
+              <Input
+                className="h-8 w-16"
+                disabled={isAdvancedAccessRestricted}
+                max={23}
+                min={0}
+                onChange={(event) =>
+                  setParentalSettings((prev) => ({
+                    ...prev,
+                    bedtimeWindowEndHour: Math.max(
+                      0,
+                      Math.min(23, Number(event.target.value) || 0)
+                    ),
+                  }))
+                }
+                type="number"
+                value={parentalSettings.bedtimeWindowEndHour}
+              />
             </div>
-          </div>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Début du mode coucher</p>
-            <Input
-              max={23}
-              min={0}
-              onChange={(event) =>
-                setParentalSettings((prev) => ({
-                  ...prev,
-                  bedtimeWindowStartHour: Math.max(
-                    0,
-                    Math.min(23, Number(event.target.value) || 0)
-                  ),
-                }))
-              }
-              type="number"
-              value={parentalSettings.bedtimeWindowStartHour}
-            />
-          </div>
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Fin du mode coucher</p>
-            <Input
-              max={23}
-              min={0}
-              onChange={(event) =>
-                setParentalSettings((prev) => ({
-                  ...prev,
-                  bedtimeWindowEndHour: Math.max(
-                    0,
-                    Math.min(23, Number(event.target.value) || 0)
-                  ),
-                }))
-              }
-              type="number"
-              value={parentalSettings.bedtimeWindowEndHour}
-            />
           </div>
         </div>
 
@@ -2703,9 +2043,7 @@ export default function SettingsPage() {
 
         <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-4">
           <h3 className="text-sm font-semibold">Compteur de tokens (hors chat fantôme)</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Compte cumulatif de tous les échanges non fantômes (entrée/sortie).
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Consommation cumulée sur cet appareil.</p>
           <div className="mt-3 grid gap-2 md:grid-cols-3">
             <div className="rounded-lg border border-border/50 bg-card/70 p-3">
               <p className="text-xs text-muted-foreground">Tokens entrée</p>
@@ -2945,25 +2283,44 @@ export default function SettingsPage() {
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button
-              onClick={handleTogglePosition}
+              className="h-8"
+              onClick={() => {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                  window.localStorage.setItem(
+                    POSITION_SETTINGS_STORAGE_KEY,
+                    JSON.stringify({
+                      lat: pos.coords.latitude,
+                      lng: pos.coords.longitude,
+                      updatedAt: new Date().toISOString(),
+                    })
+                  );
+                  createNotification({
+                    level: "success",
+                    message: "Position mise à jour.",
+                    title: "Localisation",
+                  });
+                });
+              }}
               size="sm"
-              type="button"
               variant="outline"
             >
-              {isResolvingPosition
-                ? "Localisation..."
-                : positionEnabled
-                  ? "Désactiver"
-                  : "Activer"}
+              Mettre à jour ma position
             </Button>
-            <Input
-              className="max-w-xs"
-              disabled={!positionEnabled}
-              onChange={(event) => setPositionLabel(event.target.value)}
-              placeholder="Coordonnées détectées"
-              readOnly
-              value={positionLabel}
-            />
+            <Button
+              className="h-8"
+              onClick={() => {
+                window.localStorage.removeItem(POSITION_SETTINGS_STORAGE_KEY);
+                createNotification({
+                  level: "info",
+                  message: "Données de position supprimées.",
+                  title: "Localisation",
+                });
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              Supprimer
+            </Button>
           </div>
         </div>
       </section>
@@ -2980,7 +2337,7 @@ export default function SettingsPage() {
           Crédits
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Suivi des crédits IA par tier, des tâches et des fichiers.
+          Suivi des crédits IA par tier, des tâches et des fichiers. Quiz illimités.
         </p>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -3234,14 +2591,24 @@ export default function SettingsPage() {
           Rejoignez le serveur Discord officiel pour poser vos questions,
           remonter des bugs et suivre les nouveautés.
         </p>
-        <a
-          className="mt-3 inline-flex rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-500/20 dark:text-indigo-300"
-          href="https://discord.gg/fV7zwdGPpY"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Ouvrir Discord mAI
-        </a>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <a
+            className="inline-flex rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-500/20 dark:text-indigo-300"
+            href="https://discord.gg/fV7zwdGPpY"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Ouvrir Discord mAI
+          </a>
+          <a
+            className="inline-flex rounded-xl border border-indigo-600 bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+            href="https://discord.com/oauth2/authorize?client_id=1494660523688591510&permissions=8&integration_type=0&scope=bot+applications.commands"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Discuter avec mAI dans Discord
+          </a>
+        </div>
       </section>
 
       {isMemoryModalOpen && (
