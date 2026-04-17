@@ -1,37 +1,10 @@
 "use client";
 
-import {
-  Bell,
-  CalendarClock,
-  Camera,
-  Clock3,
-  Database,
-  Download,
-  FileText,
-  Gauge,
-  KeyRound,
-  ListPlus,
-  Lock,
-  Mail,
-  MessageCircle,
-  PencilLine,
-  PlusCircle,
-  Puzzle,
-  Settings2,
-  ShieldAlert,
-  ShieldCheck,
-  SlidersHorizontal,
-  TimerReset,
-  Trash2,
-  UserCircle2,
-  X,
-} from "lucide-react";
+import { PencilLine, Settings2, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import {
   getTierRemaining,
@@ -39,13 +12,17 @@ import {
   type ModelTier,
 } from "@/lib/ai/credits";
 import { APP_VERSION } from "@/lib/app-version";
-import { LANGUAGE_STORAGE_KEY, resolveLanguage, setLanguageInStorage } from "@/lib/i18n";
 import {
   CHAT_TAGS_STORAGE_KEY,
   TAG_DEFINITIONS_STORAGE_KEY,
   TAG_PALETTE,
   type TagDefinition,
 } from "@/lib/chat-preferences";
+import {
+  LANGUAGE_STORAGE_KEY,
+  resolveLanguage,
+  setLanguageInStorage,
+} from "@/lib/i18n";
 import { createNotification } from "@/lib/notifications";
 import {
   defaultSecuritySettings,
@@ -57,7 +34,14 @@ import {
 } from "@/lib/security-settings";
 import { planDefinitions } from "@/lib/subscription";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
-import { cn } from "@/lib/utils";
+import { AproposSection } from "./apropos-section";
+import { CompteSection } from "./compte-section";
+import { CreditsSection } from "./credits-section";
+import { DonneesSection } from "./donnees-section";
+import { NotificationsSection } from "./notifications-section";
+import { ParentalSection } from "./parental-section";
+import { PersonnalisationSection } from "./personnalisation-section";
+import { TachesSection } from "./taches-section";
 
 const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v018";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
@@ -185,6 +169,7 @@ function hashLockCode(code: string): string {
   for (let index = 0; index < code.length; index += 1) {
     hash = (hash * 33) ^ code.charCodeAt(index);
   }
+
   return (hash >>> 0).toString(16);
 }
 
@@ -329,8 +314,7 @@ function sanitizeScheduledTasks(input: unknown): ScheduledTask[] {
     )
     .map((task) => ({
       ...task,
-      isEnabled:
-        typeof task.isEnabled === "boolean" ? task.isEnabled : true,
+      isEnabled: typeof task.isEnabled === "boolean" ? task.isEnabled : true,
       notes: typeof task.notes === "string" ? task.notes.trim() : "",
       title: task.title.trim(),
     }))
@@ -487,8 +471,9 @@ export default function SettingsPage() {
   });
   const [deferredPwaPrompt, setDeferredPwaPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [securitySettings, setSecuritySettings] =
-    useState<SecuritySettings>(defaultSecuritySettings);
+  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(
+    defaultSecuritySettings
+  );
   const [securityPinDraft, setSecurityPinDraft] = useState("");
   const [securityPinConfirmDraft, setSecurityPinConfirmDraft] = useState("");
   const [securityFeedback, setSecurityFeedback] = useState<{
@@ -508,6 +493,17 @@ export default function SettingsPage() {
     }
     return ["none", "light"];
   }, [plan]);
+
+  useEffect(() => {
+    // Request notification permission if running as PWA
+    if (
+      window.matchMedia("(display-mode: standalone)").matches &&
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
+      Notification.requestPermission();
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -547,12 +543,12 @@ export default function SettingsPage() {
     window.addEventListener("storage", refreshUsage);
     window.addEventListener("mai:websearch-usage-updated", refreshUsage);
     window.addEventListener("mai:usage-updated", refreshUsage);
+
+    const sectionVisibility = (key: string) =>
+      activeSettingsSection === key ? "block" : "hidden";
     return () => {
       window.removeEventListener("storage", refreshUsage);
-      window.removeEventListener(
-        "mai:websearch-usage-updated",
-        refreshUsage
-      );
+      window.removeEventListener("mai:websearch-usage-updated", refreshUsage);
       window.removeEventListener("mai:usage-updated", refreshUsage);
     };
   }, []);
@@ -1127,7 +1123,9 @@ export default function SettingsPage() {
   useEffect(() => {
     const enabled = window.localStorage.getItem("mai-reasoning-enabled");
     const level = window.localStorage.getItem("mai-reasoning-level");
-    setReasoningPreference(resolveReasoningPreferenceFromStorage(enabled, level));
+    setReasoningPreference(
+      resolveReasoningPreferenceFromStorage(enabled, level)
+    );
     setIsReasoningPreferenceHydrated(true);
   }, []);
 
@@ -1570,13 +1568,6 @@ export default function SettingsPage() {
         title: "Tâches",
         used: tasks.length,
       },
-      {
-        key: "quiz",
-        limit: -1,
-        period: "day",
-        title: "Quiz",
-        used: 0,
-      },
     ];
   }, [
     currentPlanDefinition,
@@ -1625,7 +1616,9 @@ export default function SettingsPage() {
     ) &&
     !isParentalSessionUnlocked;
   const isDataAccessRestricted =
-    isAdvancedAccessRestricted || isUsageLimitReached || isBedtimeRestrictionActive;
+    isAdvancedAccessRestricted ||
+    isUsageLimitReached ||
+    isBedtimeRestrictionActive;
 
   const handleSetLockCode = () => {
     const normalizedNewCode = newLockCode.trim();
@@ -1689,7 +1682,6 @@ export default function SettingsPage() {
     });
   };
 
-
   const handleSaveSecurityPin = () => {
     const nextPin = securityPinDraft.trim();
     const confirmPin = securityPinConfirmDraft.trim();
@@ -1739,6 +1731,133 @@ export default function SettingsPage() {
     });
   };
 
+  const allProps = {
+    sectionVisibility,
+    handleProfileLogoUpload,
+    profileLogoDataUrl,
+    profileName,
+    setProfileName,
+    profession,
+    setProfession,
+    aiBehavior,
+    setAiBehavior,
+    aiPersonality,
+    setAiPersonality,
+    personalContext,
+    setPersonalContext,
+    isMemoryLoading,
+    memoryError,
+    memoryEntryIds,
+    handleEditMemoryEntry,
+    handleDeleteMemoryEntry,
+    maxMemoryEntries,
+    memoryDraft,
+    setMemoryDraft,
+    handleSaveMemoryEntry,
+    setMemoryEditingIndex,
+    memoryEditingIndex,
+    isMemoryModalOpen,
+    setIsMemoryModalOpen,
+    aiName,
+    setAiName,
+    positionEnabled,
+    handleTogglePosition,
+    positionLabel,
+    isResolvingPosition,
+    notifications,
+    handleNotificationToggle,
+    deferredPwaPrompt,
+    handleInstallPwa,
+    parentalSettings,
+    parentalFeedback,
+    handleUnlockParentalSection,
+    unlockCode,
+    setUnlockCode,
+    newLockCode,
+    setNewLockCode,
+    confirmLockCode,
+    setConfirmLockCode,
+    handleSetLockCode,
+    tokenUsage,
+    fileUsageToday,
+    tierUsage,
+    formatDateTime,
+    getNextResetDate,
+    getCreditBadgeColor,
+    tasks,
+    maxScheduledTasks,
+    taskCommand,
+    setTaskCommand,
+    handleTaskCommand,
+    taskForm,
+    setTaskForm,
+    formatDateTimeLocalInput,
+    schedulerFrequencies,
+    schedulerModels,
+    handleCreateTask,
+    taskError,
+    handleToggleTaskEnabled,
+    handleRunTaskNow,
+    handleDeleteTask,
+    chatBarSize,
+    handleChatBarSizeChange,
+    showWordCounter,
+    handleWordCounterVisibility,
+    resolveLanguage,
+    setInterfaceLanguage,
+    setLanguageInStorage,
+    createNotification,
+    interfaceLanguage,
+    APP_VERSION,
+    data,
+    isHydrated,
+    currentPlanDefinition,
+    plan,
+    isActivating,
+    activationCode,
+    setActivationCode,
+    handleActivation,
+    activationMessage,
+    isReasoningPreferenceHydrated,
+    reasoningPreference,
+    setReasoningPreference,
+    isAuthenticated,
+    setDeferredPwaPrompt,
+    isUsageLimitReached,
+    isAdvancedAccessRestricted,
+    securitySettings,
+    handleDisableSecurityPin,
+    securityPinDraft,
+    setSecurityPinDraft,
+    securityPinConfirmDraft,
+    setSecurityPinConfirmDraft,
+    handleSaveSecurityPin,
+    securityFeedback,
+    isBedtimeRestrictionActive,
+    isDataAccessRestricted,
+    setSecuritySettings,
+    conversationTags,
+    editingTagId,
+    editingTagName,
+    setEditingTagName,
+    editingTagColor,
+    setEditingTagColor,
+    TAG_PALETTE,
+    newTagName,
+    setNewTagName,
+    newTagColor,
+    setNewTagColor,
+    setEditingTagId,
+    setConversationTags,
+    setPositionLabel,
+    isParentalSessionUnlocked,
+    setParentalSettings,
+    extensionLabels,
+    allowedReasoningPreferences,
+    clampPercentage,
+    aiMemoryEntries,
+  };
+
   return (
     <div className="liquid-glass flex h-full w-full flex-col gap-6 overflow-y-auto p-6 md:p-10">
       <div className="flex items-center gap-3">
@@ -1746,1503 +1865,14 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold">Paramètres</h1>
       </div>
 
-      <section className="rounded-2xl border border-border/50 bg-card/70 p-4 backdrop-blur-xl">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">
-          Navigation des paramètres
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {settingsSections.map((item) => (
-            <a
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs transition-colors",
-                activeSettingsSection === item.key
-                  ? "border-primary/40 bg-primary/10 text-foreground"
-                  : "border-border/60 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-              )}
-              href={item.href}
-              key={item.href}
-              onClick={() => setActiveSettingsSection(item.key)}
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Mode contextuel : la section active adapte les droits d&apos;accès.
-          Pendant la consultation des notifications, les actions sensibles sur
-          les données sont limitées.
-        </p>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("compte")
-        )}
-        id="compte"
-      >
-        <h2 className="text-lg font-semibold">Compte</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Connecté en tant que : {data?.user?.email ?? "Invité"}
-        </p>
-
-        <div className="mt-4 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background/60 to-primary/5 p-4 shadow-sm backdrop-blur-xl">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-            Forfait actuel
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full bg-primary/90 px-3 py-1 text-white hover:bg-primary/90">
-              {isHydrated ? currentPlanDefinition.label : "Chargement..."}
-            </Badge>
-            {currentPlanDefinition.recommended && (
-              <Badge className="rounded-full bg-violet-500/90 px-3 py-1 text-white hover:bg-violet-500/90">
-                Recommandé
-              </Badge>
-            )}
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {isHydrated
-              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j • Quiz illimités`
-              : "Chargement du forfait..."}
-          </p>
-
-          {isHydrated && plan !== "max" && (
-            <div className="mt-4 flex justify-center">
-              <Button asChild className="rounded-full" variant="outline">
-                <a href="/pricing">
-                  {plan === "free"
-                    ? "Obtenir Plus"
-                    : plan === "plus"
-                      ? "Obtenir Pro"
-                      : "Obtenir Max"}
-                </a>
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-white p-3 text-black">
-          <p className="text-sm font-medium">Installation PWA</p>
-          <p className="mt-1 text-xs text-black/70">
-            Installez mAI sur l&apos;écran d&apos;accueil pour un usage natif.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button
-              disabled={!deferredPwaPrompt}
-              onClick={handleInstallPwa}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Download className="mr-2 size-4" />
-              Installer mAI en PWA
-            </Button>
-            {deferredPwaPrompt ? (
-              <Button
-                onClick={() => setDeferredPwaPrompt(null)}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                Fermer
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-[auto_1fr]">
-          <div className="flex flex-col items-center gap-2">
-            <div
-              className="size-16 rounded-full border border-border/50 bg-cover bg-center shadow-sm"
-              style={{
-                backgroundImage: profileLogoDataUrl
-                  ? `url(${profileLogoDataUrl})`
-                  : "linear-gradient(135deg, oklch(0.72 0.19 248), oklch(0.66 0.15 168))",
-              }}
-            />
-            <label
-              className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-border/60 bg-background/60 px-2 py-1 text-xs"
-              htmlFor="profile-logo-input"
-            >
-              <Camera className="size-3.5" />
-              Changer le logo
-            </label>
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              id="profile-logo-input"
-              onChange={handleProfileLogoUpload}
-              type="file"
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="profile-name-input"
-            >
-              Nom de profil
-            </label>
-            <Input
-              id="profile-name-input"
-              maxLength={40}
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Ex: Dr. Lemaire"
-              value={profileName}
-            />
-            <p className="text-xs text-muted-foreground">
-              Ce nom est utilisé dans les en-têtes et interactions
-              personnalisées.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="ai-call-name"
-            >
-              Nom (comment l&apos;IA doit vous appeler)
-            </label>
-            <Input
-              id="ai-call-name"
-              onChange={(event) => setProfileName(event.target.value)}
-              placeholder="Ex: Alex"
-              value={profileName}
-            />
-          </div>
-          <div className="space-y-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="profession"
-            >
-              Profession
-            </label>
-            <Input
-              id="profession"
-              onChange={(event) => setProfession(event.target.value)}
-              placeholder="Ex: Product Designer"
-              value={profession}
-            />
-          </div>
-        </div>
-
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-          <p className="text-sm font-medium">Affichage du compteur de saisie</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Affiche/masque les mots et caractères dans la barre de chat.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              onClick={() => handleWordCounterVisibility(true)}
-              size="sm"
-              type="button"
-              variant={showWordCounter ? "default" : "outline"}
-            >
-              Afficher
-            </Button>
-            <Button
-              onClick={() => handleWordCounterVisibility(false)}
-              size="sm"
-              type="button"
-              variant={!showWordCounter ? "default" : "outline"}
-            >
-              Masquer
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("notifications")
-        )}
-        id="notifications"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Bell className="size-4 text-primary" />
-          Notifications
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Choisissez les alertes que vous souhaitez recevoir dans l&apos;app.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {[
-            {
-              description: "Être alerté quand une réponse IA est prête.",
-              key: "responseReady" as const,
-              label: "Réponses",
-            },
-            {
-              description: "Recevoir les rappels des tâches automatiques.",
-              key: "scheduledTasks" as const,
-              label: "Tâches",
-            },
-            {
-              description: "Être notifié des mises à jour de la plateforme.",
-              key: "projectUpdates" as const,
-              label: "Plateforme",
-            },
-          ].map((notificationItem) => (
-            <button
-              className={cn(
-                "rounded-xl border p-3 text-left text-sm transition-colors",
-                notifications[notificationItem.key]
-                  ? "border-primary/40 bg-primary/10"
-                  : "border-border/50 bg-background/50"
-              )}
-              key={notificationItem.key}
-              onClick={() =>
-                handleNotificationToggle(
-                  notificationItem.key,
-                  !notifications[notificationItem.key]
-                )
-              }
-              type="button"
-            >
-              <p className="font-medium">{notificationItem.label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {notificationItem.description}
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("personnalisation")
-        )}
-        id="personnalisation"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <UserCircle2 className="size-4 text-primary" />
-            Personnalisation
-          </h2>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Personnalisez l&apos;IA et vos informations pour adapter ses réponses.
-        </p>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground" htmlFor="ai-name">
-              Nom de l&apos;assistant IA
-            </label>
-            <Input
-              id="ai-name"
-              onChange={(event) => setAiName(event.target.value)}
-              placeholder="Ex: mAI Copilot"
-              value={aiName}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="personality"
-            >
-              Personnalité (champ libre)
-            </label>
-            <textarea
-              className="min-h-24 w-full rounded-md border border-border/50 bg-background/80 p-3 text-sm outline-none"
-              id="personality"
-              onChange={(event) => setAiPersonality(event.target.value)}
-              placeholder="Ex: Ton rassurant, structuré, orienté solution et pédagogie."
-              value={aiPersonality}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <p className="text-xs text-muted-foreground">Réflexion</p>
-            <div className="rounded-xl border border-border/60 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                Disponible selon votre forfait : Free/Plus (Aucun, Léger), Pro
-                (+ Moyen), Max (+ Approfondi).
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  {
-                    id: "none" as const,
-                    label: "Aucun",
-                    helper: "Par défaut",
-                  },
-                  {
-                    id: "light" as const,
-                    label: "Léger",
-                    helper: "Forfaits Free et +",
-                  },
-                  {
-                    id: "medium" as const,
-                    label: "Moyen",
-                    helper: "Forfaits Pro et Max",
-                  },
-                  {
-                    id: "high" as const,
-                    label: "Approfondi",
-                    helper: "Forfait Max",
-                  },
-                ].map((option) => {
-                  const isActive = reasoningPreference === option.id;
-                  const disabled = !allowedReasoningPreferences.includes(
-                    option.id
-                  );
-
-                  return (
-                    <button
-                      className={cn(
-                        "rounded-lg border px-3 py-2 text-left text-xs transition",
-                        isActive
-                          ? "border-primary/40 bg-primary/10 text-primary"
-                          : "border-border/50 bg-background/60",
-                        disabled &&
-                          "cursor-not-allowed border-dashed opacity-60"
-                      )}
-                      disabled={disabled}
-                      key={option.id}
-                      onClick={() => setReasoningPreference(option.id)}
-                      type="button"
-                    >
-                      <p className="font-medium">{option.label}</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {option.helper}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="liquid-glass space-y-4 rounded-2xl border border-border/60 bg-background/70 p-4 md:col-span-2">
-            <h3 className="text-base font-semibold">
-              Personnalisation du comportement
-            </h3>
-            {[
-              {
-                id: "tone",
-                label: "Ton",
-                left: "Créatif / Libre",
-                right: "Strict / Pro",
-                value: aiBehavior.tone,
-              },
-              {
-                id: "concision",
-                label: "Concision",
-                left: "Très détaillé",
-                right: "Ultra concis",
-                value: aiBehavior.concision,
-              },
-              {
-                id: "register",
-                label: "Registre Linguistique",
-                left: "Familier",
-                right: "Soutenu",
-                value: aiBehavior.register,
-              },
-            ].map((behaviorItem) => (
-              <div className="space-y-2" key={behaviorItem.id}>
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm text-muted-foreground">
-                  <span>{behaviorItem.left}</span>
-                  <span className="text-center">
-                    {behaviorItem.label} ({behaviorItem.value}%)
-                  </span>
-                  <span className="text-right">{behaviorItem.right}</span>
-                </div>
-                <input
-                  className="w-full accent-foreground"
-                  max={100}
-                  min={0}
-                  onChange={(event) =>
-                    setAiBehavior((prev) => ({
-                      ...prev,
-                      [behaviorItem.id]: clampPercentage(
-                        Number(event.target.value)
-                      ),
-                    }))
-                  }
-                  step={1}
-                  type="range"
-                  value={behaviorItem.value}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label
-              className="text-xs text-muted-foreground"
-              htmlFor="personal-context"
-            >
-              Informations personnelles (champ libre)
-            </label>
-            <textarea
-              className="min-h-24 w-full rounded-md border border-border/50 bg-background/80 p-3 text-sm outline-none"
-              id="personal-context"
-              onChange={(event) => setPersonalContext(event.target.value)}
-              placeholder="Ex: 34 ans, passionné de randonnée, préfère des plans d'action concrets."
-              value={personalContext}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <p className="text-xs text-muted-foreground">Mémoire IA</p>
-            <div className="rounded-xl border border-border/60 bg-background/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                {aiMemoryEntries.length}/{maxMemoryEntries} entrée
-                {maxMemoryEntries > 1 ? "s" : ""} utilisée
-                {maxMemoryEntries > 1 ? "s" : ""}. 500 caractères max par
-                entrée.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button
-                  onClick={() => setIsMemoryModalOpen(true)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <ListPlus className="mr-1 size-4" />
-                  Ouvrir la mémoire
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("personnalisation")
-        )}
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <SlidersHorizontal className="size-4 text-primary" />
-          Ergonomie de la barre de dialogue
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Définissez la hauteur par défaut de la barre de saisie. Le mode
-          compact est désormais recommandé pour une interface plus dense.
-        </p>
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          {[
-            { label: "Compacte", value: "compact" as const },
-            { label: "Standard", value: "standard" as const },
-            { label: "Confort", value: "large" as const },
-          ].map((option) => (
-            <Button
-              className={cn(
-                "justify-start rounded-xl border border-border/50 bg-background/40",
-                chatBarSize === option.value &&
-                  "border-primary/40 bg-primary/10 text-primary"
-              )}
-              key={option.value}
-              onClick={() => handleChatBarSizeChange(option.value)}
-              variant="ghost"
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "liquid-glass rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("parental")
-        )}
-        id="parental"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <ShieldAlert className="size-4 text-primary" />
-          Contrôle parental
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Définissez un code de verrouillage, contrôlez le temps
-          d&apos;utilisation et limitez les options avancées.
-        </p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Sécurisation
-            </p>
-            <div className="mt-2 space-y-2">
-              <Input
-                maxLength={8}
-                onChange={(event) => setNewLockCode(event.target.value)}
-                placeholder="Nouveau code (4 à 8 caractères)"
-                type="password"
-                value={newLockCode}
-              />
-              <Input
-                maxLength={8}
-                onChange={(event) => setConfirmLockCode(event.target.value)}
-                placeholder="Confirmer le code"
-                type="password"
-                value={confirmLockCode}
-              />
-              <Button
-                onClick={handleSetLockCode}
-                type="button"
-                variant="outline"
-              >
-                <Lock className="mr-2 size-4" />
-                Enregistrer le code
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Protection active : {parentalSettings.enabled ? "Oui" : "Non"}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Déverrouillage temporaire
-            </p>
-            <div className="mt-2 space-y-2">
-              <Input
-                maxLength={8}
-                onChange={(event) => setUnlockCode(event.target.value)}
-                placeholder="Entrer le code"
-                type="password"
-                value={unlockCode}
-              />
-              <Button
-                onClick={handleUnlockParentalSection}
-                type="button"
-                variant="outline"
-              >
-                <ShieldCheck className="mr-2 size-4" />
-                Déverrouiller 15 min
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Session avancée :{" "}
-                {isParentalSessionUnlocked
-                  ? `active jusqu'à ${formatDateTime(
-                      new Date(parentalSettings.sessionUnlockedUntil)
-                    )}`
-                  : "verrouillée"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Clock3 className="size-4" />
-              Temps d&apos;utilisation
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <Input
-                min={15}
-                onChange={(event) =>
-                  setParentalSettings((prev) => ({
-                    ...prev,
-                    dailyLimitMinutes: Math.max(
-                      15,
-                      Math.min(720, Number(event.target.value) || 15)
-                    ),
-                  }))
-                }
-                type="number"
-                value={parentalSettings.dailyLimitMinutes}
-              />
-              <span className="text-xs text-muted-foreground">min/jour</span>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Utilisé aujourd&apos;hui : {parentalSettings.usageMinutes} min
-            </p>
-            <Button
-              className="mt-2"
-              onClick={() =>
-                setParentalSettings((prev) => ({ ...prev, usageMinutes: 0 }))
-              }
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <TimerReset className="mr-2 size-4" />
-              Réinitialiser le compteur
-            </Button>
-          </div>
-
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Puzzle className="size-4" />
-              Modules actifs
-            </p>
-            <div className="mt-2 grid gap-2">
-              {(Object.keys(extensionLabels) as ExtensionKey[]).map(
-                (extensionKey) => (
-                  <button
-                    className={cn(
-                      "flex items-center justify-between rounded-lg border px-3 py-2 text-sm",
-                      parentalSettings.extensions[extensionKey]
-                        ? "border-primary/40 bg-primary/10"
-                        : "border-border/50 bg-background/60"
-                    )}
-                    disabled={isAdvancedAccessRestricted}
-                    key={extensionKey}
-                    onClick={() =>
-                      setParentalSettings((prev) => ({
-                        ...prev,
-                        extensions: {
-                          ...prev.extensions,
-                          [extensionKey]: !prev.extensions[extensionKey],
-                        },
-                      }))
-                    }
-                    type="button"
-                  >
-                    <span>{extensionLabels[extensionKey]}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {parentalSettings.extensions[extensionKey]
-                        ? "Activée"
-                        : "Bloquée"}
-                    </span>
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-          <button
-            className="flex w-full items-center justify-between gap-2 text-left"
-            onClick={() =>
-              setParentalSettings((prev) => ({
-                ...prev,
-                advancedSettingsLocked: !prev.advancedSettingsLocked,
-              }))
-            }
-            type="button"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <Settings2 className="size-4" />
-              Limiter les paramètres avancés
-            </span>
-            <Badge variant="secondary">
-              {parentalSettings.advancedSettingsLocked ? "Actif" : "Inactif"}
-            </Badge>
-          </button>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Quand cette option est active, les actions sensibles sont bloquées
-            tant qu&apos;un déverrouillage parental n&apos;est pas validé.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <button
-            className="flex items-center justify-between rounded-xl border border-border/60 bg-background/60 p-3 text-left"
-            onClick={() =>
-              setParentalSettings((prev) => ({
-                ...prev,
-                bedtimeMode: !prev.bedtimeMode,
-              }))
-            }
-            type="button"
-          >
-            <span className="text-sm font-medium">
-              Mode coucher ({parentalSettings.bedtimeWindowStartHour}h-
-              {parentalSettings.bedtimeWindowEndHour}h)
-            </span>
-            <Badge variant="secondary">
-              {parentalSettings.bedtimeMode ? "Actif" : "Inactif"}
-            </Badge>
-          </button>
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Bonus week-end</p>
-            <div className="mt-2 flex items-center gap-2">
-              <Input
-                min={0}
-                onChange={(event) =>
-                  setParentalSettings((prev) => ({
-                    ...prev,
-                    weekendBonusMinutes: Math.max(
-                      0,
-                      Math.min(180, Number(event.target.value) || 0)
-                    ),
-                  }))
-                }
-                type="number"
-                value={parentalSettings.weekendBonusMinutes}
-              />
-              <span className="text-xs text-muted-foreground">min</span>
-            </div>
-          </div>
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Début du mode coucher</p>
-            <Input
-              max={23}
-              min={0}
-              onChange={(event) =>
-                setParentalSettings((prev) => ({
-                  ...prev,
-                  bedtimeWindowStartHour: Math.max(
-                    0,
-                    Math.min(23, Number(event.target.value) || 0)
-                  ),
-                }))
-              }
-              type="number"
-              value={parentalSettings.bedtimeWindowStartHour}
-            />
-          </div>
-          <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-            <p className="text-sm font-medium">Fin du mode coucher</p>
-            <Input
-              max={23}
-              min={0}
-              onChange={(event) =>
-                setParentalSettings((prev) => ({
-                  ...prev,
-                  bedtimeWindowEndHour: Math.max(
-                    0,
-                    Math.min(23, Number(event.target.value) || 0)
-                  ),
-                }))
-              }
-              type="number"
-              value={parentalSettings.bedtimeWindowEndHour}
-            />
-          </div>
-        </div>
-
-        {parentalFeedback && (
-          <p
-            className={cn(
-              "mt-3 text-sm",
-              parentalFeedback.type === "success"
-                ? "text-emerald-600"
-                : "text-rose-600"
-            )}
-          >
-            {parentalFeedback.text}
-          </p>
-        )}
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("donnees")
-        )}
-        id="donnees"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Database className="size-4 text-primary" />
-          Données
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Gérez vos données, vos identifiants de compte et vos accès premium.
-        </p>
-        {isUsageLimitReached && (
-          <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            Limite quotidienne atteinte ({parentalSettings.usageMinutes}/
-            {parentalSettings.dailyLimitMinutes} min). Les actions sensibles
-            restent désactivées jusqu&apos;à réinitialisation.
-          </p>
-        )}
-        {isAdvancedAccessRestricted && (
-          <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            Accès restreint : entrez le code parental dans la section "Contrôle
-            parental" pour autoriser temporairement ces actions.
-          </p>
-        )}
-        {isBedtimeRestrictionActive && (
-          <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-            Mode coucher actif ({parentalSettings.bedtimeWindowStartHour}h-
-            {parentalSettings.bedtimeWindowEndHour}h) : les actions sensibles
-            sont temporairement bloquées.
-          </p>
-        )}
-        <div className="mt-4 grid gap-2 md:grid-cols-3">
-          <Button
-            className="justify-start"
-            disabled={isDataAccessRestricted}
-            type="button"
-            variant="outline"
-          >
-            <Mail className="mr-2 size-4" />
-            Modifier l&apos;adresse mail
-          </Button>
-          <Button
-            className="justify-start"
-            disabled={isDataAccessRestricted}
-            type="button"
-            variant="outline"
-          >
-            <ShieldCheck className="mr-2 size-4" />
-            Changer le mot de passe
-          </Button>
-          {isDataAccessRestricted ? (
-            <Button
-              className="justify-start"
-              disabled
-              type="button"
-              variant="outline"
-            >
-              <FileText className="mr-2 size-4" />
-              Exporter mes données
-            </Button>
-          ) : (
-            <Button asChild className="justify-start" variant="outline">
-              <a download href="/api/export">
-                <FileText className="mr-2 size-4" />
-                Exporter mes données
-              </a>
-            </Button>
-          )}
-        </div>
-
-        <div className="liquid-glass mt-4 rounded-2xl border border-border/60 bg-background/60 p-4 backdrop-blur-2xl">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Lock className="size-4 text-cyan-400" />
-            Sécurité de session
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Protégez votre session sans vous reconnecter : vérification au chargement, PIN de reprise et déconnexion régulière.
-          </p>
-
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
-              <input
-                checked={securitySettings.securityCheckOnLoad}
-                onChange={(event) =>
-                  setSecuritySettings((current) => ({
-                    ...current,
-                    securityCheckOnLoad: event.target.checked,
-                  }))
-                }
-                type="checkbox"
-              />
-              Vérification de sécurité au chargement
-            </label>
-            <label className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
-              <input
-                checked={securitySettings.lockOnReturn}
-                disabled={!securitySettings.enablePinLock}
-                onChange={(event) =>
-                  setSecuritySettings((current) => ({
-                    ...current,
-                    lockOnReturn: event.target.checked,
-                  }))
-                }
-                type="checkbox"
-              />
-              Verrouiller la session au retour sur le site
-            </label>
-          </div>
-
-          <div className="mt-3 grid gap-2 md:grid-cols-3">
-            <Input
-              inputMode="numeric"
-              maxLength={8}
-              onChange={(event) =>
-                setSecurityPinDraft(event.target.value.replace(/\D+/g, "").slice(0, 8))
-              }
-              placeholder="Nouveau PIN (4-8)"
-              type="password"
-              value={securityPinDraft}
-            />
-            <Input
-              inputMode="numeric"
-              maxLength={8}
-              onChange={(event) =>
-                setSecurityPinConfirmDraft(event.target.value.replace(/\D+/g, "").slice(0, 8))
-              }
-              placeholder="Confirmer PIN"
-              type="password"
-              value={securityPinConfirmDraft}
-            />
-            <Button onClick={handleSaveSecurityPin} type="button" variant="outline">
-              Enregistrer PIN
-            </Button>
-          </div>
-
-          <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto]">
-            <label className="rounded-xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
-              Déconnexion régulière automatique (minutes, 0 = désactivée)
-              <Input
-                className="mt-2"
-                min={0}
-                onChange={(event) =>
-                  setSecuritySettings((current) => ({
-                    ...current,
-                    autoLogoutMinutes: Math.max(
-                      0,
-                      Math.min(1440, Number(event.target.value) || 0)
-                    ),
-                  }))
-                }
-                type="number"
-                value={securitySettings.autoLogoutMinutes}
-              />
-            </label>
-            <Button onClick={handleDisableSecurityPin} type="button" variant="ghost">
-              Désactiver PIN
-            </Button>
-          </div>
-
-          {securityFeedback ? (
-            <p
-              className={cn(
-                "mt-2 text-xs",
-                securityFeedback.type === "success"
-                  ? "text-emerald-500"
-                  : "text-rose-500"
-              )}
-            >
-              {securityFeedback.text}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-background/60 p-4">
-          <h3 className="text-sm font-semibold">Compteur de tokens (hors chat fantôme)</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Compte cumulatif de tous les échanges non fantômes (entrée/sortie).
-          </p>
-          <div className="mt-3 grid gap-2 md:grid-cols-3">
-            <div className="rounded-lg border border-border/50 bg-card/70 p-3">
-              <p className="text-xs text-muted-foreground">Tokens entrée</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {tokenUsage.inputTokens.toLocaleString("fr-FR")}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/50 bg-card/70 p-3">
-              <p className="text-xs text-muted-foreground">Tokens sortie</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {tokenUsage.outputTokens.toLocaleString("fr-FR")}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/50 bg-card/70 p-3">
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {(tokenUsage.inputTokens + tokenUsage.outputTokens).toLocaleString("fr-FR")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="liquid-panel mt-6 rounded-2xl border border-white/30 bg-white/80 p-4 text-black backdrop-blur-2xl">
-          <h3 className="text-base font-semibold">Tags de conversations</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Créez vos tags (max 20), nom limité à 20 caractères, avec couleur
-            personnalisée.
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {conversationTags.length === 0 ? (
-              <span className="text-xs text-muted-foreground">
-                Aucun tag créé pour le moment.
-              </span>
-            ) : (
-              conversationTags.map((tag) => (
-                <span
-                  className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-2.5 py-1 text-xs"
-                  key={tag.id}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: tag.color }}
-                  />
-                  {tag.name}
-                  <button
-                    className="rounded-full p-0.5 text-muted-foreground transition hover:bg-black/10 hover:text-foreground"
-                    onClick={() => {
-                      setEditingTagId(tag.id);
-                      setEditingTagName(tag.name);
-                      setEditingTagColor(tag.color);
-                    }}
-                    type="button"
-                  >
-                    <PencilLine className="size-3" />
-                  </button>
-                  <button
-                    className="rounded-full p-0.5 text-muted-foreground transition hover:bg-black/10 hover:text-foreground"
-                    onClick={() =>
-                      setConversationTags((current) =>
-                        current.filter((item) => item.id !== tag.id)
-                      )
-                    }
-                    type="button"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </span>
-              ))
-            )}
-          </div>
-
-          {editingTagId && (
-            <div className="liquid-panel mt-3 rounded-xl border border-white/30 bg-white/70 p-3">
-              <p className="text-xs font-medium text-foreground">
-                Modifier le tag
-              </p>
-              <div className="mt-2 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                <Input
-                  maxLength={20}
-                  onChange={(event) => setEditingTagName(event.target.value)}
-                  value={editingTagName}
-                />
-                <Button
-                  onClick={() => {
-                    const safeName = editingTagName.trim().slice(0, 20);
-                    if (!safeName) {
-                      return;
-                    }
-                    setConversationTags((current) =>
-                      current.map((tag) =>
-                        tag.id === editingTagId
-                          ? {
-                              ...tag,
-                              color: editingTagColor,
-                              name: safeName,
-                            }
-                          : tag
-                      )
-                    );
-                    setEditingTagId(null);
-                    setEditingTagName("");
-                  }}
-                  type="button"
-                  variant="outline"
-                >
-                  Enregistrer
-                </Button>
-                <Button
-                  onClick={() => setEditingTagId(null)}
-                  type="button"
-                  variant="ghost"
-                >
-                  Annuler
-                </Button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {TAG_PALETTE.map((color) => (
-                  <button
-                    className={cn(
-                      "h-5 w-5 rounded-full ring-1 ring-border/50 transition",
-                      editingTagColor === color && "ring-2 ring-primary"
-                    )}
-                    key={`edit-${color}`}
-                    onClick={() => setEditingTagColor(color)}
-                    style={{ backgroundColor: color }}
-                    type="button"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-            <Input
-              maxLength={20}
-              onChange={(event) => setNewTagName(event.target.value)}
-              placeholder="Nom du tag"
-              value={newTagName}
-            />
-            <Button
-              disabled={
-                newTagName.trim().length === 0 || conversationTags.length >= 20
-              }
-              onClick={() => {
-                const safeName = newTagName.trim().slice(0, 20);
-                if (!safeName) {
-                  return;
-                }
-                if (
-                  conversationTags.some(
-                    (tag) => tag.name.toLowerCase() === safeName.toLowerCase()
-                  )
-                ) {
-                  return;
-                }
-                setConversationTags((current) => [
-                  ...current,
-                  {
-                    id: crypto.randomUUID(),
-                    name: safeName,
-                    color: newTagColor,
-                  },
-                ]);
-                setNewTagName("");
-              }}
-              type="button"
-              variant="outline"
-            >
-              Créer le tag
-            </Button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {TAG_PALETTE.map((color) => (
-              <button
-                className={cn(
-                  "h-5 w-5 rounded-full ring-1 ring-border/50 transition",
-                  newTagColor === color && "ring-2 ring-primary"
-                )}
-                key={color}
-                onClick={() => setNewTagColor(color)}
-                style={{ backgroundColor: color }}
-                type="button"
-              />
-            ))}
-          </div>
-        </div>
-
-        <h3 className="mt-6 text-base font-semibold">
-          Activation Premium par code
-        </h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Aucune transaction financière directe n&apos;est traitée. Les forfaits
-          premium sont débloqués uniquement via un code officiel.
-        </p>
-
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <div className="relative w-full">
-            <KeyRound className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              onChange={(event) => setActivationCode(event.target.value)}
-              placeholder="Entrez votre code officiel"
-              value={activationCode}
-            />
-          </div>
-          <Button
-            className="sm:w-fit"
-            disabled={isActivating || activationCode.trim().length === 0}
-            onClick={handleActivation}
-            type="button"
-          >
-            {isActivating ? "Activation..." : "Activer le forfait"}
-          </Button>
-        </div>
-
-        {activationMessage && (
-          <p
-            className={cn(
-              "mt-3 text-sm",
-              activationMessage.type === "success"
-                ? "text-emerald-600"
-                : "text-rose-600"
-            )}
-          >
-            {activationMessage.text}
-          </p>
-        )}
-
-        <div className="mt-6 rounded-xl border border-border/60 bg-background/60 p-3">
-          <p className="text-sm font-medium">
-            Position (localisation optionnelle)
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Personnalise certains contenus selon votre position.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              onClick={handleTogglePosition}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              {isResolvingPosition
-                ? "Localisation..."
-                : positionEnabled
-                  ? "Désactiver"
-                  : "Activer"}
-            </Button>
-            <Input
-              className="max-w-xs"
-              disabled={!positionEnabled}
-              onChange={(event) => setPositionLabel(event.target.value)}
-              placeholder="Coordonnées détectées"
-              readOnly
-              value={positionLabel}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "liquid-glass rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("credits")
-        )}
-        id="credits"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Gauge className="size-5" />
-          Crédits
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Suivi des crédits IA par tier, des tâches et des fichiers.
-        </p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {creditMetrics.map((metric) => {
-            const isUnlimited = metric.limit < 0;
-            const consumed = isUnlimited
-              ? 0
-              : Math.min(metric.used, metric.limit);
-            const remaining = isUnlimited ? Number.POSITIVE_INFINITY : Math.max(metric.limit - consumed, 0);
-            const remainingRatio =
-              metric.limit <= 0 || !Number.isFinite(remaining)
-                ? 1
-                : remaining / metric.limit;
-            const resetDate = formatDateTime(getNextResetDate(metric.period));
-
-            return (
-              <article
-                className="rounded-xl border border-border/50 bg-background/60 p-4"
-                key={metric.key}
-              >
-                <p className="text-sm font-semibold">{metric.title}</p>
-                <p
-                  className={cn(
-                    "mt-2 text-lg font-bold tabular-nums",
-                    getCreditBadgeColor(remainingRatio)
-                  )}
-                >
-                  {isUnlimited ? "Illimité" : `${remaining}/${metric.limit}`}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {isUnlimited
-                    ? "Accès sans limite"
-                    : `Consommé: ${consumed} • Réinitialisation: ${resetDate}`}
-                </p>
-              </article>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border/50 bg-background/60 p-4">
-          <h3 className="text-sm font-semibold">Infos</h3>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">
-            Les crédits du Tier 1 regroupent les modèles GPT-5.4, GPT-5.2,
-            Mistral Large 3 tandis que le Tier 2 comporte GPT-5.1, GPT-5,
-            Claude Sonnet 4.6, Claude Sonnet 4, DeepSeek 3.2, Kimi K2.5 et que
-            le Tier 3 ont les modèles les moins performants, GPT-5.4 Mini,
-            GPT-5.4 Nano, Claude Haïku 4.5.
-          </p>
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("taches")
-        )}
-        id="taches"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <CalendarClock className="size-5" />
-          Tâches — Programmateur de prompts automatiques
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Planifiez des prompts récurrents avec fréquence, date, titre et modèle
-          IA. Quota : {tasks.length}/{maxScheduledTasks} tâche
-          {maxScheduledTasks > 1 ? "s" : ""}.
-        </p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <Input
-            onChange={(event) => setTaskCommand(event.target.value)}
-            placeholder='Commande IA (ex: "créer une tâche planifiée : réviser la physique demain à 18h")'
-            value={taskCommand}
-          />
-          <Button onClick={handleTaskCommand} type="button" variant="outline">
-            Pré-remplir via IA
-          </Button>
-          <Input
-            onChange={(event) =>
-              setTaskForm((prev) => ({ ...prev, title: event.target.value }))
-            }
-            placeholder="Titre de la tâche (ex: Veille IA hebdomadaire)"
-            value={taskForm.title}
-          />
-          <Input
-            min={formatDateTimeLocalInput()}
-            onChange={(event) =>
-              setTaskForm((prev) => ({
-                ...prev,
-                nextRunAt: event.target.value,
-              }))
-            }
-            type="datetime-local"
-            value={taskForm.nextRunAt}
-          />
-          <select
-            className="h-10 rounded-md border border-border/50 bg-background/80 px-3 text-sm"
-            onChange={(event) =>
-              setTaskForm((prev) => ({
-                ...prev,
-                frequency: event.target.value as ScheduledTask["frequency"],
-              }))
-            }
-            value={taskForm.frequency}
-          >
-            {schedulerFrequencies.map((frequency) => (
-              <option key={frequency} value={frequency}>
-                {frequency}
-              </option>
-            ))}
-          </select>
-          <select
-            className="h-10 rounded-md border border-border/50 bg-background/80 px-3 text-sm"
-            onChange={(event) =>
-              setTaskForm((prev) => ({
-                ...prev,
-                model: event.target.value as ScheduledTask["model"],
-              }))
-            }
-            value={taskForm.model}
-          >
-            {schedulerModels.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </select>
-          <Input
-            onChange={(event) =>
-              setTaskForm((prev) => ({ ...prev, notes: event.target.value }))
-            }
-            placeholder="Notes d'exécution (optionnel)"
-            value={taskForm.notes}
-          />
-        </div>
-
-        <Button className="mt-3" onClick={handleCreateTask} type="button">
-          <PlusCircle className="mr-2 size-4" />
-          Créer la tâche automatique
-        </Button>
-
-        {taskError && (
-          <p className="mt-3 text-sm text-rose-600 dark:text-rose-400">
-            {taskError}
-          </p>
-        )}
-
-        <div className="mt-4 space-y-2">
-          {tasks.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
-              Aucune tâche planifiée. Créez votre premier programmateur
-              automatique.
-            </p>
-          ) : (
-            tasks.map((task) => (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/60 p-3"
-                key={task.id}
-              >
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium">{task.title}</p>
-                  <p className="text-muted-foreground">
-                    {task.frequency} • {task.model} • prochain lancement :{" "}
-                    {new Date(task.nextRunAt).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Statut : {task.isEnabled ? "Actif" : "En pause"}
-                  </p>
-                  {task.notes ? (
-                    <p className="text-xs text-muted-foreground">{task.notes}</p>
-                  ) : null}
-                  {task.lastRunAt ? (
-                    <p className="text-xs text-muted-foreground">
-                      Dernière exécution :{" "}
-                      {new Date(task.lastRunAt).toLocaleString()}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => handleToggleTaskEnabled(task.id)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    {task.isEnabled ? "Mettre en pause" : "Réactiver"}
-                  </Button>
-                  <Button
-                    onClick={() => handleRunTaskNow(task.id)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    Exécuter maintenant
-                  </Button>
-                  <Button
-                    onClick={() => handleDeleteTask(task.id)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Trash2 className="mr-1 size-4" />
-                    Supprimer
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section
-        className={cn(
-          "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("apropos")
-        )}
-        id="apropos"
-      >
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <MessageCircle className="size-5" />
-          Communauté & support
-        </h2>
-        <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-          <label className="text-sm font-medium" htmlFor="language-selector">
-            Langue
-          </label>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Langue d&apos;interface par défaut: Français.
-          </p>
-          <select
-            className="mt-2 w-full rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm"
-            id="language-selector"
-            onChange={(event) => {
-              const nextLanguage = resolveLanguage(event.target.value);
-              setInterfaceLanguage(nextLanguage);
-              setLanguageInStorage(nextLanguage);
-              createNotification({
-                level: "success",
-                message: `Langue appliquée: ${nextLanguage.toUpperCase()}`,
-                title: "Préférences",
-              });
-            }}
-            value={interfaceLanguage}
-          >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-            <option value="es">Español</option>
-          </select>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Rejoignez le serveur Discord officiel pour poser vos questions,
-          remonter des bugs et suivre les nouveautés.
-        </p>
-        <a
-          className="mt-3 inline-flex rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-500/20 dark:text-indigo-300"
-          href="https://discord.gg/fV7zwdGPpY"
-          rel="noreferrer"
-          target="_blank"
-        >
-          Ouvrir Discord mAI
-        </a>
-      </section>
+      <CompteSection {...allProps} />
+      <NotificationsSection {...allProps} />
+      <PersonnalisationSection {...allProps} />
+      <ParentalSection {...allProps} />
+      <DonneesSection {...allProps} />
+      <CreditsSection {...allProps} />
+      <TachesSection {...allProps} />
+      <AproposSection {...allProps} />
 
       {isMemoryModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-md">
