@@ -285,13 +285,22 @@ export async function POST(request: Request) {
         return new ChatbotError("bad_request:api").toResponse();
       }
 
-      const externalResult = await runExternalTextModel(
-        chatModel,
-        modelMessages,
-        {
+      let externalResult: Awaited<ReturnType<typeof runExternalTextModel>>;
+
+      try {
+        externalResult = await runExternalTextModel(chatModel, modelMessages, {
           systemInstruction: computedSystemPrompt,
-        }
-      );
+        });
+      } catch (externalError) {
+        console.error("[mAI Chat Error] external model failed", {
+          model: chatModel,
+          message:
+            externalError instanceof Error
+              ? externalError.message
+              : String(externalError),
+        });
+        throw externalError;
+      }
       const assistantMessageId = generateUUID();
       const textPartId = generateUUID();
 
@@ -464,15 +473,32 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
+        const message =
+          error instanceof Error ? error.message : "Unknown streaming error";
+
+        console.error("[mAI Chat Error] streamText failed", {
+          model: chatModel,
+          message,
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
         if (
-          error instanceof Error &&
-          error.message?.includes(
+          message.includes(
             "AI Gateway requires a valid credit card on file to service requests"
           )
         ) {
           return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
         }
-        return "Oops, an error occurred!";
+
+        if (message.toLowerCase().includes("api key")) {
+          return "Clé API manquante ou invalide. Vérifie FS_API_KEY.";
+        }
+
+        if (message.toLowerCase().includes("model")) {
+          return `Modèle "${chatModel}" non reconnu par le provider.`;
+        }
+
+        return "Une erreur est survenue. Réessaie ou change de modèle.";
       },
     });
 
@@ -513,7 +539,7 @@ export async function POST(request: Request) {
       return new ChatbotError("bad_request:activate_gateway").toResponse();
     }
 
-    console.error("Unhandled error in chat API:", error, { vercelId });
+    console.error("Unhandled error in chat API:", error, { vercelId, chatModel: requestBody?.selectedChatModel });
     return new ChatbotError("offline:chat").toResponse();
   }
 }

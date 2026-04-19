@@ -16,6 +16,12 @@ const fsModelMapping: Record<string, string> = {
   "azure/deepseek-v3.2": "DeepSeek-V3.2",
   "azure/kimi-k2.5": "Kimi-K2.5",
   "azure/mistral-large-3": "Mistral-Large-3",
+  // Anthropic/Claude (à aligner avec les IDs exposés par FranceStudent).
+  "anthropic/claude-opus-4-6": "claude-opus-4-20250601",
+  "anthropic/claude-opus-4-7": "claude-opus-4-20250714",
+  "claude/claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+  "anthropic/claude-sonnet-4-6": "claude-sonnet-4-20250601",
+  "anthropic/claude-haiku-4-5": "claude-haiku-4-5-20250401",
 };
 
 export const fsTextModels = new Set(Object.keys(fsModelMapping));
@@ -23,16 +29,28 @@ export const fsTextModels = new Set(Object.keys(fsModelMapping));
 // Comet image provider has been intentionally disabled.
 export const cometImageModels = new Set<string>();
 
-const fsClient = (() => {
-  if (!FS_API_KEY) {
-    throw new Error("Missing API key: define FS_API_KEY.");
+let cachedFsClient: OpenAI | null | undefined;
+
+function getFsClient(): OpenAI | null {
+  if (cachedFsClient !== undefined) {
+    return cachedFsClient;
   }
 
-  return new OpenAI({
+  if (!FS_API_KEY) {
+    console.error(
+      "[FranceStudent] FS_API_KEY manquante: le provider textuel est désactivé."
+    );
+    cachedFsClient = null;
+    return cachedFsClient;
+  }
+
+  cachedFsClient = new OpenAI({
     baseURL: FS_API_BASE_URL,
     apiKey: FS_API_KEY,
   });
-})();
+
+  return cachedFsClient;
+}
 
 interface ChatCompletionMessage {
   content?: string | Array<{ text?: string }> | null;
@@ -67,6 +85,12 @@ export async function generateResponse(input: {
   messages: Array<{ role: "user" | "assistant" | "developer"; content: string }>;
   systemInstruction?: string;
 }): Promise<{ provider: string; text: string }> {
+  const fsClient = getFsClient();
+
+  if (!fsClient) {
+    throw new Error("FranceStudent provider non initialisé (FS_API_KEY manquante)");
+  }
+
   const completion = await fsClient.chat.completions.create({
     model: input.model,
     messages: [
@@ -75,7 +99,6 @@ export async function generateResponse(input: {
         : []),
       ...input.messages,
     ],
-    store: true,
   });
 
   const text = extractTextFromChatCompletion(completion);
@@ -99,7 +122,7 @@ export async function runExternalTextModel(
   const providerModelId = fsModelMapping[modelId];
 
   if (!providerModelId) {
-    throw new Error("Unsupported external text model");
+    throw new Error(`Unsupported external text model: ${modelId}`);
   }
 
   const messages = modelMessages
@@ -161,5 +184,7 @@ export async function runCometImageModel(
   _prompt: string,
   _image?: string
 ): Promise<{ provider: string; imageUrl?: string; imageBase64?: string }> {
-  throw new Error("Image generation provider is disabled. Only OpenAI FS text models are supported.");
+  throw new Error(
+    "Image generation provider is disabled. Only OpenAI FS text models are supported."
+  );
 }

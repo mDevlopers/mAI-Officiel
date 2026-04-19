@@ -8,26 +8,40 @@ const FS_API_BASE_URL =
 const FS_API_KEY = process.env.FS_API_KEY;
 
 function normalizeModelId(modelId: string): string {
-  if (modelId.startsWith("openai/")) {
-    return modelId.replace("openai/", "");
-  }
-  return modelId;
+  const slashIndex = modelId.indexOf("/");
+  return slashIndex !== -1 ? modelId.slice(slashIndex + 1) : modelId;
 }
 
-const fsProvider = (() => {
+let cachedFsProvider:
+  | ReturnType<typeof createOpenAI>
+  | null
+  | undefined;
+
+function getFsProvider(): ReturnType<typeof createOpenAI> | null {
+  if (cachedFsProvider !== undefined) {
+    return cachedFsProvider;
+  }
+
   if (isTestEnvironment) {
-    return null;
+    cachedFsProvider = null;
+    return cachedFsProvider;
   }
 
   if (!FS_API_KEY) {
-    throw new Error("Missing API key: define FS_API_KEY.");
+    console.error(
+      "[FranceStudent] FS_API_KEY manquante: le provider AI SDK est désactivé."
+    );
+    cachedFsProvider = null;
+    return cachedFsProvider;
   }
 
-  return createOpenAI({
+  cachedFsProvider = createOpenAI({
     apiKey: FS_API_KEY,
     baseURL: FS_API_BASE_URL,
   });
-})();
+
+  return cachedFsProvider;
+}
 
 export const myProvider = isTestEnvironment
   ? (() => {
@@ -46,8 +60,10 @@ export function getLanguageModel(modelId: string) {
     return myProvider.languageModel(modelId);
   }
 
+  const fsProvider = getFsProvider();
+
   if (!fsProvider) {
-    throw new Error("FranceStudent provider is not initialized");
+    throw new Error("FranceStudent provider is not initialized (missing FS_API_KEY)");
   }
 
   return fsProvider.chat(normalizeModelId(modelId));
@@ -58,8 +74,10 @@ export function getTitleModel() {
     return myProvider.languageModel("title-model");
   }
 
+  const fsProvider = getFsProvider();
+
   if (!fsProvider) {
-    throw new Error("FranceStudent provider is not initialized");
+    throw new Error("FranceStudent provider is not initialized (missing FS_API_KEY)");
   }
 
   return fsProvider.chat(normalizeModelId(titleModel.id));
