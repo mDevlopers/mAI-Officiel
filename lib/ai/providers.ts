@@ -102,7 +102,7 @@ export function getLanguageModel(modelId: string) {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
-    return fsProvider.chat(normalizeModelId(modelId));
+    return fsProvider.responses(normalizeModelId(modelId));
   }
 
   const gatewayProvider = getGatewayProvider();
@@ -122,7 +122,7 @@ export function getTitleModel() {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
-    return fsProvider.chat(normalizeModelId(titleModel.id));
+    return fsProvider.responses(normalizeModelId(titleModel.id));
   }
 
   const gatewayProvider = getGatewayProvider();

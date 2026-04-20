@@ -65,6 +65,10 @@ interface ChatCompletionResponse {
   output_text?: string;
 }
 
+interface ResponsesApiResponse {
+  output_text?: string;
+}
+
 function extractTextFromChatCompletion(
   data: ChatCompletionResponse | undefined | null
 ): string {
@@ -95,17 +99,38 @@ export async function generateResponse(input: {
     throw new Error("FranceStudent provider non initialisé (FS_API_KEY manquante)");
   }
 
-  const completion = await fsClient.chat.completions.create({
-    model: input.model,
-    messages: [
-      ...(input.systemInstruction
-        ? [{ role: "developer" as const, content: input.systemInstruction }]
-        : []),
-      ...input.messages,
-    ],
-  });
+  const normalizedMessages = [
+    ...(input.systemInstruction
+      ? [{ role: "developer" as const, content: input.systemInstruction }]
+      : []),
+    ...input.messages,
+  ];
 
-  const text = extractTextFromChatCompletion(completion);
+  let text = "";
+
+  try {
+    const response = (await fsClient.responses.create({
+      model: input.model,
+      input: normalizedMessages,
+    })) as ResponsesApiResponse;
+    text = (response.output_text ?? "").trim();
+  } catch (error) {
+    const isNotFoundError =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      error.status === 404;
+
+    if (!isNotFoundError) {
+      throw error;
+    }
+
+    const completion = await fsClient.chat.completions.create({
+      model: input.model,
+      messages: normalizedMessages,
+    });
+    text = extractTextFromChatCompletion(completion);
+  }
 
   if (!text) {
     throw new Error("FranceStudent API returned an empty response");
