@@ -16,6 +16,10 @@ let cachedFsProvider:
   | ReturnType<typeof createOpenAI>
   | null
   | undefined;
+let cachedGatewayProvider:
+  | ReturnType<typeof createOpenAI>
+  | null
+  | undefined;
 
 function getFsProvider(): ReturnType<typeof createOpenAI> | null {
   if (cachedFsProvider !== undefined) {
@@ -43,6 +47,25 @@ function getFsProvider(): ReturnType<typeof createOpenAI> | null {
   return cachedFsProvider;
 }
 
+function getGatewayProvider(): ReturnType<typeof createOpenAI> | null {
+  if (cachedGatewayProvider !== undefined) {
+    return cachedGatewayProvider;
+  }
+
+  const gatewayKey = process.env.AI_GATEWAY_API_KEY;
+  if (!gatewayKey) {
+    cachedGatewayProvider = null;
+    return cachedGatewayProvider;
+  }
+
+  cachedGatewayProvider = createOpenAI({
+    apiKey: gatewayKey,
+    baseURL: "https://ai-gateway.vercel.sh/v1",
+  });
+
+  return cachedGatewayProvider;
+}
+
 export const myProvider = isTestEnvironment
   ? (() => {
       const { chatModel, titleModel } = require("./models.mock");
@@ -61,12 +84,18 @@ export function getLanguageModel(modelId: string) {
   }
 
   const fsProvider = getFsProvider();
-
-  if (!fsProvider) {
-    throw new Error("FranceStudent provider is not initialized (missing FS_API_KEY)");
+  if (fsProvider) {
+    return fsProvider.chat(normalizeModelId(modelId));
   }
 
-  return fsProvider.chat(normalizeModelId(modelId));
+  const gatewayProvider = getGatewayProvider();
+  if (gatewayProvider) {
+    return gatewayProvider.chat(modelId);
+  }
+
+  throw new Error(
+    "No AI provider is initialized. Configure FS_API_KEY or AI_GATEWAY_API_KEY."
+  );
 }
 
 export function getTitleModel() {
@@ -75,10 +104,16 @@ export function getTitleModel() {
   }
 
   const fsProvider = getFsProvider();
-
-  if (!fsProvider) {
-    throw new Error("FranceStudent provider is not initialized (missing FS_API_KEY)");
+  if (fsProvider) {
+    return fsProvider.chat(normalizeModelId(titleModel.id));
   }
 
-  return fsProvider.chat(normalizeModelId(titleModel.id));
+  const gatewayProvider = getGatewayProvider();
+  if (gatewayProvider) {
+    return gatewayProvider.chat(titleModel.id);
+  }
+
+  throw new Error(
+    "No AI provider is initialized. Configure FS_API_KEY or AI_GATEWAY_API_KEY."
+  );
 }
