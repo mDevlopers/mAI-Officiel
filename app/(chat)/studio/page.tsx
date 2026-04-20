@@ -1,15 +1,25 @@
 "use client";
 
 import { ImagePlus, Upload, WandSparkles } from "lucide-react";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useSubscriptionPlan } from "@/hooks/use-subscription-plan";
 import { affordableImageModels } from "@/lib/ai/affordable-models";
+import { canConsumeUsage, consumeUsage, getUsageCount } from "@/lib/usage-limits";
 
 const imageModels = affordableImageModels;
 
 type StudioMode = "generate-image" | "edit-image";
 
+const STUDIO_DAILY_LIMITS = {
+  free: 5,
+  plus: 10,
+  pro: 20,
+  max: Number.POSITIVE_INFINITY,
+} as const;
+
 export default function StudioPage() {
+  const { isHydrated, plan } = useSubscriptionPlan();
   const [mode, setMode] = useState<StudioMode>("generate-image");
   const [prompt, setPrompt] = useState("");
   const [imageInput, setImageInput] = useState("");
@@ -17,6 +27,8 @@ export default function StudioPage() {
   const [imageModel, setImageModel] = useState(imageModels[0]?.id ?? "");
   const [resultImage, setResultImage] = useState("");
   const [resultProvider, setResultProvider] = useState("");
+  const [resultStatus, setResultStatus] = useState("");
+  const [imagesToday, setImagesToday] = useState(0);
   const [error, setError] = useState("");
   const [importSource, setImportSource] = useState<"device" | "mai-library">(
     "device"
@@ -24,8 +36,20 @@ export default function StudioPage() {
   const [outputFormat, setOutputFormat] = useState<"square" | "landscape">(
     "square"
   );
+  const dailyLimit = STUDIO_DAILY_LIMITS[plan];
+  const hasUnlimitedStudio = !Number.isFinite(dailyLimit);
+  const remainingImages = hasUnlimitedStudio
+    ? Number.POSITIVE_INFINITY
+    : Math.max(dailyLimit - imagesToday, 0);
 
   const currentModel = imageModel;
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+    setImagesToday(getUsageCount("studio", "day"));
+  }, [isHydrated]);
 
   const onImageFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -51,38 +75,80 @@ export default function StudioPage() {
       return;
     }
 
+    if (!hasUnlimitedStudio && !canConsumeUsage("studio", "day", dailyLimit)) {
+      setError(
+        `Quota Studio atteint (${dailyLimit}/jour). Passez au forfait supérieur ou réessayez demain.`
+      );
+      return;
+    }
+
     setIsLoading(true);
     setError("");
     setResultImage("");
+    setResultProvider("");
+    setResultStatus("Lancement de la génération…");
 
     try {
-      const response = await fetch("/api/studio", {
+      const response = await fetch("/api/studio/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: mode,
-          model: currentModel,
+          mode,
           prompt,
           image: mode === "edit-image" ? imageInput : undefined,
           size: outputFormat === "square" ? "1024x1024" : "1536x1024",
         }),
       });
 
-      const payload = await response.json();
+      const payload = (await response.json()) as { error?: string; id?: string };
       if (!response.ok) {
         throw new Error(payload?.error ?? "Erreur de génération");
       }
 
-      setResultProvider(payload.provider ?? "provider inconnu");
-
-      if (payload.type === "image") {
-        if (payload.imageUrl) {
-          setResultImage(payload.imageUrl);
-        } else if (payload.imageBase64) {
-          setResultImage(`data:image/png;base64,${payload.imageBase64}`);
-        }
+      if (!payload.id) {
+        throw new Error("Réponse AI Horde invalide: identifiant introuvable.");
       }
+
+      const maxAttempts = 30;
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const statusResponse = await fetch(`/api/studio/result/${payload.id}`, {
+          cache: "no-store",
+        });
+        const statusPayload = (await statusResponse.json()) as {
+          error?: string;
+          image?: string;
+          message?: string;
+          status?: "done" | "processing";
+        };
+
+        if (!statusResponse.ok) {
+          throw new Error(statusPayload.error ?? "Erreur pendant le suivi du rendu.");
+        }
+
+        if (statusPayload.status === "done" && statusPayload.image) {
+          setResultImage(statusPayload.image);
+          setResultStatus("Image générée ✅");
+          break;
+        }
+
+        setResultStatus(
+          statusPayload.message ?? "Image en cours de génération ⏳"
+        );
+
+        if (attempt === maxAttempts - 1) {
+          throw new Error("Délai dépassé: génération toujours en cours.");
+        }
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, 2000);
+        });
+      }
+
+      setResultProvider("AI Horde");
+      const usage = consumeUsage("studio", "day");
+      setImagesToday(usage.count);
     } catch (runError) {
+      setResultStatus("");
       setError(
         runError instanceof Error ? runError.message : "Erreur inconnue"
       );
@@ -100,6 +166,14 @@ export default function StudioPage() {
           </h1>
           <p className="text-sm text-black/70">
             Génération et édition d'images avec une interface moderne.
+          </p>
+          <p className="mt-1 text-xs text-black/60">
+            Quota Studio : {imagesToday}/
+            {hasUnlimitedStudio ? "∞" : dailyLimit} image
+            {hasUnlimitedStudio || dailyLimit > 1 ? "s" : ""} aujourd&apos;hui
+            {!hasUnlimitedStudio
+              ? ` (${remainingImages} restante${remainingImages > 1 ? "s" : ""})`
+              : " (illimité avec Max)"}.
           </p>
         </div>
         <div className="flex gap-2 rounded-2xl border border-black/20 bg-white/70 p-1 backdrop-blur-xl">
@@ -244,7 +318,9 @@ export default function StudioPage() {
 
           <Button
             className="mt-4 w-full border border-black/20 bg-cyan-200 text-black hover:bg-cyan-300"
-            disabled={isLoading}
+            disabled={
+              isLoading || !isHydrated || (!hasUnlimitedStudio && remainingImages <= 0)
+            }
             onClick={runStudio}
           >
             {isLoading ? "Traitement..." : "Lancer la génération"}
@@ -257,6 +333,9 @@ export default function StudioPage() {
           <p className="mt-1 text-[11px] text-black/60">
             Fournisseur actif : {resultProvider || "en attente"}
           </p>
+          {resultStatus ? (
+            <p className="mt-1 text-[11px] text-black/60">{resultStatus}</p>
+          ) : null}
 
           {resultImage ? (
             <img
