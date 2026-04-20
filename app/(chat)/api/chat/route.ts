@@ -460,6 +460,10 @@ export async function POST(request: Request) {
           return `Le provider IA n'expose pas encore l'endpoint/modèle demandé pour "${chatModel}". Essaie "openai/gpt-5" ou "openai/gpt-5-mini".`;
         }
 
+        if (message.toLowerCase().includes("bad request")) {
+          return `Le provider IA a rejeté la requête pour "${chatModel}" (agent inactif ou modèle indisponible). Essaie "openai/gpt-5.4" ou "openai/gpt-5.4-mini".`;
+        }
+
         return "Une erreur est survenue. Réessaie ou change de modèle.";
       },
     });

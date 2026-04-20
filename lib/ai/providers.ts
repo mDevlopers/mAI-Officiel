@@ -8,13 +8,11 @@ const FS_API_BASE_URL =
 const FS_API_KEY = process.env.FS_API_KEY;
 
 const fsModelAliases: Record<string, string> = {
-  // Alias de compatibilité: certains IDs internes historiques ne sont pas
-  // toujours exposés tels quels par l'endpoint OpenAI-compatible.
-  "gpt-5.4": "gpt-5",
-  "gpt-5.4-mini": "gpt-5-mini",
-  "gpt-5.4-nano": "gpt-5-nano",
-  "gpt-5.2": "gpt-5-mini",
-  "gpt-5.1": "gpt-5-mini",
+  // Alias de compatibilité inverses pour les environnements qui exposent
+  // les agents "gpt-5.4*" au lieu des IDs "gpt-5*".
+  "gpt-5": "gpt-5.4",
+  "gpt-5-mini": "gpt-5.4-mini",
+  "gpt-5-nano": "gpt-5.4-nano",
 };
 
 function normalizeModelId(modelId: string): string {
