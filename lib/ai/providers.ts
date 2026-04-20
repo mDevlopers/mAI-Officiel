@@ -100,7 +100,9 @@ export function getLanguageModel(modelId: string) {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
-    return fsProvider.responses(normalizeModelId(modelId));
+    // Force le mode chat-completions pour éviter les flux d'événements bruts
+    // `response.*` renvoyés par certains proxys compatibles Responses API.
+    return fsProvider.chat(normalizeModelId(modelId));
   }
 
   const gatewayProvider = getGatewayProvider();
@@ -120,7 +122,7 @@ export function getTitleModel() {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
-    return fsProvider.responses(normalizeModelId(titleModel.id));
+    return fsProvider.chat(normalizeModelId(titleModel.id));
   }
 
   const gatewayProvider = getGatewayProvider();
