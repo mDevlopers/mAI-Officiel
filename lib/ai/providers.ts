@@ -7,9 +7,26 @@ const FS_API_BASE_URL =
   process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1/";
 const FS_API_KEY = process.env.FS_API_KEY;
 
+const fsModelAliases: Record<string, string> = {
+  // Alias de compatibilité: certains IDs internes historiques ne sont pas
+  // toujours exposés tels quels par l'endpoint OpenAI-compatible.
+  "gpt-5.4": "gpt-5",
+  "gpt-5.4-mini": "gpt-5-mini",
+  "gpt-5.4-nano": "gpt-5-nano",
+  "gpt-5.2": "gpt-5-mini",
+  "gpt-5.1": "gpt-5-mini",
+};
+
 function normalizeModelId(modelId: string): string {
   const slashIndex = modelId.indexOf("/");
-  return slashIndex !== -1 ? modelId.slice(slashIndex + 1) : modelId;
+  const normalizedModelId =
+    slashIndex !== -1 ? modelId.slice(slashIndex + 1) : modelId;
+
+  return fsModelAliases[normalizedModelId] ?? normalizedModelId;
+}
+
+function normalizeBaseUrl(baseURL: string): string {
+  return baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
 }
 
 let cachedFsProvider:
@@ -41,7 +58,7 @@ function getFsProvider(): ReturnType<typeof createOpenAI> | null {
 
   cachedFsProvider = createOpenAI({
     apiKey: FS_API_KEY,
-    baseURL: FS_API_BASE_URL,
+    baseURL: normalizeBaseUrl(FS_API_BASE_URL),
   });
 
   return cachedFsProvider;

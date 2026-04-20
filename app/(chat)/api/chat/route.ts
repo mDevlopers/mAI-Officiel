@@ -456,6 +456,10 @@ export async function POST(request: Request) {
           return `Modèle "${chatModel}" non reconnu par le provider.`;
         }
 
+        if (message.toLowerCase().includes("not found")) {
+          return `Le provider IA n'expose pas encore l'endpoint/modèle demandé pour "${chatModel}". Essaie "openai/gpt-5" ou "openai/gpt-5-mini".`;
+        }
+
         return "Une erreur est survenue. Réessaie ou change de modèle.";
       },
     });
