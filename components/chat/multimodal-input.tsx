@@ -86,6 +86,7 @@ import { parseFileForAi, validateFileBeforeUpload } from "@/lib/file-parser";
 import { createNotification } from "@/lib/notifications";
 import { pluginRegistry } from "@/lib/plugins/registry";
 import type { Attachment, ChatMessage } from "@/lib/types";
+import { triggerHaptic } from "@/lib/haptics";
 import { consumeUsage } from "@/lib/usage-limits";
 import { cn, fetcher } from "@/lib/utils";
 import {
@@ -958,6 +959,7 @@ ${extractedFileContext}`
           customSystemPrompt,
         },
       });
+      triggerHaptic(14);
 
       if (isWebSearchEnabled || forceWebSearchEnabled) {
         consumeUsage("websearch", "day");
@@ -1127,6 +1129,7 @@ ${extractedFileContext}`
           ...currentAttachments,
           ...successfullyUploadedAttachments,
         ]);
+        triggerHaptic(10);
       } catch (_error) {
         toast.error("Échec de l'envoi des fichiers.");
       } finally {
@@ -1195,6 +1198,7 @@ ${extractedFileContext}`
           ...curr,
           ...(successfullyUploadedAttachments as Attachment[]),
         ]);
+        triggerHaptic(10);
       } catch (_error) {
         toast.error("Échec de l'envoi de l'image collée.");
       } finally {
