@@ -30,7 +30,7 @@ export function resolveModelLogoProvider(model: ModelBrandInput): string {
     return "deepseek";
   }
   if (id.includes("qwen") || name.includes("qwen")) {
-    return "alibaba";
+    return "qwen";
   }
   if (provider === "horde") {
     if (id.includes("claude")) {
@@ -95,7 +95,21 @@ export function resolveModelLogoProvider(model: ModelBrandInput): string {
       return "deepseek";
     }
     if (id.includes("qwen")) {
-      return "alibaba";
+      return "qwen";
+    }
+    if (
+      id.includes("mistral") ||
+      id.includes("mixtral") ||
+      name.includes("mistral") ||
+      name.includes("mixtral")
+    ) {
+      return "mistral";
+    }
+    if (id.includes("gemma") || name.includes("gemma")) {
+      return "google";
+    }
+    if (id.includes("llama") || name.includes("llama")) {
+      return "meta";
     }
     return "meta";
   }
@@ -105,7 +119,7 @@ export function resolveModelLogoProvider(model: ModelBrandInput): string {
       return "deepseek";
     }
     if (id.includes("qwen")) {
-      return "alibaba";
+      return "qwen";
     }
     if (id.includes("llama")) {
       return "meta";

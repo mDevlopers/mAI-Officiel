@@ -530,6 +530,7 @@ export default function SettingsPage() {
   });
   const [fileUsageToday, setFileUsageToday] = useState(0);
   const [studioUsageToday, setStudioUsageToday] = useState(0);
+  const [waveUsageWeek, setWaveUsageWeek] = useState(0);
   const [vibrationsEnabled, setVibrationsEnabled] = useState(true);
   const [tierUsage, setTierUsage] = useState<Record<ModelTier, number>>({
     tier1: 0,
@@ -539,6 +540,7 @@ export default function SettingsPage() {
   const [deferredPwaPrompt, setDeferredPwaPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const [showPwaInstallCard, setShowPwaInstallCard] = useState(true);
   const [notificationPermission, setNotificationPermission] = useState<
     NotificationPermission | "unsupported"
   >("unsupported");
@@ -597,6 +599,7 @@ export default function SettingsPage() {
     const refreshUsage = () => {
       setFileUsageToday(getUsageCount("files", "day"));
       setStudioUsageToday(getUsageCount("studio", "day"));
+      setWaveUsageWeek(getUsageCount("wave", "week"));
       setTierUsage({
         tier1: getTierUsage("tier1"),
         tier2: getTierUsage("tier2"),
@@ -1222,8 +1225,18 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const dismissed = window.localStorage.getItem("mai.pwa.install.dismissed");
+    if (dismissed === "1") {
+      setShowPwaInstallCard(false);
+    }
+  }, []);
+
+  useEffect(() => {
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
+      window.localStorage.removeItem("mai.pwa.install.dismissed");
+      setShowPwaInstallCard(true);
       setDeferredPwaPrompt(event as BeforeInstallPromptEvent);
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
@@ -1699,15 +1712,15 @@ export default function SettingsPage() {
         key: "images",
         limit: currentPlanDefinition.limits.studioImagesPerDay,
         period: "day",
-        title: "Images (Studio)",
+        title: "Images",
         used: studioUsageToday,
       },
       {
-        key: "tasks",
-        limit: currentPlanDefinition.limits.taskSchedules,
-        period: "month",
-        title: "Tâches",
-        used: tasks.length,
+        key: "wave",
+        limit: currentPlanDefinition.limits.musicGenerationsPerWeek,
+        period: "week",
+        title: "Musiques (Wave)",
+        used: waveUsageWeek,
       },
     ];
   }, [
@@ -1717,7 +1730,7 @@ export default function SettingsPage() {
     isAuthenticated,
     isHydrated,
     plan,
-    tasks.length,
+    waveUsageWeek,
     tierUsage.tier1,
     tierUsage.tier2,
     tierUsage.tier3,
@@ -1738,7 +1751,6 @@ export default function SettingsPage() {
     { href: "#parental", key: "parental", label: uiLabels.parental },
     { href: "#donnees", key: "donnees", label: uiLabels.data },
     { href: "#credits", key: "credits", label: uiLabels.credits },
-    { href: "#taches", key: "taches", label: uiLabels.tasks },
     { href: "#apropos", key: "apropos", label: uiLabels.about },
   ] as const;
   const sectionVisibility = (key: (typeof settingsSections)[number]["key"]) =>
@@ -1971,7 +1983,7 @@ export default function SettingsPage() {
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {isHydrated
-              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j • Quiz illimités`
+              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j`
               : "Chargement du forfait..."}
           </p>
 
@@ -1990,34 +2002,38 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-white p-3 text-black">
-          <p className="text-sm font-medium">Installation PWA</p>
-          <p className="mt-1 text-xs text-black/70">
-            Installez mAI sur l&apos;écran d&apos;accueil pour un usage natif.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button
-              disabled={!deferredPwaPrompt}
-              onClick={handleInstallPwa}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Download className="mr-2 size-4" />
-              Installer mAI en PWA
-            </Button>
-            {deferredPwaPrompt ? (
+        {showPwaInstallCard ? (
+          <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-white p-3 text-black">
+            <p className="text-sm font-medium">Installation PWA</p>
+            <p className="mt-1 text-xs text-black/70">
+              Installez mAI sur l&apos;écran d&apos;accueil pour un usage natif.
+            </p>
+            <div className="mt-3 flex gap-2">
               <Button
-                onClick={() => setDeferredPwaPrompt(null)}
+                disabled={!deferredPwaPrompt}
+                onClick={handleInstallPwa}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Download className="mr-2 size-4" />
+                Installer mAI en PWA
+              </Button>
+              <Button
+                onClick={() => {
+                  setDeferredPwaPrompt(null);
+                  setShowPwaInstallCard(false);
+                  window.localStorage.setItem("mai.pwa.install.dismissed", "1");
+                }}
                 size="sm"
                 type="button"
                 variant="ghost"
               >
                 Fermer
               </Button>
-            ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="mt-5 grid gap-4 md:grid-cols-[auto_1fr]">
           <div className="flex flex-col items-center gap-2">
@@ -2369,23 +2385,6 @@ export default function SettingsPage() {
           Définissez la hauteur par défaut de la barre de saisie. Le mode
           compact est désormais recommandé pour une interface plus dense.
         </p>
-
-        <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              checked={improveMaiForAll}
-              className="mt-1"
-              onChange={(event) => setImproveMaiForAll(event.target.checked)}
-              type="checkbox"
-            />
-            <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
-              <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
-              </span>
-            </span>
-          </label>
-        </div>
 
         <div className="mt-4 grid gap-2 md:grid-cols-3">
           {[
@@ -2773,9 +2772,13 @@ export default function SettingsPage() {
               type="checkbox"
             />
             <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
+              <span className="block text-sm font-semibold">
+                Améliorer mAI pour tous
+              </span>
               <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
+                Autorisez l&apos;utilisation de votre contenu pour entraîner les
+                modèles et améliorer les performances d&apos;mAI pour vous et
+                tous ceux qui l&apos;utilisent.
               </span>
             </span>
           </label>
@@ -3234,7 +3237,7 @@ export default function SettingsPage() {
       <section
         className={cn(
           "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("taches")
+          "hidden"
         )}
         id="taches"
       >

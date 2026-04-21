@@ -37,7 +37,7 @@ export function CreditsSection({
         Crédits
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Suivi des crédits IA par tier, des tâches, des fichiers et des images.
+        Suivi des crédits IA par tier, des fichiers, des images et de la musique.
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -81,14 +81,40 @@ export function CreditsSection({
 
       <div className="mt-4 rounded-xl border border-border/50 bg-background/60 p-4">
         <h3 className="text-sm font-semibold">Infos</h3>
-        <p className="mt-2 text-xs leading-6 text-muted-foreground">
-          Tier 1 : GPT-5.4, GPT-5.2, Claude Opus 4.6/4.7 et Mistral Large 3.
-          Tier 2 : GPT-5.1, GPT-5, Claude Sonnet 4/4.6, DeepSeek 3.2, Kimi
-          K2.5/K2.6 et les modèles AI Horde les plus coûteux. Tier 3 : modèles
-          rapides/économiques (GPT-5.4 Mini/Nano, Claude Haïku 4.5 et AI Horde
-          compacts). Les images Studio disposent aussi d&apos;un quota quotidien
-          dédié selon le forfait.
-        </p>
+        <div className="mt-2 space-y-4 text-xs leading-6 text-muted-foreground">
+          <p>
+            <strong>Tier 1 · Modèles Ultra-Lourds</strong> — GPT-5.4, GPT-5.2,
+            GPT-OSS-120b, Claude Opus 4.7, Claude Opus 4.6, DeepSeek-R1,
+            Mistral-Large-3, Mistral Large, Llama 3.3 70b, Nemotron 3 Super
+            1220b, Behemoth-R1-123B-v2-w4a16.
+            <br />
+            Limites: Invité 2/j • Gratuit 10/j • mAI+ 25/j • Pro 50/j • Max
+            75/j.
+          </p>
+          <p>
+            <strong>Tier 2 · Modèles Équilibrés</strong> — GPT-5, GPT-5.1,
+            GPT-OSS-20b, Claude Sonnet 4.6, Claude Sonnet 4, DeepSeek-V3.2,
+            Gemma-4-31B-it, Mixtral:8x7b, Qwen 3.6 Plus, Qwen 3.6 Plus Preview,
+            Qwen 3 Coder, Qwen 3 Next, Qwen3-30B-A3B-abliterated-erotic,
+            Qwen3:14b, Kimi K2.6, Kimi-K2.5, Artemis-31B-v1b-Q4_K_M,
+            Cydonia-24B-v4.3, Rocinante-XL-16B-v1a-Q4_K_M, Skyfall-31B-v4.1,
+            WizzGPTv8.
+            <br />
+            Limites: Invité 5/j • Gratuit 30/j • mAI+ 100/j • Pro 250/j • Max
+            500/j.
+          </p>
+          <p>
+            <strong>Tier 3 · Modèles Légers</strong> — GPT-5.4 Mini, GPT-5.4
+            Nano, Claude Haiku 4.5, Claude Haïku 3, Gemma2:9b,
+            Ministral-3-8B-Instruct-2512, Qwen_Qwen3-0.6B-IQ4_XS, Llama3.1:8b,
+            L3-8B-Stheno-v3.2, L3-Super-Nova-RP-8B, HY-MT1.5-1.8B,
+            LFM2.5-1.2B-Instruct, mini-magnum-12b-v1.1,
+            MN-12B-Mag-Mell-R1.Q5_K_M, pygmalion-2-7b.Q4_K_M.
+            <br />
+            Limites: Invité 15/j • Gratuit 100/j • mAI+ 500/j • Pro 1000/j •
+            Max 2000/j.
+          </p>
+        </div>
       </div>
     </section>
   );

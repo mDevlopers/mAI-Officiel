@@ -4,6 +4,20 @@ import OpenAI from "openai";
 const FS_API_BASE_URL =
   process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1/";
 const FS_API_KEY = process.env.FS_API_KEY;
+const OLLAMA_BASE_URL =
+  process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1";
+const OLLAMA_API_KEY =
+  process.env.OLLAMA_API_KEY ?? process.env.OLLAMA_API_TOKEN;
+const AI_HORDE_OAI_BASE_URL =
+  process.env.AI_HORDE_OAI_BASE_URL ?? "https://oai.aihorde.net/v1";
+const AI_HORDE_API_KEY = process.env.AI_HORDE_API_KEY ?? "0000000000";
+const OPENROUTER_BASE_URL =
+  process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1";
+const OPENROUTER_API_KEYS = [
+  process.env.OPENROUTER_API_KEY_1,
+  process.env.OPENROUTER_API_KEY_2,
+  process.env.OPENROUTER_API_KEY_3,
+].filter((value): value is string => Boolean(value && value.trim()));
 
 const fsModelMapping: Record<string, string> = {
   "openai/gpt-5.4": "gpt-5.4",
@@ -23,6 +37,17 @@ const fsModelMapping: Record<string, string> = {
   "claude/claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
   "anthropic/claude-sonnet-4-6": "claude-sonnet-4-20250601",
   "anthropic/claude-haiku-4-5": "claude-haiku-4-5-20250401",
+};
+
+const ollamaModelMapping: Record<string, string> = {
+  "ollama/qwen3:14b": "qwen3:14b",
+  "ollama/llama3.1:8b": "llama3.1:8b",
+  "ollama/mixtral:8x7b": "mixtral:8x7b",
+  "ollama/deepseek-r1": "deepseek-r1",
+  "ollama/gemma2:9b": "gemma2:9b",
+};
+
+const hordeModelMapping: Record<string, string> = {
   "horde/Cydonia-24B-v4.3": "Cydonia-24B-v4.3",
   "horde/Skyfall-31B-v4.1": "Skyfall-31B-v4.1",
   "horde/Gemma-4-31B-it": "Gemma-4-31B-it",
@@ -43,12 +68,36 @@ const fsModelMapping: Record<string, string> = {
     "Qwen3-30B-A3B-abliterated-erotic",
 };
 
-export const fsTextModels = new Set(Object.keys(fsModelMapping));
+const openRouterModelMapping: Record<string, string> = {
+  "openrouter/qwen/qwen3.6-plus:free": "qwen/qwen3.6-plus:free",
+  "openrouter/qwen/qwen3.6-plus-preview:free":
+    "qwen/qwen3.6-plus-preview:free",
+  "openrouter/qwen/qwen3-coder:free": "qwen/qwen3-coder:free",
+  "openrouter/qwen/qwen3-next-80b-a3b-instruct:free":
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+  "openrouter/meta-llama/llama-3.3-70b-instruct:free":
+    "meta-llama/llama-3.3-70b-instruct:free",
+  "openrouter/nvidia/nemotron-3-super-120b:free":
+    "nvidia/nemotron-3-super-120b:free",
+  "openrouter/mistralai/mistral-large": "mistralai/mistral-large",
+  "openrouter/anthropic/claude-3-haiku": "anthropic/claude-3-haiku",
+  "openrouter/openai/gpt-oss-20b": "openai/gpt-oss-20b",
+};
+
+export const fsTextModels = new Set([
+  ...Object.keys(fsModelMapping),
+  ...Object.keys(ollamaModelMapping),
+  ...Object.keys(hordeModelMapping),
+  ...Object.keys(openRouterModelMapping),
+]);
 
 // Comet image provider has been intentionally disabled.
 export const cometImageModels = new Set<string>();
 
 let cachedFsClient: OpenAI | null | undefined;
+let cachedOllamaClient: OpenAI | null | undefined;
+let cachedHordeClient: OpenAI | null | undefined;
+let cachedOpenRouterClients: OpenAI[] | undefined;
 
 function normalizeBaseUrl(baseURL: string): string {
   return baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
@@ -73,6 +122,52 @@ function getFsClient(): OpenAI | null {
   });
 
   return cachedFsClient;
+}
+
+function getOllamaClient(): OpenAI | null {
+  if (cachedOllamaClient !== undefined) {
+    return cachedOllamaClient;
+  }
+
+  if (!OLLAMA_API_KEY) {
+    cachedOllamaClient = null;
+    return cachedOllamaClient;
+  }
+
+  cachedOllamaClient = new OpenAI({
+    baseURL: normalizeBaseUrl(OLLAMA_BASE_URL),
+    apiKey: OLLAMA_API_KEY,
+  });
+
+  return cachedOllamaClient;
+}
+
+function getHordeClient(): OpenAI {
+  if (cachedHordeClient !== undefined && cachedHordeClient) {
+    return cachedHordeClient;
+  }
+
+  cachedHordeClient = new OpenAI({
+    baseURL: normalizeBaseUrl(AI_HORDE_OAI_BASE_URL),
+    apiKey: AI_HORDE_API_KEY,
+  });
+
+  return cachedHordeClient;
+}
+
+function getOpenRouterClients(): OpenAI[] {
+  if (cachedOpenRouterClients !== undefined) {
+    return cachedOpenRouterClients;
+  }
+
+  cachedOpenRouterClients = OPENROUTER_API_KEYS.map(
+    (apiKey) =>
+      new OpenAI({
+        baseURL: normalizeBaseUrl(OPENROUTER_BASE_URL),
+        apiKey,
+      })
+  );
+  return cachedOpenRouterClients;
 }
 
 interface ChatCompletionMessage {
@@ -329,8 +424,11 @@ export async function runExternalTextModel(
   modelMessages: ModelMessage[],
   options?: { systemInstruction?: string }
 ): Promise<{ provider: string; text: string }> {
-  const providerModelId = fsModelMapping[modelId];
-
+  const providerModelId =
+    fsModelMapping[modelId] ??
+    ollamaModelMapping[modelId] ??
+    hordeModelMapping[modelId] ??
+    openRouterModelMapping[modelId];
   if (!providerModelId) {
     throw new Error(`Unsupported external text model: ${modelId}`);
   }
@@ -383,6 +481,83 @@ export async function runExternalTextModel(
 
   if (messages.length === 0) {
     throw new Error("External model requires at least one text message");
+  }
+
+  if (modelId.startsWith("ollama/")) {
+    const ollamaClient = getOllamaClient();
+    if (!ollamaClient) {
+      throw new Error("Ollama provider non initialisé (OLLAMA_API_KEY manquante)");
+    }
+    const completion = await ollamaClient.chat.completions.create({
+      model: providerModelId,
+      messages: messages.map((message) => ({
+        role:
+          message.role === "developer"
+            ? ("system" as const)
+            : (message.role as "assistant" | "user"),
+        content: message.content,
+      })),
+    });
+    const text = extractTextFromChatCompletion(completion);
+    if (!text) {
+      throw new Error("Ollama API returned an empty response");
+    }
+    return { provider: "ollama", text };
+  }
+
+  if (modelId.startsWith("horde/")) {
+    const hordeClient = getHordeClient();
+    const completion = await hordeClient.chat.completions.create({
+      model: providerModelId,
+      messages: messages.map((message) => ({
+        role:
+          message.role === "developer"
+            ? ("system" as const)
+            : (message.role as "assistant" | "user"),
+        content: message.content,
+      })),
+    });
+    const text = extractTextFromChatCompletion(completion);
+    if (!text) {
+      throw new Error("AI Horde API returned an empty response");
+    }
+    return { provider: "horde", text };
+  }
+
+  if (modelId.startsWith("openrouter/")) {
+    const openRouterClients = getOpenRouterClients();
+    if (openRouterClients.length === 0) {
+      throw new Error(
+        "OpenRouter provider non initialisé (OPENROUTER_API_KEY_1/2/3 manquantes)"
+      );
+    }
+
+    let lastError: unknown = null;
+    for (const openRouterClient of openRouterClients) {
+      try {
+        const completion = await openRouterClient.chat.completions.create({
+          model: providerModelId,
+          messages: messages.map((message) => ({
+            role:
+              message.role === "developer"
+                ? ("system" as const)
+                : (message.role as "assistant" | "user"),
+            content: message.content,
+          })),
+        });
+        const text = extractTextFromChatCompletion(completion);
+        if (!text) {
+          throw new Error("OpenRouter API returned an empty response");
+        }
+        return { provider: "openrouter", text };
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("OpenRouter API failed on all configured API keys");
   }
 
   return generateResponse({

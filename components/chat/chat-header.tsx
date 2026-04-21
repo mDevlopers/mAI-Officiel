@@ -55,8 +55,8 @@ function PureChatHeader({
           />
         )}
 
-        <span className="ml-auto rounded-full border border-violet-400/50 bg-violet-300/25 px-2 py-0.5 font-medium text-[10px] text-violet-700 dark:text-violet-200">
-          Accès anticipé
+        <span className="ml-auto rounded-full border border-emerald-400/60 bg-emerald-200/60 px-2 py-0.5 font-medium text-[10px] text-emerald-700 dark:border-emerald-300/40 dark:bg-emerald-500/20 dark:text-emerald-200">
+          Release Candidate
         </span>
       </header>
     </>

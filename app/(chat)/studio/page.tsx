@@ -1,12 +1,10 @@
 "use client";
 
 import {
-  BookOpen,
   CircleHelp,
   Copy,
   Download,
   Heart,
-  ImagePlus,
   Library,
   Plus,
   RefreshCw,
@@ -35,6 +33,7 @@ type OutputPreset = "square" | "landscape" | "portrait" | "story" | "custom";
 type StudioSection = "explorer" | "images" | "likes";
 type LibrarySection = "mes-medias" | "favoris" | "telechargements" | "dechets";
 type SortMode = "date" | "style" | "popularite" | "chronologique";
+type ImageDownloadFormat = "png" | "jpeg" | "webp";
 
 type StudioImageItem = {
   createdAt: string;
@@ -56,14 +55,24 @@ const outputPresetSizes: Record<Exclude<OutputPreset, "custom">, string> = {
 };
 
 const quickStyles = [
-  "Portrait cinématique",
-  "Style anime japonais",
-  "Illustration réaliste ultra-détaillée",
-  "Pixel art rétro",
-  "Style peinture artistique",
-  "Illustration bande dessinée",
-  "Style concept art",
+  "Photo éditoriale premium",
+  "Anime néon futuriste",
+  "Cyberpunk pluie nocturne",
+  "Cinematic noir 35mm",
+  "Rendu 3D isométrique",
+  "Illustration fantasy épique",
+  "Aquarelle minimaliste",
+  "Concept art sci-fi",
+  "Affiche rétro vintage",
+  "Macro ultra-réaliste",
 ];
+
+const getStudioCreditCost = (imageCount: number): number => {
+  if (imageCount <= 1) return 1;
+  if (imageCount === 2) return 1.5;
+  if (imageCount === 3) return 2;
+  return 2.5;
+};
 
 export default function StudioPage() {
   const { currentPlanDefinition, plan } = useSubscriptionPlan();
@@ -72,6 +81,7 @@ export default function StudioPage() {
   const [mode, setMode] = useState<StudioMode>("generate-image");
   const [prompt, setPrompt] = useState("");
   const [imageInput, setImageInput] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [imageModel, setImageModel] = useState(imageModels[0]?.id ?? "");
   const [error, setError] = useState("");
@@ -89,6 +99,7 @@ export default function StudioPage() {
   const [selectedStyle, setSelectedStyle] = useState("");
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState<ImageDownloadFormat>("png");
   const [gallery, setGallery] = useState<StudioImageItem[]>([]);
   const [activeImage, setActiveImage] = useState<StudioImageItem | null>(null);
   const [editorBrightness, setEditorBrightness] = useState(100);
@@ -96,6 +107,7 @@ export default function StudioPage() {
   const [editorSaturation, setEditorSaturation] = useState(100);
   const [editorBlur, setEditorBlur] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageUploadRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     try {
@@ -181,6 +193,8 @@ export default function StudioPage() {
   ]);
 
   const createSingleImage = async () => {
+    const sourceImage =
+      mode === "edit-image" ? imageInput || uploadedImages[0] : undefined;
     const response = await fetch("/api/studio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -188,7 +202,7 @@ export default function StudioPage() {
         action: mode,
         model: imageModel,
         prompt: selectedStyle ? `${prompt}, ${selectedStyle}` : prompt,
-        image: mode === "edit-image" ? imageInput : undefined,
+        image: sourceImage,
         size: selectedSize,
       }),
     });
@@ -226,14 +240,16 @@ export default function StudioPage() {
       return;
     }
 
+    const requestedCost = getStudioCreditCost(variationCount);
     if (
       !canConsumeUsage(
         "studio",
         "day",
-        currentPlanDefinition.limits.studioImagesPerDay
+        currentPlanDefinition.limits.studioImagesPerDay,
+        requestedCost
       )
     ) {
-      setError("Limite journalière d'images Studio atteinte pour votre forfait.");
+      setError("Crédits images insuffisants pour ce nombre de variations.");
       return;
     }
 
@@ -244,17 +260,7 @@ export default function StudioPage() {
     try {
       const nextItems: StudioImageItem[] = [];
       for (let i = 0; i < variationCount; i += 1) {
-        if (
-          !canConsumeUsage(
-            "studio",
-            "day",
-            currentPlanDefinition.limits.studioImagesPerDay
-          )
-        ) {
-          break;
-        }
         const url = await createSingleImage();
-        consumeUsage("studio", "day");
         nextItems.push({
           createdAt: new Date().toISOString(),
           downloads: 0,
@@ -270,11 +276,16 @@ export default function StudioPage() {
       if (nextItems.length === 0) {
         throw new Error("Aucune image générée (quota atteint ou réponse vide).");
       }
+      consumeUsage("studio", "day", getStudioCreditCost(nextItems.length));
 
       setGallery((current) => [...nextItems, ...current]);
       setActiveSection("images");
       triggerHaptic([30, 40, 30]);
-      toast.success(`${nextItems.length} image(s) générée(s).`);
+      toast.success(
+        `${nextItems.length} image(s) générée(s) • -${getStudioCreditCost(
+          nextItems.length
+        )} crédits.`
+      );
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : "Erreur inconnue");
     } finally {
@@ -299,15 +310,53 @@ export default function StudioPage() {
     triggerHaptic(12);
   };
 
-  const downloadImage = (item: StudioImageItem) => {
-    const anchor = document.createElement("a");
-    anchor.href = item.url;
-    anchor.download = `mai-studio-${item.id}.png`;
-    anchor.click();
-    setGallery((current) =>
-      current.map((x) => (x.id === item.id ? { ...x, downloads: x.downloads + 1 } : x))
-    );
-    triggerHaptic(12);
+  const downloadImage = async (
+    item: StudioImageItem,
+    format: ImageDownloadFormat = "png"
+  ) => {
+    try {
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        image.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = image.naturalWidth || image.width;
+          canvas.height = image.naturalHeight || image.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Contexte canvas indisponible"));
+            return;
+          }
+          ctx.drawImage(image, 0, 0);
+          const mimeType =
+            format === "jpeg"
+              ? "image/jpeg"
+              : format === "webp"
+                ? "image/webp"
+                : "image/png";
+          resolve(canvas.toDataURL(mimeType, 0.92));
+        };
+        image.onerror = () => reject(new Error("Chargement image impossible"));
+        image.src = item.url;
+      });
+
+      const anchor = document.createElement("a");
+      anchor.href = dataUrl;
+      anchor.download = `mai-studio-${item.id}.${format}`;
+      anchor.click();
+      setGallery((current) =>
+        current.map((x) =>
+          x.id === item.id ? { ...x, downloads: x.downloads + 1 } : x
+        )
+      );
+      triggerHaptic(12);
+    } catch {
+      const anchor = document.createElement("a");
+      anchor.href = item.url;
+      anchor.download = `mai-studio-${item.id}.${format}`;
+      anchor.click();
+      toast.warning("Téléchargement direct utilisé (conversion indisponible).");
+    }
   };
 
   const addToLibrary = (item: StudioImageItem) => {
@@ -335,7 +384,7 @@ export default function StudioPage() {
   };
 
   const applyEditorAdjustments = () => {
-    const source = activeImage?.url || imageInput;
+    const source = activeImage?.url || imageInput || uploadedImages[0];
     if (!source) {
       toast.error("Aucune image à modifier.");
       return;
@@ -364,6 +413,48 @@ export default function StudioPage() {
     image.src = source;
   };
 
+  const onPromptImagesSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const allFiles = Array.from(event.target.files ?? []);
+    if (allFiles.length > 2) {
+      toast.warning("Maximum 2 images importées. Les 2 premières ont été conservées.");
+    }
+    const files = allFiles.slice(0, 2);
+    if (files.length === 0) return;
+
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      toast.error("Seules les images sont acceptées.");
+      event.target.value = "";
+      return;
+    }
+
+    const readFileAsDataUrl = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = () => reject(new Error("Impossible de lire l'image"));
+        reader.readAsDataURL(file);
+      });
+
+    try {
+      const loaded = (await Promise.all(files.map(readFileAsDataUrl))).filter(Boolean);
+      if (loaded.length === 0) {
+        toast.error("Import impossible.");
+        return;
+      }
+      setUploadedImages(loaded);
+      if (mode === "edit-image") {
+        setImageInput(loaded[0]);
+      }
+      triggerHaptic(10);
+      toast.success(`${loaded.length} image(s) importée(s).`);
+    } catch {
+      toast.error("Une erreur est survenue pendant l'import.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   return (
     <div className="relative flex h-full w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden w-64 shrink-0 border-r border-border/60 bg-card/70 p-4 lg:block">
@@ -375,7 +466,7 @@ export default function StudioPage() {
             { id: "likes", label: "J'aime" },
           ].map((item) => (
             <button
-              className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
+              className={`w-full rounded-2xl px-3 py-2 text-left text-sm ${
                 activeSection === item.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
               }`}
               key={item.id}
@@ -396,7 +487,7 @@ export default function StudioPage() {
             { id: "dechets", label: "Déchets" },
           ].map((item) => (
             <button
-              className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
+              className={`w-full rounded-2xl px-3 py-2 text-left text-sm ${
                 activeLibrarySection === item.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
               }`}
               key={item.id}
@@ -419,7 +510,7 @@ export default function StudioPage() {
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">IA utilisée</label>
             <select
-              className="h-9 w-full rounded-md border border-border bg-background px-2"
+              className="h-9 w-full rounded-xl border border-border bg-background px-3"
               onChange={(event) => setImageModel(event.target.value)}
               value={imageModel}
             >
@@ -433,7 +524,7 @@ export default function StudioPage() {
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Style visuel</label>
             <select
-              className="h-9 w-full rounded-md border border-border bg-background px-2"
+              className="h-9 w-full rounded-xl border border-border bg-background px-3"
               onChange={(event) => setStyleFilter(event.target.value)}
               value={styleFilter}
             >
@@ -448,7 +539,7 @@ export default function StudioPage() {
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Tri</label>
             <select
-              className="h-9 w-full rounded-md border border-border bg-background px-2"
+              className="h-9 w-full rounded-xl border border-border bg-background px-3"
               onChange={(event) => setSortMode(event.target.value as SortMode)}
               value={sortMode}
             >
@@ -474,7 +565,7 @@ export default function StudioPage() {
           <div className="flex items-center gap-2">
             <Search className="size-4 text-muted-foreground" />
             <input
-              className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+              className="h-9 w-full rounded-xl border border-border bg-background px-4 text-sm"
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Rechercher par prompt, style, modèle..."
               type="search"
@@ -489,7 +580,7 @@ export default function StudioPage() {
               "Favoris",
               "Téléchargées",
             ].map((chip) => (
-              <button className="rounded-full border border-border px-3 py-1 text-xs hover:bg-muted" key={chip} type="button">
+              <button className="rounded-2xl border border-border px-3 py-1 text-xs hover:bg-muted" key={chip} type="button">
                 {chip}
               </button>
             ))}
@@ -537,13 +628,26 @@ export default function StudioPage() {
         </section>
 
         <section className="sticky bottom-0 z-20 border-t border-border/50 bg-background/95 p-3 backdrop-blur">
-          <div className="rounded-2xl border border-border bg-card/80 p-3">
+          <div className="rounded-3xl border border-border bg-card/80 p-4">
             <div className="flex items-center gap-2">
-              <button className="rounded-lg border border-border p-2" type="button">
+              <button
+                className="rounded-2xl border border-border p-2.5"
+                onClick={() => imageUploadRef.current?.click()}
+                type="button"
+                title="Importer 1 à 2 images"
+              >
                 <Plus className="size-4" />
               </button>
+              <input
+                accept="image/*"
+                className="hidden"
+                multiple
+                onChange={onPromptImagesSelected}
+                ref={imageUploadRef}
+                type="file"
+              />
               <textarea
-                className="min-h-12 flex-1 resize-none rounded-lg border border-border bg-background p-2 text-sm"
+                className="min-h-12 flex-1 resize-none rounded-2xl border border-border bg-background p-3 text-sm"
                 onChange={(event) => setPrompt(event.target.value)}
                 placeholder="Décrivez votre image..."
                 value={prompt}
@@ -560,7 +664,7 @@ export default function StudioPage() {
                 ["portrait", "4:5"],
               ].map(([id, label]) => (
                 <button
-                  className={`rounded-full border px-3 py-1 ${
+                  className={`rounded-2xl border px-3 py-1 ${
                     outputPreset === id ? "border-primary text-primary" : "border-border"
                   }`}
                   key={id}
@@ -571,7 +675,7 @@ export default function StudioPage() {
                 </button>
               ))}
               <select
-                className="h-8 rounded-full border border-border bg-background px-3"
+                className="h-8 rounded-2xl border border-border bg-background px-3"
                 onChange={(event) => setVariationCount(Number(event.target.value))}
                 value={variationCount}
               >
@@ -581,21 +685,21 @@ export default function StudioPage() {
                 <option value={4}>4v</option>
               </select>
               <button
-                className="rounded-full border border-border px-3 py-1"
+                className="rounded-2xl border border-border px-3 py-1"
                 onClick={() => setShowStylePicker((current) => !current)}
                 type="button"
               >
-                <BookOpen className="mr-1 inline size-3.5" /> 📚 Styles
+                Styles
               </button>
               <button
-                className="rounded-full border border-border px-3 py-1"
+                className="rounded-2xl border border-border px-3 py-1"
                 onClick={() => setShowHelp((current) => !current)}
                 type="button"
               >
-                <CircleHelp className="mr-1 inline size-3.5" /> ? Aide
+                <CircleHelp className="mr-1 inline size-3.5" /> Aide
               </button>
               <button
-                className="rounded-full border border-border px-3 py-1"
+                className="rounded-2xl border border-border px-3 py-1"
                 onClick={() => setMode((current) => (current === "generate-image" ? "edit-image" : "generate-image"))}
                 type="button"
               >
@@ -621,6 +725,34 @@ export default function StudioPage() {
                     {style}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {uploadedImages.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-background/70 p-2">
+                {uploadedImages.map((imageSrc, index) => (
+                  <div className="relative" key={`${imageSrc.slice(0, 24)}-${index}`}>
+                    {/* biome-ignore lint/performance/noImgElement: local image preview */}
+                    <img
+                      alt={`Import ${index + 1}`}
+                      className="h-12 w-12 rounded-md object-cover"
+                      src={imageSrc}
+                    />
+                    <span className="absolute -top-1 -right-1 rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
+                      {index + 1}
+                    </span>
+                  </div>
+                ))}
+                <button
+                  className="rounded-full border border-border px-2 py-1 text-xs"
+                  onClick={() => {
+                    setUploadedImages([]);
+                  }}
+                  type="button"
+                >
+                  Retirer
+                </button>
+                <span className="text-[11px] text-muted-foreground">Max 2 images</span>
               </div>
             )}
 
@@ -714,7 +846,22 @@ export default function StudioPage() {
               {activeImage.style} • {activeImage.model} • {new Date(activeImage.createdAt).toLocaleString("fr-FR")}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={() => downloadImage(activeImage)} size="sm" variant="outline">
+              <select
+                className="h-9 rounded-md border border-border/60 bg-background px-2 text-xs"
+                onChange={(event) =>
+                  setDownloadFormat(event.target.value as ImageDownloadFormat)
+                }
+                value={downloadFormat}
+              >
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WEBP</option>
+              </select>
+              <Button
+                onClick={() => downloadImage(activeImage, downloadFormat)}
+                size="sm"
+                variant="outline"
+              >
                 <Download className="mr-1 size-4" /> Télécharger
               </Button>
               <Button onClick={() => toggleFavorite(activeImage.id)} size="sm" variant="outline">
