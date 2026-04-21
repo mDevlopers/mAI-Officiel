@@ -66,6 +66,13 @@ const quickStyles = [
   "Macro ultra-réaliste",
 ];
 
+const getStudioCreditCost = (imageCount: number): number => {
+  if (imageCount <= 1) return 1;
+  if (imageCount === 2) return 1.5;
+  if (imageCount === 3) return 2;
+  return 2.5;
+};
+
 export default function StudioPage() {
   const { currentPlanDefinition, plan } = useSubscriptionPlan();
   const { status } = useSession();
@@ -231,14 +238,16 @@ export default function StudioPage() {
       return;
     }
 
+    const requestedCost = getStudioCreditCost(variationCount);
     if (
       !canConsumeUsage(
         "studio",
         "day",
-        currentPlanDefinition.limits.studioImagesPerDay
+        currentPlanDefinition.limits.studioImagesPerDay,
+        requestedCost
       )
     ) {
-      setError("Limite journalière d'images Studio atteinte pour votre forfait.");
+      setError("Crédits images insuffisants pour ce nombre de variations.");
       return;
     }
 
@@ -249,17 +258,7 @@ export default function StudioPage() {
     try {
       const nextItems: StudioImageItem[] = [];
       for (let i = 0; i < variationCount; i += 1) {
-        if (
-          !canConsumeUsage(
-            "studio",
-            "day",
-            currentPlanDefinition.limits.studioImagesPerDay
-          )
-        ) {
-          break;
-        }
         const url = await createSingleImage();
-        consumeUsage("studio", "day");
         nextItems.push({
           createdAt: new Date().toISOString(),
           downloads: 0,
@@ -275,11 +274,16 @@ export default function StudioPage() {
       if (nextItems.length === 0) {
         throw new Error("Aucune image générée (quota atteint ou réponse vide).");
       }
+      consumeUsage("studio", "day", getStudioCreditCost(nextItems.length));
 
       setGallery((current) => [...nextItems, ...current]);
       setActiveSection("images");
       triggerHaptic([30, 40, 30]);
-      toast.success(`${nextItems.length} image(s) générée(s).`);
+      toast.success(
+        `${nextItems.length} image(s) générée(s) • -${getStudioCreditCost(
+          nextItems.length
+        )} crédits.`
+      );
     } catch (runError) {
       setError(runError instanceof Error ? runError.message : "Erreur inconnue");
     } finally {

@@ -1710,7 +1710,7 @@ export default function SettingsPage() {
         key: "images",
         limit: currentPlanDefinition.limits.studioImagesPerDay,
         period: "day",
-        title: "Images (Studio)",
+        title: "Images",
         used: studioUsageToday,
       },
       {
@@ -1982,7 +1982,7 @@ export default function SettingsPage() {
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
             {isHydrated
-              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j • Quiz illimités`
+              ? `${getTierRemaining("tier1", plan, isAuthenticated).limit} Tier 1/j • ${getTierRemaining("tier2", plan, isAuthenticated).limit} Tier 2/j • ${getTierRemaining("tier3", plan, isAuthenticated).limit} Tier 3/j`
               : "Chargement du forfait..."}
           </p>
 

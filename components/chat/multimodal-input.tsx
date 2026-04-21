@@ -10,6 +10,7 @@ import {
   Ghost,
   Globe2Icon,
   GraduationCapIcon,
+  ImageIcon,
   LockIcon,
   MicIcon,
   Paperclip,
@@ -129,6 +130,7 @@ const MAX_PERSISTENT_MEMORY_CHARS = 4000;
 const TOKEN_USAGE_STORAGE_KEY = "mai.token-usage.v1";
 const PLUGIN_MODE_STORAGE_KEY = "mai.plugin-mode";
 const PLUGIN_ENABLED_STORAGE_KEY = "mai.plugins.enabled.v1";
+const IMAGE_CREATION_MODE_STORAGE_KEY = "mai.image-creation-mode.enabled";
 const reflectionLevels: ReflectionLevel[] = [
   "light",
   "moderate",
@@ -905,6 +907,10 @@ function PureMultimodalInput({
         typeof window === "undefined"
           ? "none"
           : (localStorage.getItem(PLUGIN_MODE_STORAGE_KEY) ?? "none");
+      const isImageCreationModeEnabled =
+        typeof window === "undefined"
+          ? false
+          : localStorage.getItem(IMAGE_CREATION_MODE_STORAGE_KEY) === "true";
       const pluginContextBlock =
         pluginMode === "none"
           ? ""
@@ -918,6 +924,17 @@ function PureMultimodalInput({
             "[RECHERCHE WEB OBLIGATOIRE]",
             "Commence impérativement par appeler l'outil webSearch.",
             "Base ta réponse principale sur les résultats web retournés.",
+          ].join("\n")
+        : "";
+      const imageCreationBlock = isImageCreationModeEnabled
+        ? [
+            "[MODE CRÉATION D'IMAGES]",
+            "L'utilisateur veut générer des images.",
+            "Avant de proposer la génération, demande d'abord:",
+            "1) le modèle image à utiliser,",
+            "2) le nombre d'images (1 à 4),",
+            "3) la taille souhaitée (ex: 1024x1024).",
+            "Attends la réponse utilisateur avant d'aller plus loin.",
           ].join("\n")
         : "";
 
@@ -934,12 +951,16 @@ function PureMultimodalInput({
             type: "text",
             text: extractedFileContext
               ? `${forcedWebSearchBlock ? `${forcedWebSearchBlock}\n\n` : ""}${
+                  imageCreationBlock ? `${imageCreationBlock}\n\n` : ""
+                }${
                   pluginContextBlock ? `${pluginContextBlock}\n\n` : ""
                 }${prompt}
 
 [Contexte extrait des fichiers]
 ${extractedFileContext}`
               : `${forcedWebSearchBlock ? `${forcedWebSearchBlock}\n\n` : ""}${
+                  imageCreationBlock ? `${imageCreationBlock}\n\n` : ""
+                }${
                   pluginContextBlock ? `${pluginContextBlock}\n\n` : ""
                 }${prompt}`,
           },
@@ -952,6 +973,7 @@ ${extractedFileContext}`
             isWebSearchEnabled,
             forceWebSearchEnabled,
             isLearningEnabled,
+            isImageCreationModeEnabled,
           },
           clientGeolocation: geolocationPos,
           ghostMode: isGhostModeEnabled,
@@ -1607,6 +1629,8 @@ function PureContextualActionsMenu({
     "mai-learning-enabled",
     false
   );
+  const [isImageCreationModeEnabled, setIsImageCreationModeEnabled] =
+    useLocalStorage(IMAGE_CREATION_MODE_STORAGE_KEY, false);
   const [selectedPlugin, setSelectedPlugin] = useLocalStorage<string>(
     PLUGIN_MODE_STORAGE_KEY,
     "none"
@@ -1661,6 +1685,9 @@ function PureContextualActionsMenu({
   }
   if (isLearningEnabled) {
     selectedActions.push("Apprentissage");
+  }
+  if (isImageCreationModeEnabled) {
+    selectedActions.push("Création d'images");
   }
   if (selectedPlugin !== "none") {
     const pluginLabel =
@@ -1913,6 +1940,26 @@ function PureContextualActionsMenu({
             size={16}
           />
           Recherche sur le web
+        </Button>
+
+        <Button
+          className={cn(
+            "flex h-8 w-full items-center justify-start gap-2 text-xs font-normal",
+            isImageCreationModeEnabled &&
+              "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
+          )}
+          onClick={() => setIsImageCreationModeEnabled(!isImageCreationModeEnabled)}
+          variant="ghost"
+        >
+          <ImageIcon
+            className={
+              isImageCreationModeEnabled
+                ? "text-primary"
+                : "text-muted-foreground"
+            }
+            size={16}
+          />
+          Création d'images
         </Button>
 
         <Button
