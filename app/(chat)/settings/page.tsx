@@ -2386,23 +2386,6 @@ export default function SettingsPage() {
           compact est désormais recommandé pour une interface plus dense.
         </p>
 
-        <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              checked={improveMaiForAll}
-              className="mt-1"
-              onChange={(event) => setImproveMaiForAll(event.target.checked)}
-              type="checkbox"
-            />
-            <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
-              <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
-              </span>
-            </span>
-          </label>
-        </div>
-
         <div className="mt-4 grid gap-2 md:grid-cols-3">
           {[
             { label: "Compacte", value: "compact" as const },
@@ -2789,9 +2772,13 @@ export default function SettingsPage() {
               type="checkbox"
             />
             <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
+              <span className="block text-sm font-semibold">
+                Améliorer mAI pour tous
+              </span>
               <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
+                Autorisez l&apos;utilisation de votre contenu pour entraîner les
+                modèles et améliorer les performances d&apos;mAI pour vous et
+                tous ceux qui l&apos;utilisent.
               </span>
             </span>
           </label>

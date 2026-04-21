@@ -13,6 +13,13 @@ const OLLAMA_API_KEY =
 const AI_HORDE_OAI_BASE_URL =
   process.env.AI_HORDE_OAI_BASE_URL ?? "https://oai.aihorde.net/v1";
 const AI_HORDE_API_KEY = process.env.AI_HORDE_API_KEY ?? "0000000000";
+const OPENROUTER_BASE_URL =
+  process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1";
+const OPENROUTER_API_KEYS = [
+  process.env.OPENROUTER_API_KEY_1,
+  process.env.OPENROUTER_API_KEY_2,
+  process.env.OPENROUTER_API_KEY_3,
+].filter((value): value is string => Boolean(value && value.trim()));
 
 const fsModelAliases: Record<string, string> = {
   // Alias de compatibilité inverses pour les environnements qui exposent
@@ -38,6 +45,8 @@ let cachedFsProvider: ReturnType<typeof createOpenAI> | null | undefined;
 let cachedGatewayProvider: ReturnType<typeof createOpenAI> | null | undefined;
 let cachedOllamaProvider: ReturnType<typeof createOpenAI> | null | undefined;
 let cachedHordeProvider: ReturnType<typeof createOpenAI> | null | undefined;
+let cachedOpenRouterProviders: ReturnType<typeof createOpenAI>[] | undefined;
+let openRouterProviderIndex = 0;
 
 function getFsProvider(): ReturnType<typeof createOpenAI> | null {
   if (cachedFsProvider !== undefined) {
@@ -125,6 +134,20 @@ function getHordeProvider(): ReturnType<typeof createOpenAI> | null {
   return cachedHordeProvider;
 }
 
+function getOpenRouterProviders(): ReturnType<typeof createOpenAI>[] {
+  if (cachedOpenRouterProviders !== undefined) {
+    return cachedOpenRouterProviders;
+  }
+
+  cachedOpenRouterProviders = OPENROUTER_API_KEYS.map((apiKey) =>
+    createOpenAI({
+      apiKey,
+      baseURL: normalizeBaseUrl(OPENROUTER_BASE_URL),
+    })
+  );
+  return cachedOpenRouterProviders;
+}
+
 export const myProvider = isTestEnvironment
   ? (() => {
       const { chatModel, titleModel } = require("./models.mock");
@@ -157,6 +180,18 @@ export function getLanguageModel(modelId: string) {
       throw new Error("AI Horde provider non initialisé.");
     }
     return hordeProvider.chat(modelId.slice("horde/".length));
+  }
+  if (modelId.startsWith("openrouter/")) {
+    const openRouterProviders = getOpenRouterProviders();
+    if (openRouterProviders.length === 0) {
+      throw new Error(
+        "OpenRouter provider non initialisé. Configure OPENROUTER_API_KEY_1/2/3."
+      );
+    }
+    const provider =
+      openRouterProviders[openRouterProviderIndex % openRouterProviders.length];
+    openRouterProviderIndex += 1;
+    return provider.chat(modelId.slice("openrouter/".length));
   }
 
   const fsProvider = getFsProvider();
