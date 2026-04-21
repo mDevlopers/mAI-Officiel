@@ -37,6 +37,11 @@ export const affordableTextModels: AffordableModelOption[] = [
   { id: "horde/Qwen_Qwen3-0.6B-IQ4_XS", label: "Qwen_Qwen3-0.6B-IQ4_XS" },
   { id: "horde/LFM2.5-1.2B-Instruct", label: "LFM2.5-1.2B-Instruct" },
   { id: "horde/HY-MT1.5-1.8B", label: "HY-MT1.5-1.8B" },
+  { id: "ollama/qwen3:14b", label: "Qwen3:14b" },
+  { id: "ollama/llama3.1:8b", label: "Llama3.1:8b" },
+  { id: "ollama/mixtral:8x7b", label: "Mixtral:8x7b" },
+  { id: "ollama/deepseek-r1", label: "DeepSeek-R1" },
+  { id: "ollama/gemma2:9b", label: "Gemma2:9b" },
 ];
 
 export const affordableImageModels: AffordableModelOption[] = [
@@ -52,4 +57,9 @@ export const affordableImageModels: AffordableModelOption[] = [
   { id: "horde/Stable Cascade 1.0", label: "Stable Cascade 1.0" },
   { id: "horde/AbyssOrangeMix-AfterDark", label: "AbyssOrangeMix-AfterDark" },
   { id: "horde/WAI-NSFW-illustrious-SDXL", label: "WAI-NSFW-illustrious-SDXL" },
+  { id: "horde/Animagine XL", label: "Animagine XL" },
+  { id: "horde/ZavyChromaXL", label: "ZavyChromaXL" },
+  { id: "horde/Realism Engine", label: "Realism Engine" },
+  { id: "horde/Inkpunk Diffusion", label: "Inkpunk Diffusion" },
+  { id: "horde/MeinaMix", label: "MeinaMix" },
 ];

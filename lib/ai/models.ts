@@ -249,6 +249,43 @@ export const chatModels: ChatModel[] = [
     capabilities: { tools: true, vision: false, reasoning: true },
   },
 
+  // ── Ollama (Text local) ───────────────────────────────────────────────
+  {
+    id: "ollama/qwen3:14b",
+    name: "Qwen3:14b",
+    provider: "ollama",
+    description: "Modèle local Ollama Qwen3 14B.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "ollama/llama3.1:8b",
+    name: "Llama3.1:8b",
+    provider: "ollama",
+    description: "Modèle local Ollama Llama 3.1 8B.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "ollama/mixtral:8x7b",
+    name: "Mixtral:8x7b",
+    provider: "ollama",
+    description: "Modèle local Ollama Mixtral 8x7B.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "ollama/deepseek-r1",
+    name: "DeepSeek-R1",
+    provider: "ollama",
+    description: "Modèle local Ollama DeepSeek-R1.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "ollama/gemma2:9b",
+    name: "Gemma2:9b",
+    provider: "ollama",
+    description: "Modèle local Ollama Gemma2 9B.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+
   // ── Anthropic / Claude ────────────────────────────────────────────────
   {
     id: "anthropic/claude-opus-4-6",

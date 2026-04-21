@@ -4,6 +4,13 @@ import OpenAI from "openai";
 const FS_API_BASE_URL =
   process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1/";
 const FS_API_KEY = process.env.FS_API_KEY;
+const OLLAMA_BASE_URL =
+  process.env.OLLAMA_BASE_URL ?? "http://127.0.0.1:11434/v1";
+const OLLAMA_API_KEY =
+  process.env.OLLAMA_API_KEY ?? process.env.OLLAMA_API_TOKEN;
+const AI_HORDE_OAI_BASE_URL =
+  process.env.AI_HORDE_OAI_BASE_URL ?? "https://oai.aihorde.net/v1";
+const AI_HORDE_API_KEY = process.env.AI_HORDE_API_KEY ?? "0000000000";
 
 const fsModelMapping: Record<string, string> = {
   "openai/gpt-5.4": "gpt-5.4",
@@ -23,6 +30,17 @@ const fsModelMapping: Record<string, string> = {
   "claude/claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
   "anthropic/claude-sonnet-4-6": "claude-sonnet-4-20250601",
   "anthropic/claude-haiku-4-5": "claude-haiku-4-5-20250401",
+};
+
+const ollamaModelMapping: Record<string, string> = {
+  "ollama/qwen3:14b": "qwen3:14b",
+  "ollama/llama3.1:8b": "llama3.1:8b",
+  "ollama/mixtral:8x7b": "mixtral:8x7b",
+  "ollama/deepseek-r1": "deepseek-r1",
+  "ollama/gemma2:9b": "gemma2:9b",
+};
+
+const hordeModelMapping: Record<string, string> = {
   "horde/Cydonia-24B-v4.3": "Cydonia-24B-v4.3",
   "horde/Skyfall-31B-v4.1": "Skyfall-31B-v4.1",
   "horde/Gemma-4-31B-it": "Gemma-4-31B-it",
@@ -43,12 +61,18 @@ const fsModelMapping: Record<string, string> = {
     "Qwen3-30B-A3B-abliterated-erotic",
 };
 
-export const fsTextModels = new Set(Object.keys(fsModelMapping));
+export const fsTextModels = new Set([
+  ...Object.keys(fsModelMapping),
+  ...Object.keys(ollamaModelMapping),
+  ...Object.keys(hordeModelMapping),
+]);
 
 // Comet image provider has been intentionally disabled.
 export const cometImageModels = new Set<string>();
 
 let cachedFsClient: OpenAI | null | undefined;
+let cachedOllamaClient: OpenAI | null | undefined;
+let cachedHordeClient: OpenAI | null | undefined;
 
 function normalizeBaseUrl(baseURL: string): string {
   return baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
@@ -73,6 +97,37 @@ function getFsClient(): OpenAI | null {
   });
 
   return cachedFsClient;
+}
+
+function getOllamaClient(): OpenAI | null {
+  if (cachedOllamaClient !== undefined) {
+    return cachedOllamaClient;
+  }
+
+  if (!OLLAMA_API_KEY) {
+    cachedOllamaClient = null;
+    return cachedOllamaClient;
+  }
+
+  cachedOllamaClient = new OpenAI({
+    baseURL: normalizeBaseUrl(OLLAMA_BASE_URL),
+    apiKey: OLLAMA_API_KEY,
+  });
+
+  return cachedOllamaClient;
+}
+
+function getHordeClient(): OpenAI {
+  if (cachedHordeClient !== undefined && cachedHordeClient) {
+    return cachedHordeClient;
+  }
+
+  cachedHordeClient = new OpenAI({
+    baseURL: normalizeBaseUrl(AI_HORDE_OAI_BASE_URL),
+    apiKey: AI_HORDE_API_KEY,
+  });
+
+  return cachedHordeClient;
 }
 
 interface ChatCompletionMessage {
@@ -329,8 +384,10 @@ export async function runExternalTextModel(
   modelMessages: ModelMessage[],
   options?: { systemInstruction?: string }
 ): Promise<{ provider: string; text: string }> {
-  const providerModelId = fsModelMapping[modelId];
-
+  const providerModelId =
+    fsModelMapping[modelId] ??
+    ollamaModelMapping[modelId] ??
+    hordeModelMapping[modelId];
   if (!providerModelId) {
     throw new Error(`Unsupported external text model: ${modelId}`);
   }
@@ -383,6 +440,47 @@ export async function runExternalTextModel(
 
   if (messages.length === 0) {
     throw new Error("External model requires at least one text message");
+  }
+
+  if (modelId.startsWith("ollama/")) {
+    const ollamaClient = getOllamaClient();
+    if (!ollamaClient) {
+      throw new Error("Ollama provider non initialisé (OLLAMA_API_KEY manquante)");
+    }
+    const completion = await ollamaClient.chat.completions.create({
+      model: providerModelId,
+      messages: messages.map((message) => ({
+        role:
+          message.role === "developer"
+            ? ("system" as const)
+            : (message.role as "assistant" | "user"),
+        content: message.content,
+      })),
+    });
+    const text = extractTextFromChatCompletion(completion);
+    if (!text) {
+      throw new Error("Ollama API returned an empty response");
+    }
+    return { provider: "ollama", text };
+  }
+
+  if (modelId.startsWith("horde/")) {
+    const hordeClient = getHordeClient();
+    const completion = await hordeClient.chat.completions.create({
+      model: providerModelId,
+      messages: messages.map((message) => ({
+        role:
+          message.role === "developer"
+            ? ("system" as const)
+            : (message.role as "assistant" | "user"),
+        content: message.content,
+      })),
+    });
+    const text = extractTextFromChatCompletion(completion);
+    if (!text) {
+      throw new Error("AI Horde API returned an empty response");
+    }
+    return { provider: "horde", text };
   }
 
   return generateResponse({

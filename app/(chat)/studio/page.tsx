@@ -1,12 +1,10 @@
 "use client";
 
 import {
-  BookOpen,
   CircleHelp,
   Copy,
   Download,
   Heart,
-  ImagePlus,
   Library,
   Plus,
   RefreshCw,
@@ -56,13 +54,16 @@ const outputPresetSizes: Record<Exclude<OutputPreset, "custom">, string> = {
 };
 
 const quickStyles = [
-  "Portrait cinématique",
-  "Style anime japonais",
-  "Illustration réaliste ultra-détaillée",
-  "Pixel art rétro",
-  "Style peinture artistique",
-  "Illustration bande dessinée",
-  "Style concept art",
+  "Photo éditoriale premium",
+  "Anime néon futuriste",
+  "Cyberpunk pluie nocturne",
+  "Cinematic noir 35mm",
+  "Rendu 3D isométrique",
+  "Illustration fantasy épique",
+  "Aquarelle minimaliste",
+  "Concept art sci-fi",
+  "Affiche rétro vintage",
+  "Macro ultra-réaliste",
 ];
 
 export default function StudioPage() {
@@ -72,6 +73,7 @@ export default function StudioPage() {
   const [mode, setMode] = useState<StudioMode>("generate-image");
   const [prompt, setPrompt] = useState("");
   const [imageInput, setImageInput] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [imageModel, setImageModel] = useState(imageModels[0]?.id ?? "");
   const [error, setError] = useState("");
@@ -96,6 +98,7 @@ export default function StudioPage() {
   const [editorSaturation, setEditorSaturation] = useState(100);
   const [editorBlur, setEditorBlur] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageUploadRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     try {
@@ -181,6 +184,8 @@ export default function StudioPage() {
   ]);
 
   const createSingleImage = async () => {
+    const sourceImage =
+      mode === "edit-image" ? imageInput || uploadedImages[0] : undefined;
     const response = await fetch("/api/studio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -188,7 +193,7 @@ export default function StudioPage() {
         action: mode,
         model: imageModel,
         prompt: selectedStyle ? `${prompt}, ${selectedStyle}` : prompt,
-        image: mode === "edit-image" ? imageInput : undefined,
+        image: sourceImage,
         size: selectedSize,
       }),
     });
@@ -335,7 +340,7 @@ export default function StudioPage() {
   };
 
   const applyEditorAdjustments = () => {
-    const source = activeImage?.url || imageInput;
+    const source = activeImage?.url || imageInput || uploadedImages[0];
     if (!source) {
       toast.error("Aucune image à modifier.");
       return;
@@ -362,6 +367,48 @@ export default function StudioPage() {
       toast.success("Retouches appliquées.");
     };
     image.src = source;
+  };
+
+  const onPromptImagesSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const allFiles = Array.from(event.target.files ?? []);
+    if (allFiles.length > 2) {
+      toast.warning("Maximum 2 images importées. Les 2 premières ont été conservées.");
+    }
+    const files = allFiles.slice(0, 2);
+    if (files.length === 0) return;
+
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      toast.error("Seules les images sont acceptées.");
+      event.target.value = "";
+      return;
+    }
+
+    const readFileAsDataUrl = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = () => reject(new Error("Impossible de lire l'image"));
+        reader.readAsDataURL(file);
+      });
+
+    try {
+      const loaded = (await Promise.all(files.map(readFileAsDataUrl))).filter(Boolean);
+      if (loaded.length === 0) {
+        toast.error("Import impossible.");
+        return;
+      }
+      setUploadedImages(loaded);
+      if (mode === "edit-image") {
+        setImageInput(loaded[0]);
+      }
+      triggerHaptic(10);
+      toast.success(`${loaded.length} image(s) importée(s).`);
+    } catch {
+      toast.error("Une erreur est survenue pendant l'import.");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
@@ -539,9 +586,22 @@ export default function StudioPage() {
         <section className="sticky bottom-0 z-20 border-t border-border/50 bg-background/95 p-3 backdrop-blur">
           <div className="rounded-2xl border border-border bg-card/80 p-3">
             <div className="flex items-center gap-2">
-              <button className="rounded-lg border border-border p-2" type="button">
+              <button
+                className="rounded-lg border border-border p-2"
+                onClick={() => imageUploadRef.current?.click()}
+                type="button"
+                title="Importer 1 à 2 images"
+              >
                 <Plus className="size-4" />
               </button>
+              <input
+                accept="image/*"
+                className="hidden"
+                multiple
+                onChange={onPromptImagesSelected}
+                ref={imageUploadRef}
+                type="file"
+              />
               <textarea
                 className="min-h-12 flex-1 resize-none rounded-lg border border-border bg-background p-2 text-sm"
                 onChange={(event) => setPrompt(event.target.value)}
@@ -585,14 +645,14 @@ export default function StudioPage() {
                 onClick={() => setShowStylePicker((current) => !current)}
                 type="button"
               >
-                <BookOpen className="mr-1 inline size-3.5" /> 📚 Styles
+                Styles
               </button>
               <button
                 className="rounded-full border border-border px-3 py-1"
                 onClick={() => setShowHelp((current) => !current)}
                 type="button"
               >
-                <CircleHelp className="mr-1 inline size-3.5" /> ? Aide
+                <CircleHelp className="mr-1 inline size-3.5" /> Aide
               </button>
               <button
                 className="rounded-full border border-border px-3 py-1"
@@ -621,6 +681,34 @@ export default function StudioPage() {
                     {style}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {uploadedImages.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-background/70 p-2">
+                {uploadedImages.map((imageSrc, index) => (
+                  <div className="relative" key={`${imageSrc.slice(0, 24)}-${index}`}>
+                    {/* biome-ignore lint/performance/noImgElement: local image preview */}
+                    <img
+                      alt={`Import ${index + 1}`}
+                      className="h-12 w-12 rounded-md object-cover"
+                      src={imageSrc}
+                    />
+                    <span className="absolute -top-1 -right-1 rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
+                      {index + 1}
+                    </span>
+                  </div>
+                ))}
+                <button
+                  className="rounded-full border border-border px-2 py-1 text-xs"
+                  onClick={() => {
+                    setUploadedImages([]);
+                  }}
+                  type="button"
+                >
+                  Retirer
+                </button>
+                <span className="text-[11px] text-muted-foreground">Max 2 images</span>
               </div>
             )}
 
