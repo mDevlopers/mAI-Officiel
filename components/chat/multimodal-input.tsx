@@ -1270,7 +1270,7 @@ ${extractedFileContext}`
   }, [handlePaste]);
 
   return (
-    <div className={cn("relative flex w-full flex-col gap-4", className)}>
+    <div className={cn("relative flex w-full flex-col gap-2", className)}>
       {editingMessage && onCancelEdit && (
         <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <span>Modification du message</span>
@@ -1707,27 +1707,67 @@ function PureContextualActionsMenu({
     []
   );
 
-  if (isWebSearchEnabled) {
-    selectedActions.push("Recherche");
-  }
   if (forceWebSearchEnabled) {
     selectedActions.push("Web forcée");
-  }
-  if (isLearningEnabled) {
+  } else if (isWebSearchEnabled) {
+    selectedActions.push("Recherche");
+  } else if (isLearningEnabled) {
     selectedActions.push("Apprentissage");
-  }
-  if (isImageCreationModeEnabled) {
+  } else if (isImageCreationModeEnabled) {
     selectedActions.push("Création d'images");
-  }
-  if (isMusicCreationModeEnabled) {
+  } else if (isMusicCreationModeEnabled) {
     selectedActions.push("Créer de la musique");
-  }
-  if (selectedPlugin !== "none") {
+  } else if (selectedPlugin !== "none") {
     const pluginLabel =
       pluginRegistry.find((plugin) => plugin.id === selectedPlugin)?.name ??
       selectedPlugin;
     selectedActions.push(`Plugin: ${pluginLabel}`);
   }
+
+  const resetPlusModes = () => {
+    setIsWebSearchEnabled(false);
+    setForceWebSearchEnabled(false);
+    setIsLearningEnabled(false);
+    setIsImageCreationModeEnabled(false);
+    setIsMusicCreationModeEnabled(false);
+    setSelectedPlugin("none");
+  };
+
+  const toggleSinglePlusMode = (
+    mode: "web" | "web-force" | "learning" | "image" | "music"
+  ) => {
+    const isAlreadyEnabled =
+      (mode === "web" && isWebSearchEnabled && !forceWebSearchEnabled) ||
+      (mode === "web-force" && forceWebSearchEnabled) ||
+      (mode === "learning" && isLearningEnabled) ||
+      (mode === "image" && isImageCreationModeEnabled) ||
+      (mode === "music" && isMusicCreationModeEnabled);
+
+    if (isAlreadyEnabled) {
+      resetPlusModes();
+      return;
+    }
+
+    resetPlusModes();
+    if (mode === "web") {
+      setIsWebSearchEnabled(true);
+      return;
+    }
+    if (mode === "web-force") {
+      setIsWebSearchEnabled(true);
+      setForceWebSearchEnabled(true);
+      return;
+    }
+    if (mode === "learning") {
+      setIsLearningEnabled(true);
+      return;
+    }
+    if (mode === "image") {
+      setIsImageCreationModeEnabled(true);
+      return;
+    }
+    setIsMusicCreationModeEnabled(true);
+  };
 
   const canUseDeepReflection = plan === "max";
   const canUseVeryDeepReflection = false;
@@ -1941,7 +1981,7 @@ function PureContextualActionsMenu({
             isWebSearchEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
-          onClick={() => setIsWebSearchEnabled(!isWebSearchEnabled)}
+          onClick={() => toggleSinglePlusMode("web")}
           variant="ghost"
         >
           <SearchIcon
@@ -1958,12 +1998,7 @@ function PureContextualActionsMenu({
             forceWebSearchEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
-          onClick={() => {
-            if (!isWebSearchEnabled) {
-              setIsWebSearchEnabled(true);
-            }
-            setForceWebSearchEnabled(!forceWebSearchEnabled);
-          }}
+          onClick={() => toggleSinglePlusMode("web-force")}
           variant="ghost"
         >
           <Globe2Icon
@@ -1981,7 +2016,7 @@ function PureContextualActionsMenu({
             isImageCreationModeEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
-          onClick={() => setIsImageCreationModeEnabled(!isImageCreationModeEnabled)}
+          onClick={() => toggleSinglePlusMode("image")}
           variant="ghost"
         >
           <ImageIcon
@@ -2000,7 +2035,7 @@ function PureContextualActionsMenu({
             isMusicCreationModeEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
-          onClick={() => setIsMusicCreationModeEnabled(!isMusicCreationModeEnabled)}
+          onClick={() => toggleSinglePlusMode("music")}
           variant="ghost"
         >
           <Music2Icon
@@ -2044,7 +2079,7 @@ function PureContextualActionsMenu({
             isLearningEnabled &&
               "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
           )}
-          onClick={() => setIsLearningEnabled(!isLearningEnabled)}
+          onClick={() => toggleSinglePlusMode("learning")}
           variant="ghost"
         >
           <GraduationCapIcon
@@ -2113,7 +2148,9 @@ function PureContextualActionsMenu({
                     ? "border-primary/45 bg-primary/10 text-primary"
                     : "border-border/60 hover:border-primary/35 hover:bg-primary/5"
                 )}
-                onClick={() => setSelectedPlugin("none")}
+                      onClick={() => {
+                        resetPlusModes();
+                      }}
                 type="button"
               >
                 Aucun plugin actif
@@ -2149,7 +2186,14 @@ function PureContextualActionsMenu({
                           : "border-border/60 hover:border-primary/35"
                       )}
                       disabled={!enabledPluginsSet.has(plugin.id)}
-                      onClick={() => setSelectedPlugin(plugin.id)}
+                      onClick={() => {
+                        if (selectedPlugin === plugin.id) {
+                          resetPlusModes();
+                          return;
+                        }
+                        resetPlusModes();
+                        setSelectedPlugin(plugin.id);
+                      }}
                       type="button"
                     >
                       Utiliser

@@ -23,7 +23,10 @@ type Runtime =
   | "cpp"
   | "go"
   | "ruby"
-  | "php";
+  | "php"
+  | "sql"
+  | "json"
+  | "markdown";
 
 type RuntimeFile = { contentBase64: string; name: string };
 type EditorTheme = "monokai" | "dracula" | "one-dark";
@@ -61,6 +64,9 @@ const runtimeSnippets: Record<Runtime, string> = {
   go: `package main\nimport "fmt"\nfunc main(){ fmt.Println("Hello Go") }`,
   ruby: `puts "Hello Ruby"`,
   php: `<?php\necho "Hello PHP\\n";`,
+  sql: `CREATE TABLE sales(month TEXT, amount INTEGER);\nINSERT INTO sales VALUES ('Jan', 20), ('Feb', 40), ('Mar', 35);\nSELECT month, amount FROM sales ORDER BY amount DESC;`,
+  json: `{\n  "project": "mAI Code Interpreter",\n  "version": 2,\n  "features": ["snippets", "history", "multi-runtime"]\n}`,
+  markdown: `# Rapport rapide\n\n- Dataset: ventes mensuelles\n- Insight principal: **février** est le meilleur mois.\n\n\`\`\`python\nprint("Export prêt")\n\`\`\``,
 };
 
 const runtimeLabels: Record<Runtime, string> = {
@@ -74,6 +80,9 @@ const runtimeLabels: Record<Runtime, string> = {
   go: "Go",
   ruby: "Ruby",
   php: "PHP",
+  sql: "SQL (SQLite)",
+  json: "JSON",
+  markdown: "Markdown",
 };
 
 const runtimeOrder: Runtime[] = [
@@ -87,12 +96,16 @@ const runtimeOrder: Runtime[] = [
   "go",
   "ruby",
   "php",
+  "sql",
+  "json",
+  "markdown",
 ];
 
 const quickPresets: Array<{ label: string; runtime: Runtime }> = [
   { label: "Analyse CSV", runtime: "python" },
   { label: "Script CLI", runtime: "bash" },
   { label: "Sandbox JS", runtime: "javascript" },
+  { label: "Requête SQL", runtime: "sql" },
 ];
 
 async function toRuntimeFile(file: File): Promise<RuntimeFile> {
@@ -130,6 +143,7 @@ export default function InterpreterPage() {
       { icon: FileSpreadsheet, label: "Import CSV / Excel" },
       { icon: BarChart3, label: "Génération de graphiques" },
       { icon: SquareTerminal, label: "Logs & erreurs structurés" },
+      { icon: Play, label: "Runtimes code + aperçu JSON/Markdown" },
     ],
     []
   );
@@ -155,7 +169,7 @@ export default function InterpreterPage() {
 
       const payload = (await response.json()) as ExecutionResponse;
       setResult(payload);
-      setHistory(
+      setHistory((current) =>
         [
           {
             createdAt: new Date().toISOString(),
@@ -163,7 +177,7 @@ export default function InterpreterPage() {
             runtime,
             sourceCode: code,
           },
-          ...history,
+          ...current,
         ].slice(0, 20)
       );
     } catch (error) {
@@ -175,7 +189,7 @@ export default function InterpreterPage() {
         success: false,
       } satisfies ExecutionResponse;
       setResult(errorPayload);
-      setHistory(
+      setHistory((current) =>
         [
           {
             createdAt: new Date().toISOString(),
@@ -183,7 +197,7 @@ export default function InterpreterPage() {
             runtime,
             sourceCode: code,
           },
-          ...history,
+          ...current,
         ].slice(0, 20)
       );
     } finally {
@@ -311,15 +325,27 @@ export default function InterpreterPage() {
             </p>
           ) : null}
 
-          <button
-            className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-            disabled={isRunning}
-            onClick={onRun}
-            type="button"
-          >
-            <Play className="size-4" />
-            {isRunning ? "Exécution..." : "Run"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
+              disabled={isRunning}
+              onClick={onRun}
+              type="button"
+            >
+              <Play className="size-4" />
+              {isRunning ? "Exécution..." : "Run"}
+            </button>
+            <button
+              className="inline-flex items-center gap-2 rounded-xl border border-border/60 px-4 py-2 text-sm"
+              onClick={() => {
+                setFiles([]);
+                setResult(null);
+              }}
+              type="button"
+            >
+              Réinitialiser sortie
+            </button>
+          </div>
         </section>
 
         <section className="liquid-panel rounded-2xl p-4">
