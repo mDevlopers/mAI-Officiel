@@ -2,6 +2,8 @@ import { auth } from "@/app/(auth)/auth";
 import { runExternalTextModel } from "@/lib/ai/external-providers";
 
 const SUNO_ENDPOINT = "https://api.sunoapi.org/api/v1/generate";
+const DEFAULT_PERSONA_ID = "persona_default_fr";
+const DEFAULT_PERSONA_MODEL = "style_persona";
 
 type WaveRequest =
   | {
@@ -20,8 +22,6 @@ type WaveRequest =
       prompt: string;
       style?: string;
       title?: string;
-      personaId?: string;
-      personaModel?: string;
       negativeTags?: string;
       vocalGender?: "m" | "f" | "n";
       styleWeight?: number;
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     try {
       const generationPrompt = [
         "Crée des paroles de chanson structurées.",
-        "Retourne uniquement les lyrics finaux en français.",
+        "Retourne uniquement les lyrics finaux.",
         body.style ? `Style: ${body.style}` : "",
         body.mood ? `Ambiance: ${body.mood}` : "",
         body.language ? `Langue cible: ${body.language}` : "",
@@ -110,8 +110,8 @@ export async function POST(request: Request) {
     prompt,
     style: asTrimmedString(body.style) || undefined,
     title: asTrimmedString(body.title) || undefined,
-    personaId: asTrimmedString(body.personaId) || undefined,
-    personaModel: asTrimmedString(body.personaModel) || undefined,
+    personaId: DEFAULT_PERSONA_ID,
+    personaModel: DEFAULT_PERSONA_MODEL,
     negativeTags: asTrimmedString(body.negativeTags) || undefined,
     vocalGender: body.vocalGender,
     styleWeight: body.styleWeight,
