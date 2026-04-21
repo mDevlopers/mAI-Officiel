@@ -332,6 +332,70 @@ export const chatModels: ChatModel[] = [
     reasoningEffort: "low",
     capabilities: { tools: true, vision: true, reasoning: true },
   },
+  // ── OpenRouter ─────────────────────────────────────────────────────────
+  {
+    id: "openrouter/qwen/qwen3.6-plus:free",
+    name: "Qwen 3.6 Plus",
+    provider: "openrouter",
+    description: "Qwen 3.6 Plus via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/qwen/qwen3.6-plus-preview:free",
+    name: "Qwen 3.6 Plus Preview",
+    provider: "openrouter",
+    description: "Qwen 3.6 Plus Preview via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/qwen/qwen3-coder:free",
+    name: "Qwen 3 Coder",
+    provider: "openrouter",
+    description: "Qwen 3 Coder via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/qwen/qwen3-next-80b-a3b-instruct:free",
+    name: "Qwen 3 Next",
+    provider: "openrouter",
+    description: "Qwen 3 Next 80B A3B Instruct via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+    name: "Llama 3.3 70b",
+    provider: "openrouter",
+    description: "Llama 3.3 70B Instruct via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/nvidia/nemotron-3-super-120b:free",
+    name: "Nemotron 3 Super 120b",
+    provider: "openrouter",
+    description: "Nemotron 3 Super 120B via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/mistralai/mistral-large",
+    name: "Mistral Large",
+    provider: "openrouter",
+    description: "Mistral Large via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/anthropic/claude-3-haiku",
+    name: "Claude 3 Haiku",
+    provider: "openrouter",
+    description: "Claude 3 Haiku via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
+  {
+    id: "openrouter/openai/gpt-oss-20b",
+    name: "GPT-OSS-20b",
+    provider: "openrouter",
+    description: "GPT-OSS-20b via OpenRouter.",
+    capabilities: { tools: true, vision: false, reasoning: true },
+  },
 ];
 
 export const embeddingModels = [

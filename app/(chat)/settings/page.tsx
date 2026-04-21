@@ -530,6 +530,7 @@ export default function SettingsPage() {
   });
   const [fileUsageToday, setFileUsageToday] = useState(0);
   const [studioUsageToday, setStudioUsageToday] = useState(0);
+  const [waveUsageWeek, setWaveUsageWeek] = useState(0);
   const [vibrationsEnabled, setVibrationsEnabled] = useState(true);
   const [tierUsage, setTierUsage] = useState<Record<ModelTier, number>>({
     tier1: 0,
@@ -598,6 +599,7 @@ export default function SettingsPage() {
     const refreshUsage = () => {
       setFileUsageToday(getUsageCount("files", "day"));
       setStudioUsageToday(getUsageCount("studio", "day"));
+      setWaveUsageWeek(getUsageCount("wave", "week"));
       setTierUsage({
         tier1: getTierUsage("tier1"),
         tier2: getTierUsage("tier2"),
@@ -1714,11 +1716,11 @@ export default function SettingsPage() {
         used: studioUsageToday,
       },
       {
-        key: "tasks",
-        limit: currentPlanDefinition.limits.taskSchedules,
-        period: "month",
-        title: "Tâches",
-        used: tasks.length,
+        key: "wave",
+        limit: currentPlanDefinition.limits.musicGenerationsPerWeek,
+        period: "week",
+        title: "Musiques (Wave)",
+        used: waveUsageWeek,
       },
     ];
   }, [
@@ -1728,7 +1730,7 @@ export default function SettingsPage() {
     isAuthenticated,
     isHydrated,
     plan,
-    tasks.length,
+    waveUsageWeek,
     tierUsage.tier1,
     tierUsage.tier2,
     tierUsage.tier3,
@@ -1749,7 +1751,6 @@ export default function SettingsPage() {
     { href: "#parental", key: "parental", label: uiLabels.parental },
     { href: "#donnees", key: "donnees", label: uiLabels.data },
     { href: "#credits", key: "credits", label: uiLabels.credits },
-    { href: "#taches", key: "taches", label: uiLabels.tasks },
     { href: "#apropos", key: "apropos", label: uiLabels.about },
   ] as const;
   const sectionVisibility = (key: (typeof settingsSections)[number]["key"]) =>
@@ -2385,23 +2386,6 @@ export default function SettingsPage() {
           compact est désormais recommandé pour une interface plus dense.
         </p>
 
-        <div className="mt-4 rounded-2xl border border-border/60 bg-background/60 p-4">
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              checked={improveMaiForAll}
-              className="mt-1"
-              onChange={(event) => setImproveMaiForAll(event.target.checked)}
-              type="checkbox"
-            />
-            <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
-              <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
-              </span>
-            </span>
-          </label>
-        </div>
-
         <div className="mt-4 grid gap-2 md:grid-cols-3">
           {[
             { label: "Compacte", value: "compact" as const },
@@ -2788,9 +2772,13 @@ export default function SettingsPage() {
               type="checkbox"
             />
             <span>
-              <span className="block text-sm font-semibold">Améliorer mAI pour tous</span>
+              <span className="block text-sm font-semibold">
+                Améliorer mAI pour tous
+              </span>
               <span className="block text-xs text-muted-foreground">
-                Autorisez l'utilisation de votre contenu pour entraîner les modèles et améliorer les performances d'mAI pour vous et tous ceux qui l'utilisent. Nous prenons des mesures pour protéger votre vie privée.
+                Autorisez l&apos;utilisation de votre contenu pour entraîner les
+                modèles et améliorer les performances d&apos;mAI pour vous et
+                tous ceux qui l&apos;utilisent.
               </span>
             </span>
           </label>
@@ -3249,7 +3237,7 @@ export default function SettingsPage() {
       <section
         className={cn(
           "rounded-2xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl",
-          sectionVisibility("taches")
+          "hidden"
         )}
         id="taches"
       >
