@@ -10,9 +10,9 @@ import { SessionGuard } from "@/components/security/session-guard";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
+  metadataBase: new URL("https://mai-officiel.vercel.app"),
   title: "mAI",
-  description: "mAI - assistant collaboratif et personnalisable.",
+  description: "Avec mAI, passez à la vitesse supérieure !",
   icons: {
     icon: "/images/logo.png",
     shortcut: "/images/logo.png",
