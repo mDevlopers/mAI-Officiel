@@ -19,6 +19,20 @@ export const BotIcon = () => {
   );
 };
 
+export const CustomStarIcon = ({ size = 16, className }: { size?: number, className?: string }) => {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/star-logo.png"
+      alt="Star Logo"
+      width={size}
+      height={size}
+      className={className}
+      style={{ objectFit: "contain" }}
+    />
+  );
+};
+
 export const UserIcon = () => {
   return (
     <svg

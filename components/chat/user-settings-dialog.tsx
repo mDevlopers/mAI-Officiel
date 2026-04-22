@@ -109,7 +109,11 @@ function parseProfileSettings(
 
 function getDefaultDisplayName(user: User, isGuest: boolean): string {
   if (isGuest) {
-    return "Invité";
+    return user.name?.trim() || "Invité";
+  }
+
+  if (user.name?.trim()) {
+    return user.name.trim();
   }
 
   const userNameFromEmail = user.email?.split("@")[0]?.trim();
@@ -770,6 +774,9 @@ export function UserSettingsDialog({
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <Languages className="size-4 text-violet-400" /> Langue de
                 l'interface
+                <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">
+                  Béta
+                </span>
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 Le changement s'applique immédiatement aux zones déjà
@@ -785,6 +792,8 @@ export function UserSettingsDialog({
                 <option value="fr">Français</option>
                 <option value="en">English</option>
                 <option value="es">Español</option>
+                <option value="de">Deutsch</option>
+                <option value="it">Italiano</option>
               </select>
             </section>
 

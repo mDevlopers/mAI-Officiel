@@ -1,5 +1,5 @@
 import equal from "fast-deep-equal";
-import { Flag, Pin, Play } from "lucide-react";
+import { Flag, Pin, Play, WrenchIcon } from "lucide-react";
 import { memo } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
@@ -45,12 +45,14 @@ export function PureMessageActions({
   vote,
   isLoading,
   onEdit,
+  toolsUsed = [],
 }: {
   chatId: string;
   message: ChatMessage;
   vote: Vote | undefined;
   isLoading: boolean;
   onEdit?: () => void;
+  toolsUsed?: string[];
 }) {
   const { mutate } = useSWRConfig();
   const [_, copyToClipboard] = useCopyToClipboard();
@@ -167,6 +169,12 @@ export function PureMessageActions({
 
   return (
     <Actions className="-ml-0.5 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover/message:opacity-100">
+      {toolsUsed.length > 0 && (
+        <div className="flex items-center gap-1.5 px-2 text-xs text-muted-foreground/50">
+          <WrenchIcon className="size-3" />
+          <span>{toolsUsed.join(", ")}</span>
+        </div>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button

@@ -19,7 +19,7 @@ import {
   PlusIcon,
   Puzzle,
   SearchIcon,
-  SparklesIcon,
+  CustomStarIcon,
   Square,
   StarIcon,
 } from "lucide-react";
@@ -2165,7 +2165,7 @@ function PureContextualActionsMenu({
                       {plugin.name}
                       {plugin.isNew ? (
                         <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">
-                          <SparklesIcon className="size-2.5" />
+                          <CustomStarIcon className="size-2.5" />
                           NEW
                         </span>
                       ) : null}

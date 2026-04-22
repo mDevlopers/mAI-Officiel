@@ -2,7 +2,7 @@
 
 export const LANGUAGE_STORAGE_KEY = "mai.language.v1";
 
-export const SUPPORTED_LANGUAGES = ["fr", "en", "es"] as const;
+export const SUPPORTED_LANGUAGES = ["fr", "en", "es", "de", "it"] as const;
 
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -136,6 +136,90 @@ export const dictionary = {
     "errors.documentBadRequest":
       "La requête pour créer ou mettre à jour le document est invalide. Veuillez vérifier votre saisie et réessayer.",
     "errors.default": "Un problème est survenu. Veuillez réessayer plus tard.",
+  },
+  de: {
+    notifications: "Benachrichtigungen",
+    noNotifications: "Keine Benachrichtigungen.",
+    showNotifications: "Benachrichtigungen anzeigen",
+    ghostMode: "Geist-Modus",
+    ghostModeActive: "Geist-Modus aktiv",
+    voiceMode: "mAI Voice",
+    voiceModeLabel: "Reiner Sprachmodus (Experimentell)",
+    voiceListening: "Zuhören...",
+    voiceStart: "Sprachmodus starten",
+    voiceStop: "Halt",
+    voiceTranscript: "Transkript",
+    voiceSend: "An Chat senden",
+    voiceCaptions: "Untertitel",
+    "errors.database": "Beim Ausführen einer Datenbankabfrage ist ein Fehler aufgetreten.",
+    "errors.badRequestApi":
+      "Die Anfrage konnte nicht verarbeitet werden. Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.",
+    "errors.gateway":
+      "AI Gateway erfordert eine gültige Kreditkarte, um Anfragen zu bearbeiten.",
+    "errors.authRequired": "Sie müssen sich anmelden, bevor Sie fortfahren können.",
+    "errors.authForbidden":
+      "Ihr Konto hat keinen Zugriff auf diese Funktion.",
+    "errors.rateLimit":
+      "Sie haben das Nachrichtenlimit erreicht. Kommen Sie in 1 Stunde zurück, um weiter zu chatten.",
+    "errors.chatNotFound":
+      "Der angeforderte Chat wurde nicht gefunden. Bitte überprüfen Sie die Chat-ID und versuchen Sie es erneut.",
+    "errors.chatForbidden":
+      "Dieser Chat gehört einem anderen Benutzer. Bitte überprüfen Sie die Chat-ID und versuchen Sie es erneut.",
+    "errors.chatUnauthorized":
+      "Sie müssen sich anmelden, um diesen Chat anzuzeigen. Bitte melden Sie sich an und versuchen Sie es erneut.",
+    "errors.offline":
+      "Wir haben Probleme beim Senden Ihrer Nachricht. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+    "errors.documentNotFound":
+      "Das angeforderte Dokument wurde nicht gefunden. Bitte überprüfen Sie die Dokument-ID und versuchen Sie es erneut.",
+    "errors.documentForbidden":
+      "Dieses Dokument gehört einem anderen Benutzer. Bitte überprüfen Sie die Dokument-ID und versuchen Sie es erneut.",
+    "errors.documentUnauthorized":
+      "Sie müssen sich anmelden, um dieses Dokument anzuzeigen. Bitte melden Sie sich an und versuchen Sie es erneut.",
+    "errors.documentBadRequest":
+      "Die Anfrage zum Erstellen oder Aktualisieren des Dokuments war ungültig. Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.",
+    "errors.default": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+  },
+  it: {
+    notifications: "Notifiche",
+    noNotifications: "Nessuna notifica.",
+    showNotifications: "Mostra notifiche",
+    ghostMode: "Modalità fantasma",
+    ghostModeActive: "Modalità fantasma attiva",
+    voiceMode: "mAI Voice",
+    voiceModeLabel: "Modalità voce pura (Sperimentale)",
+    voiceListening: "In ascolto...",
+    voiceStart: "Avvia modalità voce",
+    voiceStop: "Ferma",
+    voiceTranscript: "Trascrizione",
+    voiceSend: "Invia alla chat",
+    voiceCaptions: "Sottotitoli",
+    "errors.database": "Si è verificato un errore durante l'esecuzione di una query nel database.",
+    "errors.badRequestApi":
+      "Impossibile elaborare la richiesta. Controlla l'input e riprova.",
+    "errors.gateway":
+      "AI Gateway richiede una carta di credito valida per elaborare le richieste.",
+    "errors.authRequired": "Devi accedere prima di continuare.",
+    "errors.authForbidden":
+      "Il tuo account non ha accesso a questa funzione.",
+    "errors.rateLimit":
+      "Hai raggiunto il limite di messaggi. Torna tra 1 ora per continuare a chattare.",
+    "errors.chatNotFound":
+      "La chat richiesta non è stata trovata. Controlla l'ID della chat e riprova.",
+    "errors.chatForbidden":
+      "Questa chat appartiene a un altro utente. Controlla l'ID della chat e riprova.",
+    "errors.chatUnauthorized":
+      "Devi accedere per visualizzare questa chat. Accedi e riprova.",
+    "errors.offline":
+      "Abbiamo problemi a inviare il tuo messaggio. Controlla la tua connessione Internet e riprova.",
+    "errors.documentNotFound":
+      "Il documento richiesto non è stato trovato. Controlla l'ID del documento e riprova.",
+    "errors.documentForbidden":
+      "Questo documento appartiene a un altro utente. Controlla l'ID del documento e riprova.",
+    "errors.documentUnauthorized":
+      "Devi accedere per visualizzare questo documento. Accedi e riprova.",
+    "errors.documentBadRequest":
+      "La richiesta di creazione o aggiornamento del documento non è valida. Controlla l'input e riprova.",
+    "errors.default": "Qualcosa è andato storto. Riprova più tardi.",
   },
 } as const;
 

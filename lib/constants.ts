@@ -12,6 +12,19 @@ export const guestRegex = /^guest-\d+$/;
 
 export const DUMMY_PASSWORD = generateDummyPassword();
 
+export const GUEST_PSEUDONYMS = [
+  "Supporter",
+  "Fan",
+  "Apprenti",
+  "Explorateur",
+  "Novice",
+  "Voyageur",
+  "Chercheur",
+  "Curieux",
+  "Aventurier",
+  "Pionnier"
+];
+
 export const greetingPrompts = [
   "Comment puis-je vous aider aujourd'hui ?",
   "Que voulez-vous construire avec mAI ?",

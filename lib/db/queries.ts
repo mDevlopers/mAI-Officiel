@@ -58,14 +58,18 @@ export async function createUser(email: string, password: string) {
   }
 }
 
+import { GUEST_PSEUDONYMS } from "../constants";
+
 export async function createGuestUser() {
   const email = `guest-${Date.now()}`;
   const password = generateHashedPassword(generateUUID());
+  const randomPseudonym = GUEST_PSEUDONYMS[Math.floor(Math.random() * GUEST_PSEUDONYMS.length)];
 
   try {
-    return await db.insert(user).values({ email, password }).returning({
+    return await db.insert(user).values({ email, password, name: randomPseudonym }).returning({
       id: user.id,
       email: user.email,
+      name: user.name,
     });
   } catch (_error) {
     throw new ChatbotError(

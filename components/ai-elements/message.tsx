@@ -63,7 +63,7 @@ export const MessageContent = ({
 }: MessageContentProps) => (
   <div
     className={cn(
-      "flex min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm text-foreground",
+      "flex min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm text-foreground animate-[fade-in_0.5s_ease-out]",
       className
     )}
     {...props}
