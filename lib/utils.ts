@@ -6,6 +6,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { formatISO } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema';
+import { extractJsonObjectsFromStream } from '@/lib/json-stream-parser';
 import { ChatbotError, type ErrorCode } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 
@@ -88,12 +89,17 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .join('');
 }
 
+/**
+ * Safety net: handles raw event streams stored in DB before
+ * extractTextFromResponsesPayload was introduced (write-path).
+ * Removable once all legacy messages are migrated.
+ */
 function extractTextFromResponseEventStream(text: string): string | null {
   if (!text.includes('"type":"response.')) {
     return null;
   }
 
-  const parsedEvents = extractJsonObjectsFromConcatenatedStream(text)
+  const parsedEvents = extractJsonObjectsFromStream(text)
     .filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null);
 
   if (parsedEvents.length === 0) {
@@ -114,61 +120,4 @@ function extractTextFromResponseEventStream(text: string): string | null {
     .join('');
 
   return deltaText.trim().length > 0 ? deltaText : null;
-}
-
-function extractJsonObjectsFromConcatenatedStream(raw: string): unknown[] {
-  const events: unknown[] = [];
-  let depth = 0;
-  let startIndex = -1;
-  let isInsideString = false;
-  let isEscaped = false;
-
-  for (let i = 0; i < raw.length; i++) {
-    const currentCharacter = raw[i];
-
-    if (isInsideString) {
-      if (isEscaped) {
-        isEscaped = false;
-        continue;
-      }
-
-      if (currentCharacter === '\\') {
-        isEscaped = true;
-        continue;
-      }
-
-      if (currentCharacter === '"') {
-        isInsideString = false;
-      }
-      continue;
-    }
-
-    if (currentCharacter === '"') {
-      isInsideString = true;
-      continue;
-    }
-
-    if (currentCharacter === '{') {
-      if (depth === 0) {
-        startIndex = i;
-      }
-      depth += 1;
-      continue;
-    }
-
-    if (currentCharacter === '}') {
-      depth -= 1;
-      if (depth === 0 && startIndex >= 0) {
-        const eventAsString = raw.slice(startIndex, i + 1);
-        try {
-          events.push(JSON.parse(eventAsString) as unknown);
-        } catch {
-          // ignore malformed chunk
-        }
-        startIndex = -1;
-      }
-    }
-  }
-
-  return events;
 }
