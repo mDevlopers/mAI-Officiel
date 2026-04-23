@@ -87,6 +87,12 @@ test("sanitizeText", () => {
     ),
     "Bonjour depuis content_part.done"
   );
+  assert.equal(
+    sanitizeText(
+      '"type":"response.output_text.delta","delta":"Bon" some broken json "type":"response.output_text.delta","delta":"jour"'
+    ),
+    "Bonjour"
+  );
 });
 
 test("getTextFromMessage", () => {

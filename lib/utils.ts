@@ -104,9 +104,54 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
  */
 function extractTextFromResponseEventStream(text: string): string | null {
   const extractedText = extractTextFromResponsesPayload(text);
-  return extractedText.length > 0 ? extractedText : null;
+  if (extractedText.length > 0) {
+    return extractedText;
+  }
+
+  return extractTextFromResponseEventStreamFallback(text);
 }
 
 function looksLikeResponsesEventStream(text: string): boolean {
   return text.includes('"type":"response.') || text.includes('"type": "response.');
+}
+
+function extractTextFromResponseEventStreamFallback(text: string): string | null {
+  const doneMatches = Array.from(
+    text.matchAll(
+      /"type"\s*:\s*"response\.output_text\.done"[\s\S]*?"text"\s*:\s*"((?:\\.|[^"\\])*)"/g
+    )
+  );
+  const doneText = doneMatches.at(-1)?.[1];
+  if (doneText) {
+    return decodeJsonStringValue(doneText).trim();
+  }
+
+  const contentPartMatches = Array.from(
+    text.matchAll(
+      /"type"\s*:\s*"response\.content_part\.done"[\s\S]*?"part"\s*:\s*\{[\s\S]*?"text"\s*:\s*"((?:\\.|[^"\\])*)"/g
+    )
+  );
+  const contentPartText = contentPartMatches.at(-1)?.[1];
+  if (contentPartText) {
+    return decodeJsonStringValue(contentPartText).trim();
+  }
+
+  const deltaMatches = Array.from(
+    text.matchAll(
+      /"type"\s*:\s*"response\.output_text\.delta"[\s\S]*?"delta"\s*:\s*"((?:\\.|[^"\\])*)"/g
+    )
+  );
+  if (deltaMatches.length > 0) {
+    return deltaMatches.map((match) => decodeJsonStringValue(match[1])).join('');
+  }
+
+  return null;
+}
+
+function decodeJsonStringValue(rawValue: string): string {
+  try {
+    return JSON.parse(`"${rawValue}"`) as string;
+  } catch {
+    return rawValue;
+  }
 }
