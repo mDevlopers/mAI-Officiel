@@ -20,6 +20,7 @@ import {
 } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { isExternalTextModel, runExternalTextModel } from "@/lib/ai/external-providers";
 import { normalizePromptInput, validatePromptSafety } from "@/lib/ai/safety";
 import { audioAssistant } from "@/lib/ai/tools/audio-assistant";
 import { createDocument } from "@/lib/ai/tools/create-document";
@@ -348,6 +349,40 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        const shouldDisableStreamingForModel =
+          isExternalTextModel(chatModel) && !isToolApprovalFlow;
+
+        if (shouldDisableStreamingForModel) {
+          const { text } = await runExternalTextModel(chatModel, modelMessages, {
+            systemInstruction: computedSystemPrompt.concat(
+              forceWebSearch
+                ? "\n\n[Instruction système] La recherche web est obligatoire pour cette requête: appelle d'abord l'outil webSearch, puis réponds en t'appuyant sur ses résultats."
+                : ""
+            ),
+          });
+
+          const textPartId = generateId();
+          dataStream.write({ type: "text-start", id: textPartId });
+          dataStream.write({
+            type: "text-delta",
+            id: textPartId,
+            delta: text,
+          });
+          dataStream.write({ type: "text-end", id: textPartId });
+
+          if (titlePromise && !isGhostMode) {
+            const generatedTitle = normalizeChatTitle(await titlePromise);
+            const title =
+              generatedTitle.length > 0
+                ? generatedTitle
+                : buildFallbackTitleFromMessage(message as ChatMessage);
+            dataStream.write({ type: "data-chat-title", data: title });
+            await updateChatTitleById({ chatId: id, title });
+          }
+
+          return;
+        }
+
         const result = streamText({
           model: getLanguageModel(chatModel),
           system: computedSystemPrompt.concat(
