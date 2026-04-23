@@ -20,6 +20,7 @@ import {
 } from "@/lib/ai/models";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { isExternalTextModel, runExternalTextModel } from "@/lib/ai/external-providers";
 import { normalizePromptInput, validatePromptSafety } from "@/lib/ai/safety";
 import { audioAssistant } from "@/lib/ai/tools/audio-assistant";
 import { createDocument } from "@/lib/ai/tools/create-document";
@@ -77,6 +78,34 @@ function buildFallbackTitleFromMessage(message?: ChatMessage): string {
   }
 
   return normalizeChatTitle(text.split(" ").slice(0, 8).join(" "));
+}
+
+function toUserFacingChatErrorMessage(message: string, model: string): string {
+  if (
+    message.includes(
+      "AI Gateway requires a valid credit card on file to service requests"
+    )
+  ) {
+    return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
+  }
+
+  if (message.toLowerCase().includes("api key")) {
+    return "Clé API manquante ou invalide. Vérifie FS_API_KEY.";
+  }
+
+  if (message.toLowerCase().includes("model")) {
+    return `Modèle "${model}" non reconnu par le provider.`;
+  }
+
+  if (message.toLowerCase().includes("not found")) {
+    return `Le provider IA n'expose pas encore l'endpoint/modèle demandé pour "${model}". Essaie "openai/gpt-5" ou "openai/gpt-5-mini".`;
+  }
+
+  if (message.toLowerCase().includes("bad request")) {
+    return `Le provider IA a rejeté la requête pour "${model}" (agent inactif ou modèle indisponible). Essaie "openai/gpt-5.4-mini".`;
+  }
+
+  return "Une erreur est survenue. Réessaie ou change de modèle.";
 }
 
 function getStreamContext() {
@@ -348,6 +377,57 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        const shouldDisableStreamingForModel =
+          isExternalTextModel(chatModel) && !isToolApprovalFlow;
+
+        if (shouldDisableStreamingForModel) {
+          let text = "";
+          try {
+            const result = await runExternalTextModel(chatModel, modelMessages, {
+              systemInstruction: computedSystemPrompt.concat(
+                forceWebSearch
+                  ? "\n\n[Instruction système] La recherche web est obligatoire pour cette requête: appelle d'abord l'outil webSearch, puis réponds en t'appuyant sur ses résultats."
+                  : ""
+              ),
+            });
+            text = result.text;
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "Unknown streaming error";
+            console.error("[mAI Chat Error] runExternalTextModel failed", {
+              model: chatModel,
+              message,
+              stack: error instanceof Error ? error.stack : undefined,
+            });
+            text = toUserFacingChatErrorMessage(message, chatModel);
+          }
+
+          dataStream.write({ type: "start" });
+          dataStream.write({ type: "start-step" });
+          const textPartId = generateId();
+          dataStream.write({ type: "text-start", id: textPartId });
+          dataStream.write({
+            type: "text-delta",
+            id: textPartId,
+            delta: text,
+          });
+          dataStream.write({ type: "text-end", id: textPartId });
+          dataStream.write({ type: "finish-step" });
+          dataStream.write({ type: "finish", finishReason: "stop" });
+
+          if (titlePromise && !isGhostMode) {
+            const generatedTitle = normalizeChatTitle(await titlePromise);
+            const title =
+              generatedTitle.length > 0
+                ? generatedTitle
+                : buildFallbackTitleFromMessage(message as ChatMessage);
+            dataStream.write({ type: "data-chat-title", data: title });
+            await updateChatTitleById({ chatId: id, title });
+          }
+
+          return;
+        }
+
         const result = streamText({
           model: getLanguageModel(chatModel),
           system: computedSystemPrompt.concat(
@@ -452,31 +532,7 @@ export async function POST(request: Request) {
           stack: error instanceof Error ? error.stack : undefined,
         });
 
-        if (
-          message.includes(
-            "AI Gateway requires a valid credit card on file to service requests"
-          )
-        ) {
-          return "AI Gateway requires a valid credit card on file to service requests. Please visit https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card to add a card and unlock your free credits.";
-        }
-
-        if (message.toLowerCase().includes("api key")) {
-          return "Clé API manquante ou invalide. Vérifie FS_API_KEY.";
-        }
-
-        if (message.toLowerCase().includes("model")) {
-          return `Modèle "${chatModel}" non reconnu par le provider.`;
-        }
-
-        if (message.toLowerCase().includes("not found")) {
-          return `Le provider IA n'expose pas encore l'endpoint/modèle demandé pour "${chatModel}". Essaie "openai/gpt-5" ou "openai/gpt-5-mini".`;
-        }
-
-        if (message.toLowerCase().includes("bad request")) {
-          return `Le provider IA a rejeté la requête pour "${chatModel}" (agent inactif ou modèle indisponible). Essaie "openai/gpt-5.4" ou "openai/gpt-5.4-mini".`;
-        }
-
-        return "Une erreur est survenue. Réessaie ou change de modèle.";
+        return toUserFacingChatErrorMessage(message, chatModel);
       },
     });
 

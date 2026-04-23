@@ -201,17 +201,35 @@ function extractTextFromChatCompletion(
   const content = data?.choices?.[0]?.message?.content;
 
   if (typeof content === "string") {
-    return content.trim();
+    const normalized = extractTextFromPotentialResponsesStream(content);
+    return normalized.length > 0 ? normalized : content.trim();
   }
 
   if (Array.isArray(content)) {
     return content
-      .map((item) => (typeof item?.text === "string" ? item.text : ""))
+      .map((item) => {
+        if (typeof item?.text !== "string") {
+          return "";
+        }
+        const normalized = extractTextFromPotentialResponsesStream(item.text);
+        return normalized.length > 0 ? normalized : item.text;
+      })
       .join("\n")
       .trim();
   }
 
   return (data?.output_text ?? "").trim();
+}
+
+function extractTextFromPotentialResponsesStream(rawContent: string): string {
+  const trimmedContent = rawContent.trim();
+
+  if (!trimmedContent.startsWith("{")) {
+    return "";
+  }
+
+  const parsed = extractTextFromResponsesPayload(trimmedContent);
+  return parsed.length > 0 ? parsed : "";
 }
 
 function extractTextFromResponsesOutput(
@@ -298,6 +316,19 @@ export function extractTextFromResponsesPayload(payload: unknown): string {
     }
   }
 
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "type" in payload &&
+    typeof payload.type === "string" &&
+    payload.type.startsWith("response.") &&
+    "response" in payload
+  ) {
+    return extractTextFromResponsesPayload(
+      (payload as { response?: unknown }).response
+    );
+  }
+
   return extractTextFromResponsesOutput(payload as ResponsesApiResponse);
 }
 
@@ -358,6 +389,18 @@ function extractJsonObjectsFromStream(raw: string): unknown[] {
   return events;
 }
 
+function getErrorStatus(error: unknown): number | null {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+  ) {
+    return error.status;
+  }
+  return null;
+}
+
 export async function generateResponse(input: {
   model: string;
   messages: Array<{
@@ -391,21 +434,36 @@ export async function generateResponse(input: {
     })) as ResponsesApiResponse;
     text = extractTextFromResponsesPayload(response);
   } catch (error) {
-    const isNotFoundError =
-      typeof error === "object" &&
-      error !== null &&
-      "status" in error &&
-      error.status === 404;
+    const errorStatus = getErrorStatus(error);
+    const isResponsesFallbackEligibleError =
+      errorStatus === 400 || errorStatus === 404 || errorStatus === 422;
 
-    if (!isNotFoundError) {
+    if (!isResponsesFallbackEligibleError) {
       throw error;
     }
 
-    const completion = await fsClient.chat.completions.create({
-      model: input.model,
-      messages: normalizedMessages,
-    });
-    text = extractTextFromChatCompletion(completion);
+    try {
+      const completion = await fsClient.chat.completions.create({
+        model: input.model,
+        messages: normalizedMessages,
+      });
+      text = extractTextFromChatCompletion(completion);
+    } catch (completionError) {
+      const completionStatus = getErrorStatus(completionError);
+      const canRetryWithMiniModel =
+        input.model === "gpt-5.4" &&
+        (completionStatus === 400 || completionStatus === 404);
+
+      if (!canRetryWithMiniModel) {
+        throw completionError;
+      }
+
+      const fallbackCompletion = await fsClient.chat.completions.create({
+        model: "gpt-5.4-mini",
+        messages: normalizedMessages,
+      });
+      text = extractTextFromChatCompletion(fallbackCompletion);
+    }
   }
 
   if (!text) {
