@@ -95,10 +95,6 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
  * Removable once all legacy messages are migrated.
  */
 function extractTextFromResponseEventStream(text: string): string | null {
-  if (!text.includes('"type":"response.')) {
-    return null;
-  }
-
   const parsedEvents = extractJsonObjectsFromStream(text)
     .filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null);
 
@@ -112,6 +108,30 @@ function extractTextFromResponseEventStream(text: string): string | null {
 
   if (typeof doneText === 'string' && doneText.trim().length > 0) {
     return doneText;
+  }
+
+  const outputText = parsedEvents
+    .map((entry) => {
+      if (typeof entry.output_text === 'string') {
+        return entry.output_text;
+      }
+
+      const nestedResponse = entry.response;
+      if (
+        typeof nestedResponse === 'object' &&
+        nestedResponse !== null &&
+        'output_text' in nestedResponse &&
+        typeof nestedResponse.output_text === 'string'
+      ) {
+        return nestedResponse.output_text;
+      }
+
+      return '';
+    })
+    .find((value) => value.trim().length > 0);
+
+  if (outputText) {
+    return outputText.trim();
   }
 
   const deltaText = parsedEvents
