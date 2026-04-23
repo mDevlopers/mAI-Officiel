@@ -6,6 +6,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { formatISO } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema';
+import { extractJsonObjectsFromStream } from '@/lib/json-stream-parser';
 import { ChatbotError, type ErrorCode } from './errors';
 import type { ChatMessage, ChatTools, CustomUIDataTypes } from './types';
 
@@ -88,12 +89,22 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .join('');
 }
 
+/**
+ * Safety net: cleans up raw response event streams that may have been
+ * stored in the database before extractTextFromResponsesPayload
+ * (in external-providers.ts) was introduced.
+ *
+ * This function handles the display-side (read path) extraction, while
+ * extractTextFromResponsesPayload handles the API-side (write path).
+ * Once all legacy messages in the DB have been migrated or purged,
+ * this fallback can be safely removed.
+ */
 function extractTextFromResponseEventStream(text: string): string | null {
   if (!text.includes('"type":"response.')) {
     return null;
   }
 
-  const parsedEvents = extractJsonObjectsFromConcatenatedStream(text)
+  const parsedEvents = extractJsonObjectsFromStream(text)
     .filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null);
 
   if (parsedEvents.length === 0) {
@@ -116,59 +127,4 @@ function extractTextFromResponseEventStream(text: string): string | null {
   return deltaText.trim().length > 0 ? deltaText : null;
 }
 
-function extractJsonObjectsFromConcatenatedStream(raw: string): unknown[] {
-  const events: unknown[] = [];
-  let depth = 0;
-  let startIndex = -1;
-  let isInsideString = false;
-  let isEscaped = false;
 
-  for (let i = 0; i < raw.length; i++) {
-    const currentCharacter = raw[i];
-
-    if (isInsideString) {
-      if (isEscaped) {
-        isEscaped = false;
-        continue;
-      }
-
-      if (currentCharacter === '\\') {
-        isEscaped = true;
-        continue;
-      }
-
-      if (currentCharacter === '"') {
-        isInsideString = false;
-      }
-      continue;
-    }
-
-    if (currentCharacter === '"') {
-      isInsideString = true;
-      continue;
-    }
-
-    if (currentCharacter === '{') {
-      if (depth === 0) {
-        startIndex = i;
-      }
-      depth += 1;
-      continue;
-    }
-
-    if (currentCharacter === '}') {
-      depth -= 1;
-      if (depth === 0 && startIndex >= 0) {
-        const eventAsString = raw.slice(startIndex, i + 1);
-        try {
-          events.push(JSON.parse(eventAsString) as unknown);
-        } catch {
-          // ignore malformed chunk
-        }
-        startIndex = -1;
-      }
-    }
-  }
-
-  return events;
-}

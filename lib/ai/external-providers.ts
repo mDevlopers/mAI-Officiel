@@ -1,5 +1,6 @@
 import type { ModelMessage } from "ai";
 import OpenAI from "openai";
+import { extractJsonObjectsFromStream } from "@/lib/json-stream-parser";
 
 const FS_API_BASE_URL =
   process.env.FS_API_BASE_URL ?? "https://api.francestudent.org/v1/";
@@ -301,63 +302,6 @@ export function extractTextFromResponsesPayload(payload: unknown): string {
   return extractTextFromResponsesOutput(payload as ResponsesApiResponse);
 }
 
-function extractJsonObjectsFromStream(raw: string): unknown[] {
-  const events: unknown[] = [];
-  let depth = 0;
-  let startIndex = -1;
-  let isInsideString = false;
-  let isEscaped = false;
-
-  for (let i = 0; i < raw.length; i++) {
-    const currentCharacter = raw[i];
-
-    if (isInsideString) {
-      if (isEscaped) {
-        isEscaped = false;
-        continue;
-      }
-
-      if (currentCharacter === "\\") {
-        isEscaped = true;
-        continue;
-      }
-
-      if (currentCharacter === '"') {
-        isInsideString = false;
-      }
-      continue;
-    }
-
-    if (currentCharacter === '"') {
-      isInsideString = true;
-      continue;
-    }
-
-    if (currentCharacter === "{") {
-      if (depth === 0) {
-        startIndex = i;
-      }
-      depth += 1;
-      continue;
-    }
-
-    if (currentCharacter === "}") {
-      depth -= 1;
-      if (depth === 0 && startIndex >= 0) {
-        const eventAsString = raw.slice(startIndex, i + 1);
-        try {
-          events.push(JSON.parse(eventAsString) as unknown);
-        } catch {
-          // Ignore malformed chunks and continue parsing the stream.
-        }
-        startIndex = -1;
-      }
-    }
-  }
-
-  return events;
-}
-
 export async function generateResponse(input: {
   model: string;
   messages: Array<{
@@ -376,7 +320,7 @@ export async function generateResponse(input: {
 
   const normalizedMessages = [
     ...(input.systemInstruction
-      ? [{ role: "system" as const, content: input.systemInstruction }]
+      ? [{ role: "developer" as const, content: input.systemInstruction }]
       : []),
     ...input.messages,
   ];
