@@ -70,3 +70,19 @@ test("extractTextFromResponsesPayload - préfère output_text.done à la concat 
     "Salut ! Comment puis-je t’aider ?"
   );
 });
+
+test("extractTextFromResponsesPayload - stream Responses API verbeux -> retourne seulement le texte final", () => {
+  const rawStream =
+    '{"type":"response.created","response":{"id":"resp_1","status":"in_progress","tools":[{"type":"function","name":"createDocument","parameters":{"type":"object","properties":{"title":{"type":"string"}}}}]}}' +
+    '{"type":"response.in_progress","response":{"id":"resp_1","status":"in_progress"}}' +
+    '{"type":"response.output_text.delta","delta":"Salut"}' +
+    '{"type":"response.output_text.delta","delta":" !"}' +
+    '{"type":"response.output_text.delta","delta":" Comment puis-je vous aider ?"}' +
+    '{"type":"response.output_text.done","text":"Salut ! Comment puis-je vous aider ?"}' +
+    '{"type":"response.completed","response":{"id":"resp_1","status":"completed"}}';
+
+  assert.equal(
+    extractTextFromResponsesPayload(rawStream),
+    "Salut ! Comment puis-je vous aider ?"
+  );
+});
