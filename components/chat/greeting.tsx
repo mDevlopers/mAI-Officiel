@@ -25,6 +25,18 @@ export const Greeting = () => {
       "par quoi commençons-nous aujourd'hui ?",
       "quelle idée voulez-vous explorer maintenant ?",
     ],
+    de: [
+      "wie kann ich Ihnen heute helfen?",
+      "was möchten Sie mit mAI bauen?",
+      "womit sollen wir heute anfangen?",
+      "welche Idee möchten Sie jetzt erkunden?",
+    ],
+    it: [
+      "come posso aiutarti oggi?",
+      "cosa vuoi costruire con mAI?",
+      "da dove iniziamo oggi?",
+      "quale idea vuoi esplorare ora?",
+    ],
   } as const;
   const [greetingText, setGreetingText] = useState<string>(
     greetingPromptsByLanguage.fr[0]
@@ -38,6 +50,10 @@ export const Greeting = () => {
       setTimePrefix(hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
     } else if (language === "es") {
       setTimePrefix(hour < 12 ? "Buenos días" : hour < 18 ? "Buenas tardes" : "Buenas noches");
+    } else if (language === "de") {
+      setTimePrefix(hour < 12 ? "Guten Morgen" : hour < 18 ? "Guten Tag" : "Guten Abend");
+    } else if (language === "it") {
+      setTimePrefix(hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera");
     } else if (hour < 12) {
       setTimePrefix("Bonjour");
     } else if (hour < 18) {

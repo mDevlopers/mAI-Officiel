@@ -18,6 +18,7 @@ import postgres from "postgres";
 import type { ArtifactKind } from "@/components/chat/artifact";
 import type { VisibilityType } from "@/components/chat/visibility-selector";
 import { ChatbotError } from "../errors";
+import { GUEST_PSEUDONYMS } from "../constants";
 import { generateUUID } from "../utils";
 import {
   type Chat,
@@ -59,13 +60,15 @@ export async function createUser(email: string, password: string) {
 }
 
 export async function createGuestUser() {
-  const email = `guest-${Date.now()}`;
+  const email = `guest-${Date.now()}@mai.com`;
   const password = generateHashedPassword(generateUUID());
+  const name = GUEST_PSEUDONYMS[Math.floor(Math.random() * GUEST_PSEUDONYMS.length)];
 
   try {
-    return await db.insert(user).values({ email, password }).returning({
+    return await db.insert(user).values({ email, password, name }).returning({
       id: user.id,
       email: user.email,
+      name: user.name,
     });
   } catch (_error) {
     throw new ChatbotError(

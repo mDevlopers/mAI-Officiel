@@ -1,5 +1,5 @@
 import equal from "fast-deep-equal";
-import { Flag, Pin, Play } from "lucide-react";
+import { Flag, Pin, Play, Wrench } from "lucide-react";
 import { memo } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
@@ -58,6 +58,18 @@ export function PureMessageActions({
   if (isLoading) {
     return null;
   }
+
+
+  const usedTools = message.parts
+    ?.filter((part) => part.type === "tool-invocation" || part.type.startsWith("tool-"))
+    .map((part) => {
+      // In Vercel AI SDK, tool-invocation has toolName, or if we map internal types starting with tool-
+      if ("toolName" in part) return part.toolName;
+      if (part.toolInvocation?.toolName) return part.toolInvocation.toolName;
+      return part.type.replace("tool-", "");
+    });
+
+  const uniqueTools = Array.from(new Set(usedTools || []));
 
   const textFromParts = message.parts
     ?.filter((part) => part.type === "text")
@@ -129,6 +141,14 @@ export function PureMessageActions({
     return (
       <Actions className="-mr-0.5 justify-end opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover/message:opacity-100">
         <div className="flex items-center gap-0.5">
+
+        {uniqueTools.length > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/50 bg-muted/30 text-[10px] font-medium text-muted-foreground mr-2">
+            <Wrench className="size-3" />
+            {uniqueTools.join(", ")}
+          </div>
+        )}
+
           {onEdit && (
             <Action
               className="size-7 text-black/70 hover:text-black dark:text-white/70 dark:hover:text-white"
@@ -167,6 +187,14 @@ export function PureMessageActions({
 
   return (
     <Actions className="-ml-0.5 opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover/message:opacity-100">
+
+        {uniqueTools.length > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/50 bg-muted/30 text-[10px] font-medium text-muted-foreground mr-2">
+            <Wrench className="size-3" />
+            {uniqueTools.join(", ")}
+          </div>
+        )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button

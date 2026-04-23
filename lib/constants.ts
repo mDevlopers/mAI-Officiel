@@ -19,3 +19,5 @@ export const greetingPrompts = [
   "Quelle idée voulez-vous explorer maintenant ?",
   "De quoi voulez-vous parler ?",
 ] as const;
+
+export const GUEST_PSEUDONYMS = ["Supporter", "Fan", "Apprenti", "Curieux", "Novice", "Explorateur", "Amateur", "Initié"];

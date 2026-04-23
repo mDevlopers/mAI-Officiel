@@ -132,6 +132,30 @@ const settingsLabels = {
     settings: "Paramètres",
     tasks: "Tâches",
   },
+  de: {
+    about: "Über",
+    account: "Konto",
+    credits: "Credits",
+    data: "Daten",
+    navigation: "Einstellungen Navigation",
+    notifications: "Benachrichtigungen",
+    parental: "Kindersicherung",
+    personalization: "KI-Anpassung",
+    settings: "Einstellungen",
+    tasks: "Aufgaben",
+  },
+  it: {
+    about: "Circa",
+    account: "Account",
+    credits: "Crediti",
+    data: "Dati",
+    navigation: "Navigazione impostazioni",
+    notifications: "Notifiche",
+    parental: "Controllo parentale",
+    personalization: "Personalizzazione IA",
+    settings: "Impostazioni",
+    tasks: "Compiti",
+  },
 } as const;
 
 type ScheduledTask = {

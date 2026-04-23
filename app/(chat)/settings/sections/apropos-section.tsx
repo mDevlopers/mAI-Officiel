@@ -37,6 +37,22 @@ const aboutI18n = {
     telegramSoon: "Discuter avec mAI dans Telegram",
     talkDiscord: "Discuter avec mAI dans Discord",
   },
+  de: {
+    defaultLanguage: "Standard-Schnittstellensprache:",
+    discordSupport: "Discord & Support",
+    joinDiscord: "Discord-Server beitreten",
+    language: "Sprache",
+    telegramSoon: "Mit mAI in Telegram chatten",
+    talkDiscord: "Mit mAI in Discord chatten",
+  },
+  it: {
+    defaultLanguage: "Lingua dell'interfaccia predefinita:",
+    discordSupport: "Discord & Supporto",
+    joinDiscord: "Unisciti al server Discord",
+    language: "Lingua",
+    telegramSoon: "Chatta con mAI in Telegram",
+    talkDiscord: "Chatta con mAI in Discord",
+  },
 } as const;
 
 export function AproposSection({
@@ -59,8 +75,9 @@ export function AproposSection({
         {t.discordSupport}
       </h2>
       <div className="mt-4 rounded-xl border border-border/60 bg-background/60 p-3">
-        <label className="text-sm font-medium" htmlFor="language-selector">
+        <label className="text-sm font-medium flex items-center gap-2" htmlFor="language-selector">
           {t.language}
+          <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20">Béta</span>
         </label>
         <p className="mt-1 text-xs text-muted-foreground">
           {t.defaultLanguage} Français.
@@ -74,6 +91,8 @@ export function AproposSection({
           <option value="fr">Français</option>
           <option value="en">English</option>
           <option value="es">Español</option>
+          <option value="de">Allemand</option>
+          <option value="it">Italien</option>
         </select>
       </div>
 
