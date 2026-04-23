@@ -67,7 +67,12 @@ export function getDocumentTimestampByIndex(
 export function sanitizeText(text: string) {
   const sanitized = text.replace('<has_function_call>', '');
   const extractedFromResponseStream = extractTextFromResponseEventStream(sanitized);
-  return extractedFromResponseStream ?? sanitized;
+  if (extractedFromResponseStream) {
+    return extractedFromResponseStream;
+  }
+
+  const extractedFromJsonPayload = extractTextFromJsonPayload(sanitized);
+  return extractedFromJsonPayload ?? sanitized;
 }
 
 export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
@@ -171,4 +176,67 @@ function extractJsonObjectsFromConcatenatedStream(raw: string): unknown[] {
   }
 
   return events;
+}
+
+function extractTextFromJsonPayload(text: string): string | null {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    return extractReadableTextFromUnknown(parsed);
+  } catch {
+    const possibleJsonPrefix = trimmed.match(/^(\{[\s\S]*?\}|\[[\s\S]*?\])\s*([\s\S]+)$/);
+    if (!possibleJsonPrefix?.[2]) {
+      return null;
+    }
+
+    const trailingText = possibleJsonPrefix[2].trim();
+    return trailingText.length > 0 ? trailingText : null;
+  }
+}
+
+function extractReadableTextFromUnknown(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const clean = value.trim();
+    return clean.length > 0 ? clean : null;
+  }
+
+  if (Array.isArray(value)) {
+    const pieces = value
+      .map((item) => extractReadableTextFromUnknown(item))
+      .filter((item): item is string => Boolean(item));
+
+    if (pieces.length === 0) {
+      return null;
+    }
+
+    return pieces.join('\n').trim();
+  }
+
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const candidateKeys = [
+    'response',
+    'answer',
+    'message',
+    'text',
+    'content',
+    'output',
+    'result',
+  ];
+
+  for (const key of candidateKeys) {
+    const candidate = extractReadableTextFromUnknown(record[key]);
+    if (candidate) {
+      return candidate;
+    }
+  }
+
+  return null;
 }

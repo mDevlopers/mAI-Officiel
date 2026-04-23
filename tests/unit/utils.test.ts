@@ -59,6 +59,18 @@ test("sanitizeText", () => {
     ),
     "Salut final"
   );
+  assert.equal(
+    sanitizeText('{"response":"Réponse lisible"}'),
+    "Réponse lisible"
+  );
+  assert.equal(
+    sanitizeText('{"content":[{"text":"Bonjour"}]}'),
+    "Bonjour"
+  );
+  assert.equal(
+    sanitizeText('{"status":"ok"} Réponse brute'),
+    "Réponse brute"
+  );
 });
 
 test("getTextFromMessage", () => {
