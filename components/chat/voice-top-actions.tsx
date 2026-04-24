@@ -26,9 +26,6 @@ export function VoiceTopActions({
   const [isGhostModeEnabled, setIsGhostModeEnabled] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [activeNotificationId, setActiveNotificationId] = useState<
-    string | null
-  >(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -71,16 +68,6 @@ export function VoiceTopActions({
     () => notifications.filter((item) => !item.read).length,
     [notifications]
   );
-  const activeNotification = useMemo(
-    () =>
-      notifications.find(
-        (notification) => notification.id === activeNotificationId
-      ) ??
-      notifications[0] ??
-      null,
-    [activeNotificationId, notifications]
-  );
-
   return (
     <div
       className="pointer-events-none fixed top-3 right-3 z-40 flex items-center gap-2"
@@ -126,7 +113,6 @@ export function VoiceTopActions({
               className="rounded-md border border-border/50 px-2 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
               onClick={() => {
                 clearNotifications();
-                setActiveNotificationId(null);
               }}
               type="button"
             >
@@ -141,17 +127,13 @@ export function VoiceTopActions({
               </p>
             ) : (
               notifications.map((item) => (
-                <button
+                <div
                   className={cn(
-                    "w-full rounded-lg border px-2 py-1.5 text-left transition",
-                    activeNotification?.id === item.id
-                      ? "border-primary/40 bg-primary/10"
-                      : "border-border/50 bg-background/60",
+                    "group/item w-full rounded-lg border px-2 py-1.5 text-left transition",
+                    "border-border/50 bg-background/60 hover:border-primary/40 hover:bg-primary/10",
                     !item.read && "ring-1 ring-primary/30"
                   )}
                   key={item.id}
-                  onClick={() => setActiveNotificationId(item.id)}
-                  type="button"
                 >
                   <p className="line-clamp-1 text-[11px] font-medium">
                     {item.title}
@@ -159,55 +141,36 @@ export function VoiceTopActions({
                   <p className="line-clamp-2 text-[11px] text-muted-foreground">
                     {item.message}
                   </p>
-                </button>
+                  <div className="mt-2 hidden grid-cols-3 gap-1 group-hover/item:grid">
+                    <button
+                      className="inline-flex items-center justify-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[11px] transition hover:bg-background/70"
+                      onClick={() => navigator.clipboard.writeText(item.message)}
+                      type="button"
+                    >
+                      <Copy className="size-3.5" /> Copier
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[11px] transition hover:bg-background/70"
+                      onClick={() => markNotificationRead(item.id, !item.read)}
+                      type="button"
+                    >
+                      <CheckCheck className="size-3.5" />
+                      {item.read ? "Non lu" : "Lu"}
+                    </button>
+                    <button
+                      className="inline-flex items-center justify-center gap-1 rounded-md border border-rose-400/40 px-2 py-1 text-[11px] text-rose-600 transition hover:bg-rose-500/10"
+                      onClick={() => {
+                        deleteNotification(item.id);
+                      }}
+                      type="button"
+                    >
+                      <Trash2 className="size-3.5" /> Supprimer
+                    </button>
+                  </div>
+                </div>
               ))
             )}
           </div>
-
-          {activeNotification && (
-            <div className="mt-3 rounded-xl border border-border/60 bg-background/55 p-2">
-              <p className="text-[11px] font-medium">
-                {activeNotification.title}
-              </p>
-              <p className="mt-1 line-clamp-3 text-[11px] text-muted-foreground">
-                {activeNotification.message}
-              </p>
-              <div className="mt-2 grid grid-cols-2 gap-1">
-                <button
-                  className="inline-flex items-center justify-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[11px] transition hover:bg-background/70"
-                  onClick={() =>
-                    navigator.clipboard.writeText(activeNotification.message)
-                  }
-                  type="button"
-                >
-                  <Copy className="size-3.5" /> Copier
-                </button>
-                <button
-                  className="inline-flex items-center justify-center gap-1 rounded-md border border-border/60 px-2 py-1 text-[11px] transition hover:bg-background/70"
-                  onClick={() =>
-                    markNotificationRead(
-                      activeNotification.id,
-                      !activeNotification.read
-                    )
-                  }
-                  type="button"
-                >
-                  <CheckCheck className="size-3.5" />
-                  {activeNotification.read ? "Marquer non lu" : "Marquer lu"}
-                </button>
-                <button
-                  className="col-span-2 inline-flex items-center justify-center gap-1 rounded-md border border-rose-400/40 px-2 py-1 text-[11px] text-rose-600 transition hover:bg-rose-500/10"
-                  onClick={() => {
-                    deleteNotification(activeNotification.id);
-                    setActiveNotificationId(null);
-                  }}
-                  type="button"
-                >
-                  <Trash2 className="size-3.5" /> Supprimer
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

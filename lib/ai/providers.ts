@@ -25,9 +25,14 @@ const fsModelAliases: Record<string, string> = {
   // Alias de compatibilité inverses pour les environnements qui exposent
   // les agents "gpt-5.4*" au lieu des IDs "gpt-5*".
   "gpt-5": "gpt-5.4",
+  // Fallback temporaire: certains déploiements FS n'exposent pas encore
+  // "gpt-5.5" (404), alors on redirige vers l'agent stable disponible.
+  "gpt-5.5": "gpt-5.4",
   "gpt-5-mini": "gpt-5.4-mini",
   "gpt-5-nano": "gpt-5.4-nano",
 };
+
+const fsChatApiOnlyModels = new Set<string>(["gpt-5.5"]);
 
 function normalizeModelId(modelId: string): string {
   const slashIndex = modelId.indexOf("/");
@@ -40,6 +45,15 @@ function normalizeModelId(modelId: string): string {
 function normalizeBaseUrl(baseURL: string): string {
   return baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
 }
+
+function shouldUseFsChatApi(modelId: string): boolean {
+  return fsChatApiOnlyModels.has(normalizeModelId(modelId));
+}
+
+export const providersInternals = {
+  normalizeModelId,
+  shouldUseFsChatApi,
+};
 
 let cachedFsProvider: ReturnType<typeof createOpenAI> | null | undefined;
 let cachedGatewayProvider: ReturnType<typeof createOpenAI> | null | undefined;
@@ -196,6 +210,9 @@ export function getLanguageModel(modelId: string) {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
+    if (shouldUseFsChatApi(modelId)) {
+      return fsProvider.chat(normalizeModelId(modelId));
+    }
     return fsProvider.responses(normalizeModelId(modelId));
   }
 
@@ -216,6 +233,9 @@ export function getTitleModel() {
 
   const fsProvider = getFsProvider();
   if (fsProvider) {
+    if (shouldUseFsChatApi(titleModel.id)) {
+      return fsProvider.chat(normalizeModelId(titleModel.id));
+    }
     return fsProvider.responses(normalizeModelId(titleModel.id));
   }
 

@@ -98,6 +98,16 @@ export function getNotificationHistory(): AppNotification[] {
 
     return parsed
       .filter((item) => item && typeof item === "object")
+      .filter((item) => {
+        const maybeItem = item as AppNotification;
+        if (maybeItem.metadata?.phase === "error") {
+          return false;
+        }
+        if (maybeItem.title === "Réponse IA interrompue") {
+          return false;
+        }
+        return true;
+      })
       .slice(0, 150);
   } catch {
     return [];
@@ -170,6 +180,12 @@ export function createAiResponseNotification(input: {
   modelId?: string;
   preview?: string;
 }) {
+  // UX: les notifications d'erreur de réponse IA ont été désactivées
+  // pour éviter le bruit répétitif sur "Sans titre".
+  if (input.phase === "error") {
+    return;
+  }
+
   const templateByPhase = {
     started: {
       level: "info" as const,
