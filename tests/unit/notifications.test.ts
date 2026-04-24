@@ -330,11 +330,49 @@ test("markAllNotificationsRead - updates all notifications", () => {
   createNotification({ level: "info", message: "1" });
   createNotification({ level: "info", message: "2" });
 
+  const initialEventCount = eventDispatchCount;
+
   markAllNotificationsRead(true);
 
   const historyAfter = getNotificationHistory();
   assert.equal(historyAfter[0].read, true);
   assert.equal(historyAfter[1].read, true);
+  assert.equal(eventDispatchCount, initialEventCount + 1);
+});
+
+test("markAllNotificationsRead - updates all notifications to unread", () => {
+  setupWindow();
+
+  createNotification({ level: "info", message: "1" });
+  createNotification({ level: "info", message: "2" });
+
+  // First mark all as read
+  markAllNotificationsRead(true);
+  let history = getNotificationHistory();
+  assert.equal(history[0].read, true);
+  assert.equal(history[1].read, true);
+
+  const initialEventCount = eventDispatchCount;
+
+  // Then mark all as unread
+  markAllNotificationsRead(false);
+
+  history = getNotificationHistory();
+  assert.equal(history[0].read, false);
+  assert.equal(history[1].read, false);
+  assert.equal(eventDispatchCount, initialEventCount + 1);
+});
+
+test("markAllNotificationsRead - handles empty notifications array", () => {
+  setupWindow();
+
+  const initialEventCount = eventDispatchCount;
+
+  markAllNotificationsRead(true);
+
+  const historyAfter = getNotificationHistory();
+  assert.deepEqual(historyAfter, []);
+  assert.equal(eventDispatchCount, initialEventCount + 1);
 });
 
 test("clearNotifications - removes all notifications", () => {
