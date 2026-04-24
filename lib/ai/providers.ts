@@ -25,6 +25,9 @@ const fsModelAliases: Record<string, string> = {
   // Alias de compatibilité inverses pour les environnements qui exposent
   // les agents "gpt-5.4*" au lieu des IDs "gpt-5*".
   "gpt-5": "gpt-5.4",
+  // Fallback temporaire: certains déploiements FS n'exposent pas encore
+  // "gpt-5.5" (404), alors on redirige vers l'agent stable disponible.
+  "gpt-5.5": "gpt-5.4",
   "gpt-5-mini": "gpt-5.4-mini",
   "gpt-5-nano": "gpt-5.4-nano",
 };

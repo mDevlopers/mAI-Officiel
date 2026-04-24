@@ -1096,10 +1096,13 @@ export async function getSubscriptionPlan(userId: string) {
       .where(eq(subscription.userId, userId));
     return record?.plan ?? "free";
   } catch (error) {
-    const pgError = error as { code?: string; message?: string } | undefined;
+    const pgError = error as
+      | { code?: string; message?: string; cause?: { code?: string } }
+      | undefined;
+    const pgErrorCode = pgError?.code ?? pgError?.cause?.code;
     // Compat DB: certains environnements n'ont pas encore la table "Subscription".
     // On retombe proprement sur "free" sans polluer les logs d'erreurs bloquantes.
-    if (pgError?.code !== "42P01") {
+    if (pgErrorCode !== "42P01") {
       console.error("Failed to get subscription plan:", error);
     } else {
       console.warn(
