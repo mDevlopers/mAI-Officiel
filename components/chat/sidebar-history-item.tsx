@@ -70,14 +70,8 @@ const PureChatItem = ({
     chatId: chat.id,
     initialVisibilityType: chat.visibility,
   });
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(chat.title);
-  const [summaryLength, setSummaryLength] = useState<
-    "short" | "medium" | "long"
-  >("medium");
-  const [summaryText, setSummaryText] = useState("");
-  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [chatTags, setChatTags] = useState<TagDefinition[]>([]);
   const [allTagDefinitions, setAllTagDefinitions] = useState<TagDefinition[]>(
     []
@@ -137,22 +131,6 @@ const PureChatItem = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleOpenSummary = async (length: "short" | "medium" | "long") => {
-    setSummaryOpen(true);
-    setSummaryLength(length);
-    setIsSummaryLoading(true);
-
-    const response = await fetch("/api/chat/summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chatId: chat.id, length }),
-    });
-
-    const payload = await response.json();
-    setSummaryText(payload.summary ?? "Impossible de générer le résumé.");
-    setIsSummaryLoading(false);
-  };
-
   const assignTag = (tagId: string) => {
     const allTags = readJsonStorage<Record<string, string[]>>(
       CHAT_TAGS_STORAGE_KEY,
@@ -205,7 +183,7 @@ const PureChatItem = ({
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-transparent hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium data-[active=true]:border-b data-[active=true]:border-dashed data-[active=true]:border-sidebar-foreground/50"
+        className="h-8 rounded-none text-[13px] text-sidebar-foreground/50 transition-all duration-150 hover:bg-transparent hover:text-sidebar-foreground data-active:bg-transparent data-active:font-normal data-active:text-sidebar-foreground/50 data-[active=true]:text-sidebar-foreground data-[active=true]:font-medium"
         isActive={isActive}
       >
         <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
@@ -285,33 +263,6 @@ const PureChatItem = ({
                   onClick={() => handleExportChat("txt")}
                 >
                   Texte (.txt)
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="cursor-pointer">
-              Résumé
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent className="rounded-xl border border-border/60 bg-card/90 backdrop-blur-xl">
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleOpenSummary("short")}
-                >
-                  Plus court
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleOpenSummary("medium")}
-                >
-                  Concis
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => handleOpenSummary("long")}
-                >
-                  Plus long
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuPortal>
@@ -432,19 +383,6 @@ const PureChatItem = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog onOpenChange={setSummaryOpen} open={summaryOpen}>
-        <DialogContent className="liquid-panel border-white/25 bg-white/85 text-black backdrop-blur-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Résumé de la conversation ({summaryLength})
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[50vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border/60 bg-background/70 p-3 text-sm">
-            {isSummaryLoading ? "Génération en cours..." : summaryText}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog onOpenChange={setRenameOpen} open={renameOpen}>
         <DialogContent className="liquid-panel border-white/25 bg-white/85 text-black backdrop-blur-2xl">
