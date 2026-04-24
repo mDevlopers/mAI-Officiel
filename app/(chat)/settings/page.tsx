@@ -64,6 +64,7 @@ import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 import { AproposSection } from "./sections/apropos-section";
 import { CompteSection } from "./sections/compte-section";
+import { BrandLogoSelector } from "./sections/brand-logo-selector";
 import { CreditsSection } from "./sections/credits-section";
 import { NotificationsSection } from "./sections/notifications-section";
 
@@ -2024,6 +2025,8 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        <BrandLogoSelector />
 
         {showPwaInstallCard ? (
           <div className="liquid-panel mt-4 rounded-xl border border-border/60 bg-white p-3 text-black">

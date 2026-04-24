@@ -21,6 +21,7 @@ import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { useBrandLogo } from "@/hooks/use-brand-logo";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -66,6 +67,7 @@ const PurePreviewMessage = ({
 
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
+  const { logoUrl } = useBrandLogo();
 
   const hasAnyContent = message.parts?.some(
     (part) =>
@@ -367,7 +369,7 @@ const PurePreviewMessage = ({
                 alt="mAI"
                 className="size-4 object-contain"
                 height={16}
-                src="/images/logo.png"
+                src={logoUrl}
                 width={16}
               />
             </div>
@@ -409,6 +411,8 @@ export const PreviewMessage = memo(
 );
 
 export const ThinkingMessage = () => {
+  const { logoUrl } = useBrandLogo();
+
   return (
     <div
       className="group/message w-full"
@@ -422,7 +426,7 @@ export const ThinkingMessage = () => {
               alt="mAI"
               className="size-4 object-contain"
               height={16}
-              src="/images/logo.png"
+              src={logoUrl}
               width={16}
             />
           </div>

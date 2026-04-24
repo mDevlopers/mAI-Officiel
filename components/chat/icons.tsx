@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useBrandLogo } from "@/hooks/use-brand-logo";
 
 export const BotIcon = () => {
   return (
@@ -287,11 +290,13 @@ export const FileIcon = ({ size = 16 }: { size?: number }) => {
 };
 
 export const BrandStarLogoIcon = ({ size = 28 }: { size?: number }) => {
+  const { logoUrl } = useBrandLogo();
+
   return (
     <Image
       alt="mAI Logo"
       height={size}
-      src="/images/logo.png"
+      src={logoUrl}
       style={{ objectFit: "contain", width: size, height: size }}
       width={size}
     />
