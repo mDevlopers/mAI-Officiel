@@ -166,10 +166,11 @@ export async function POST(request: Request) {
           return new ChatbotError("forbidden:chat").toResponse();
         }
       }
+      const provisionalTitle = buildFallbackTitleFromMessage(message as ChatMessage);
       await saveChat({
         id,
         userId: session.user.id,
-        title: "New chat",
+        title: provisionalTitle,
         visibility: selectedVisibilityType,
         projectId,
       });
@@ -365,7 +366,8 @@ export async function POST(request: Request) {
                 ? []
                 : activeTools,
           providerOptions: {
-            ...(openaiReasoningEffort && {
+            ...(!isHordeTextModel &&
+              openaiReasoningEffort && {
               openai: { reasoningEffort: openaiReasoningEffort },
             }),
           },
@@ -397,6 +399,7 @@ export async function POST(request: Request) {
                 textUtilities,
                 webSearch,
               },
+          toolChoice: isHordeTextModel ? "none" : "auto",
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
             functionId: "stream-text",

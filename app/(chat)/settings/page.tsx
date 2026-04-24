@@ -677,6 +677,13 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash === "statistiques") {
+      setActiveSettingsSection("statistiques");
+    }
+  }, []);
+
+  useEffect(() => {
     const syncStats = () => {
       setUserStats(getUserStatsSnapshot());
     };
@@ -1877,10 +1884,9 @@ export default function SettingsPage() {
     },
     { href: "#parental", key: "parental", label: uiLabels.parental },
     { href: "#donnees", key: "donnees", label: uiLabels.data },
-    { href: "#statistiques", key: "statistiques", label: uiLabels.stats },
     { href: "#apropos", key: "apropos", label: uiLabels.about },
   ] as const;
-  const sectionVisibility = (key: (typeof settingsSections)[number]["key"]) =>
+  const sectionVisibility = (key: string) =>
     activeSettingsSection === key ? "block" : "hidden";
   const isParentalSessionUnlocked =
     parentalSettings.sessionUnlockedUntil > Date.now();

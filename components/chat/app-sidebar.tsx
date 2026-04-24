@@ -5,7 +5,6 @@ import {
   BotIcon,
   CreditCardIcon,
   FingerprintIcon,
-  FolderIcon,
   ImagePlusIcon,
   LanguagesIcon,
   PanelsTopLeftIcon,
@@ -35,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -64,7 +64,7 @@ import { BrandStarLogoIcon } from "./icons";
 const QUICK_LINKS = [
   { href: "/", key: "discussion", icon: PenSquareIcon },
   { href: "/library", key: "library", icon: BookOpenIcon },
-  { href: "/projects", key: "projects", icon: FolderIcon },
+  { href: "/projects", key: "projects", icon: PanelsTopLeftIcon },
   { href: "/settings", key: "settings", icon: Settings2Icon },
   { href: "/pricing", key: "pricing", icon: CreditCardIcon },
 ] as const;
@@ -424,6 +424,23 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                           </Link>
                         </DropdownMenuItem>
                       ))}
+                      <div className="my-1 h-px bg-border/60" />
+                      <div className="rounded-md border border-dashed border-border/60 bg-muted/40 px-2 py-2 text-xs text-muted-foreground">
+                        <div className="mb-1 flex items-center justify-between">
+                          <span>Cooker (recettes par IA)</span>
+                          <Badge className="h-5 rounded-full bg-zinc-500/85 text-[10px] text-white hover:bg-zinc-500/85">
+                            Bientôt
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="rounded-md border border-dashed border-border/60 bg-muted/40 px-2 py-2 text-xs text-muted-foreground">
+                        <div className="mb-1 flex items-center justify-between">
+                          <span>Health (bilans & résumés médicaux)</span>
+                          <Badge className="h-5 rounded-full bg-zinc-500/85 text-[10px] text-white hover:bg-zinc-500/85">
+                            Bientôt
+                          </Badge>
+                        </div>
+                      </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </SidebarMenuItem>

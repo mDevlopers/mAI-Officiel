@@ -153,7 +153,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 setClientPreferenceCookie("mai_theme", nextTheme);
               }}
             >
-              {`Basculer en mode ${resolvedTheme === "light" ? "sombre" : "clair"}`}
+              {resolvedTheme === "light" ? "Thème Sombre" : "Thème Clair"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -164,6 +164,15 @@ export function SidebarUserNav({ user }: { user: User }) {
               }}
             >
               Paramètres
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer text-[13px]"
+              onSelect={() => {
+                closeMobileSidebar();
+                router.push("/settings#statistiques");
+              }}
+            >
+              Statistiques
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <button
