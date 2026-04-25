@@ -70,25 +70,17 @@ import {
   type SecuritySettings,
 } from "@/lib/security-settings";
 import { planDefinitions } from "@/lib/subscription";
-import {
-  getUserStatsSnapshot,
-  syncDailyLoginBonus,
-  USER_STATS_STORAGE_KEY,
-  type UserStatsSnapshot,
-} from "@/lib/user-stats";
 import { getNextResetDate, getUsageCount } from "@/lib/usage-limits";
 import { cn } from "@/lib/utils";
 import { AproposSection } from "./sections/apropos-section";
 import { CompteSection } from "./sections/compte-section";
 import { NotificationsSection } from "./sections/notifications-section";
-import { StatsSection } from "./sections/stats-section";
 
 const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v018";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const PARENTAL_SETTINGS_STORAGE_KEY = "mai.settings.parental.v1";
 const POSITION_SETTINGS_STORAGE_KEY = "mai.settings.position.v1";
-const TOKEN_USAGE_STORAGE_KEY = "mai.token-usage.v1";
 const IMPROVE_MAI_FOR_ALL_KEY = "mai.settings.improve-for-all.v1";
 const MAX_MEMORY_ENTRY_LENGTH = 500;
 const ABSOLUTE_MAX_MEMORY_ENTRIES = 200;
@@ -581,13 +573,6 @@ export default function SettingsPage() {
     text: string;
     type: "error" | "success";
   } | null>(null);
-  const [tokenUsage, setTokenUsage] = useState({
-    inputTokens: 0,
-    outputTokens: 0,
-  });
-  const [userStats, setUserStats] = useState<UserStatsSnapshot>(() =>
-    getUserStatsSnapshot()
-  );
   const [fileUsageToday, setFileUsageToday] = useState(0);
   const [studioUsageToday, setStudioUsageToday] = useState(0);
   const [waveUsageWeek, setWaveUsageWeek] = useState(0);
@@ -676,36 +661,6 @@ export default function SettingsPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash === "statistiques") {
-      setActiveSettingsSection("statistiques");
-    }
-  }, []);
-
-  useEffect(() => {
-    const syncStats = () => {
-      setUserStats(getUserStatsSnapshot());
-    };
-
-    if (isAuthenticated) {
-      const nextSnapshot = syncDailyLoginBonus(getUserStatsSnapshot());
-      window.localStorage.setItem(
-        USER_STATS_STORAGE_KEY,
-        JSON.stringify(nextSnapshot)
-      );
-      syncStats();
-    }
-
-    window.addEventListener("storage", syncStats);
-    window.addEventListener("mai:stats-updated", syncStats);
-    window.addEventListener("mai:usage-updated", syncStats);
-    return () => {
-      window.removeEventListener("storage", syncStats);
-      window.removeEventListener("mai:stats-updated", syncStats);
-      window.removeEventListener("mai:usage-updated", syncStats);
-    };
-  }, [isAuthenticated]);
 
   useEffect(() => {
     const rawTags = window.localStorage.getItem(TAG_DEFINITIONS_STORAGE_KEY);
@@ -1224,35 +1179,6 @@ export default function SettingsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    const refreshTokenUsage = () => {
-      const raw = window.localStorage.getItem(TOKEN_USAGE_STORAGE_KEY);
-      if (!raw) {
-        setTokenUsage({ inputTokens: 0, outputTokens: 0 });
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw) as {
-          inputTokens?: number;
-          outputTokens?: number;
-        };
-        setTokenUsage({
-          inputTokens: Math.max(0, Math.floor(parsed.inputTokens ?? 0)),
-          outputTokens: Math.max(0, Math.floor(parsed.outputTokens ?? 0)),
-        });
-      } catch {
-        setTokenUsage({ inputTokens: 0, outputTokens: 0 });
-      }
-    };
-
-    refreshTokenUsage();
-    window.addEventListener("storage", refreshTokenUsage);
-    window.addEventListener("mai:token-usage-updated", refreshTokenUsage);
-    return () => {
-      window.removeEventListener("storage", refreshTokenUsage);
-      window.removeEventListener("mai:token-usage-updated", refreshTokenUsage);
-    };
-  }, []);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -3352,13 +3278,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
-
-      <StatsSection
-        className={sectionVisibility("statistiques")}
-        isAuthenticated={isAuthenticated}
-        stats={userStats}
-        tokenUsage={tokenUsage}
-      />
 
       <section
         className={cn(

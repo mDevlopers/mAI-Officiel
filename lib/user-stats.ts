@@ -26,6 +26,15 @@ export type UserStatsSnapshot = {
 };
 
 export const USER_STATS_STORAGE_KEY = "mai.user.stats.v1";
+export const USER_STATS_XP_HISTORY_STORAGE_KEY = "mai.user.stats.xp-history.v1";
+const MAX_XP_HISTORY_EVENTS = 200;
+
+export type XpHistoryEntry = {
+  createdAt: string;
+  id: string;
+  reason: string;
+  xp: number;
+};
 
 const toDateKey = (date = new Date()) => date.toISOString().slice(0, 10);
 
@@ -131,6 +140,55 @@ export function saveUserStatsSnapshot(snapshot: UserStatsSnapshot) {
   window.dispatchEvent(new CustomEvent("mai:stats-updated"));
 }
 
+export function getXpHistory(): XpHistoryEntry[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const raw = window.localStorage.getItem(USER_STATS_XP_HISTORY_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    const parsed = JSON.parse(raw) as XpHistoryEntry[];
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (item) =>
+            typeof item?.id === "string" &&
+            typeof item?.createdAt === "string" &&
+            typeof item?.reason === "string" &&
+            typeof item?.xp === "number"
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveXpHistory(entries: XpHistoryEntry[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.setItem(
+    USER_STATS_XP_HISTORY_STORAGE_KEY,
+    JSON.stringify(entries.slice(0, MAX_XP_HISTORY_EVENTS))
+  );
+  window.dispatchEvent(new CustomEvent("mai:stats-updated"));
+}
+
+function appendXpHistory(reason: string, xp: number, createdAt = new Date().toISOString()) {
+  if (xp <= 0) {
+    return;
+  }
+  const history = getXpHistory();
+  const entry: XpHistoryEntry = {
+    createdAt,
+    id: `${createdAt}-${Math.random().toString(36).slice(2, 8)}`,
+    reason,
+    xp,
+  };
+  saveXpHistory([entry, ...history]);
+}
+
 export function getXpForNextLevel(level: number): number {
   if (level <= 10) {
     return 150;
@@ -199,7 +257,9 @@ export function syncDailyLoginBonus(snapshot: UserStatsSnapshot): UserStatsSnaps
   next.streakDays = next.lastLoginDate === yesterdayKey ? next.streakDays + 1 : 1;
   next.loginCount += 1;
   next.lastLoginDate = today;
-  next.xp += 10 + (next.loginCount - 1);
+  const loginXp = 10 + (next.loginCount - 1);
+  next.xp += loginXp;
+  appendXpHistory("Connexion quotidienne", loginXp);
 
   return applyBadgeRewards(next);
 }
@@ -207,12 +267,27 @@ export function syncDailyLoginBonus(snapshot: UserStatsSnapshot): UserStatsSnaps
 export function applyBadgeRewards(snapshot: UserStatsSnapshot): UserStatsSnapshot {
   const evaluated = evaluateUnlockedBadgeIds(snapshot);
   const previous = new Set(snapshot.badgesUnlocked);
-  const newBadgesCount = evaluated.filter((id) => !previous.has(id)).length;
+  const newBadges = evaluated.filter((id) => !previous.has(id));
+  const badgeXpGain = newBadges.reduce((total, badgeId) => {
+    const badge = badgesCatalog.find((item) => item.id === badgeId);
+    return total + getBadgeXpByRarity(badge?.rarity ?? "common");
+  }, 0);
+
+  for (const badgeId of newBadges) {
+    const badge = badgesCatalog.find((item) => item.id === badgeId);
+    if (!badge) {
+      continue;
+    }
+    appendXpHistory(
+      `Badge débloqué : ${badge.emoji} ${badge.name} (${getBadgeRarityLabel(badge.rarity)})`,
+      getBadgeXpByRarity(badge.rarity)
+    );
+  }
 
   return {
     ...snapshot,
     badgesUnlocked: evaluated,
-    xp: snapshot.xp + newBadgesCount * 500,
+    xp: snapshot.xp + badgeXpGain,
   };
 }
 
@@ -225,19 +300,27 @@ export function addStatsEvent(
 
   if (event === "message") {
     next.messagesSent += amount;
-    next.xp += amount * 5;
+    const gainedXp = amount * 5;
+    next.xp += gainedXp;
+    appendXpHistory("Message envoyé", gainedXp);
   }
   if (event === "vote") {
     next.votesSubmitted += amount;
-    next.xp += amount * 3;
+    const gainedXp = amount * 3;
+    next.xp += gainedXp;
+    appendXpHistory("Vote envoyé", gainedXp);
   }
   if (event === "image") {
     next.imagesGenerated += amount;
-    next.xp += amount * 10;
+    const gainedXp = amount * 10;
+    next.xp += gainedXp;
+    appendXpHistory("Image générée (Studio)", gainedXp);
   }
   if (event === "music") {
     next.musicsGenerated += amount;
-    next.xp += amount * 20;
+    const gainedXp = amount * 20;
+    next.xp += gainedXp;
+    appendXpHistory("Musique générée (Wave)", gainedXp);
   }
   if (event === "websearch") {
     next.webSearches += amount;
@@ -274,4 +357,11 @@ export function getBadgeRarityLabel(rarity: BadgeRarity) {
 
 export function getBadgeRarityOrder(rarity: BadgeRarity) {
   return rarityOrder.indexOf(rarity);
+}
+
+export function getBadgeXpByRarity(rarity: BadgeRarity): number {
+  if (rarity === "common") return 100;
+  if (rarity === "uncommon") return 200;
+  if (rarity === "rare") return 300;
+  return 500;
 }

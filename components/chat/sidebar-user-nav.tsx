@@ -169,10 +169,19 @@ export function SidebarUserNav({ user }: { user: User }) {
               className="cursor-pointer text-[13px]"
               onSelect={() => {
                 closeMobileSidebar();
-                router.push("/settings#statistiques");
+                router.push("/stats");
               }}
             >
               Statistiques
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer text-[13px]"
+              onSelect={() => {
+                closeMobileSidebar();
+                router.push("/archives");
+              }}
+            >
+              Archives
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <button
