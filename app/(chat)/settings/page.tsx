@@ -83,6 +83,9 @@ import { NotificationsSection } from "./sections/notifications-section";
 
 const TASKS_STORAGE_KEY = "mai.settings.automated-tasks.v018";
 const PROFILE_SETTINGS_STORAGE_KEY = "mai.profile.settings.v2";
+const DEFAULT_COOKER_MODEL_KEY = "mai.settings.default.cooker-model.v1";
+const DEFAULT_HEALTH_MODEL_KEY = "mai.settings.default.health-model.v1";
+const DEFAULT_QUIZZLY_MODEL_KEY = "mai.settings.default.quizzly-model.v1";
 const NOTIFICATIONS_SETTINGS_STORAGE_KEY = "mai.settings.notifications.v1";
 const ACCESSIBILITY_SETTINGS_STORAGE_KEY = "mai.settings.accessibility.v1";
 const VOICE_SETTINGS_STORAGE_KEY = "mai.voice.settings.v1";
@@ -561,6 +564,9 @@ export default function SettingsPage() {
   const [defaultMusicModel, setDefaultMusicModel] = useState(
     FALLBACK_DEFAULT_MUSIC_MODEL
   );
+  const [defaultCookerModel, setDefaultCookerModel] = useState("gpt-5.5");
+  const [defaultHealthModel, setDefaultHealthModel] = useState("gpt-5.4-mini");
+  const [defaultQuizzlyModel, setDefaultQuizzlyModel] = useState("gpt-5.4-mini");
   const [profileLogoDataUrl, setProfileLogoDataUrl] = useState<
     string | undefined
   >();
@@ -1084,10 +1090,19 @@ export default function SettingsPage() {
     const storedMusicModel =
       window.localStorage.getItem(DEFAULT_MUSIC_MODEL_KEY) ??
       FALLBACK_DEFAULT_MUSIC_MODEL;
+    const storedCookerModel =
+      window.localStorage.getItem(DEFAULT_COOKER_MODEL_KEY) ?? "gpt-5.5";
+    const storedHealthModel =
+      window.localStorage.getItem(DEFAULT_HEALTH_MODEL_KEY) ?? "gpt-5.4-mini";
+    const storedQuizzlyModel =
+      window.localStorage.getItem(DEFAULT_QUIZZLY_MODEL_KEY) ?? "gpt-5.4-mini";
 
     setDefaultTextModel(storedTextModel);
     setDefaultImageModel(storedImageModel);
     setDefaultMusicModel(storedMusicModel);
+    setDefaultCookerModel(storedCookerModel);
+    setDefaultHealthModel(storedHealthModel);
+    setDefaultQuizzlyModel(storedQuizzlyModel);
   }, []);
 
   useEffect(() => {
@@ -1101,6 +1116,15 @@ export default function SettingsPage() {
   useEffect(() => {
     window.localStorage.setItem(DEFAULT_MUSIC_MODEL_KEY, defaultMusicModel);
   }, [defaultMusicModel]);
+  useEffect(() => {
+    window.localStorage.setItem(DEFAULT_COOKER_MODEL_KEY, defaultCookerModel);
+  }, [defaultCookerModel]);
+  useEffect(() => {
+    window.localStorage.setItem(DEFAULT_HEALTH_MODEL_KEY, defaultHealthModel);
+  }, [defaultHealthModel]);
+  useEffect(() => {
+    window.localStorage.setItem(DEFAULT_QUIZZLY_MODEL_KEY, defaultQuizzlyModel);
+  }, [defaultQuizzlyModel]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -2309,6 +2333,48 @@ export default function SettingsPage() {
                 {defaultWaveModelOptions.map((waveModelId) => (
                   <option key={waveModelId} value={waveModelId}>
                     {waveModelId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Cooker
+              <select
+                className="mai-select mt-1 w-full"
+                onChange={(event) => setDefaultCookerModel(event.target.value)}
+                value={defaultCookerModel}
+              >
+                {chatModels.map((modelOption) => (
+                  <option key={`cooker-${modelOption.id}`} value={modelOption.id}>
+                    {modelOption.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Health
+              <select
+                className="mai-select mt-1 w-full"
+                onChange={(event) => setDefaultHealthModel(event.target.value)}
+                value={defaultHealthModel}
+              >
+                {chatModels.map((modelOption) => (
+                  <option key={`health-${modelOption.id}`} value={modelOption.id}>
+                    {modelOption.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Quizzly
+              <select
+                className="mai-select mt-1 w-full"
+                onChange={(event) => setDefaultQuizzlyModel(event.target.value)}
+                value={defaultQuizzlyModel}
+              >
+                {chatModels.map((modelOption) => (
+                  <option key={`quizzly-${modelOption.id}`} value={modelOption.id}>
+                    {modelOption.name}
                   </option>
                 ))}
               </select>

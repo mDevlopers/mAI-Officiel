@@ -26,6 +26,7 @@ type HealthConversation = {
 };
 
 const HISTORY_KEY = "mai.health.history.v2";
+const DEFAULT_HEALTH_MODEL_KEY = "mai.settings.default.health-model.v1";
 
 function hashPin(pin: string) {
   let hash = 0;
@@ -50,7 +51,11 @@ function loadHistory(): HealthConversation[] {
 
 export default function HealthPage() {
   const [message, setMessage] = useState("");
-  const [modelId, setModelId] = useState("gpt-5.4-mini");
+  const [modelId, setModelId] = useState(() =>
+    typeof window === "undefined"
+      ? "gpt-5.4-mini"
+      : window.localStorage.getItem(DEFAULT_HEALTH_MODEL_KEY) ?? "gpt-5.4-mini"
+  );
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<HealthConversation[]>(() => loadHistory());
   const [search, setSearch] = useState("");

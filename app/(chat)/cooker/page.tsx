@@ -65,12 +65,20 @@ const excludeSuggestions = [
 
 const STORAGE_KEY = "mai.cooker.defaults.v1";
 const HISTORY_KEY = "mai.cooker.recipe-history.v1";
+const DEFAULT_COOKER_MODEL_KEY = "mai.settings.default.cooker-model.v1";
 
 function splitCommaIngredients(value: string) {
   return value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getDefaultCookerModel() {
+  if (typeof window === "undefined") {
+    return "gpt-5.5";
+  }
+  return window.localStorage.getItem(DEFAULT_COOKER_MODEL_KEY) ?? "gpt-5.5";
 }
 
 function loadDefaults(): CookerDefaults {
@@ -82,7 +90,7 @@ function loadDefaults(): CookerDefaults {
       maxMinutes: 30,
       servings: 4,
       thermomixMode: false,
-      modelId: "gpt-5.5",
+      modelId: getDefaultCookerModel(),
     };
   }
 
@@ -98,7 +106,7 @@ function loadDefaults(): CookerDefaults {
       maxMinutes: 30,
       servings: 4,
       thermomixMode: false,
-      modelId: "gpt-5.5",
+      modelId: getDefaultCookerModel(),
     };
   }
 }

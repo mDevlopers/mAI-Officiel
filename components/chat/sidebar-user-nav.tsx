@@ -11,9 +11,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -47,6 +44,7 @@ export function SidebarUserNav({ user }: { user: User }) {
   const [customDisplayName, setCustomDisplayName] = useState<string | null>(null);
   const [customAvatarDataUrl, setCustomAvatarDataUrl] = useState<string | null>(null);
   const [customAvatarId, setCustomAvatarId] = useState<string>("aurora");
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
 
   useEffect(() => {
     const syncProfile = () => {
@@ -191,14 +189,20 @@ export function SidebarUserNav({ user }: { user: User }) {
                 </button>
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="text-[13px]">
-                Plus
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent alignOffset={-4} sideOffset={8}>
+            <DropdownMenuItem
+              className="cursor-pointer text-[13px]"
+              onSelect={(event) => {
+                event.preventDefault();
+                setIsMoreOpen((current) => !current);
+              }}
+            >
+              Plus
+            </DropdownMenuItem>
+            {isMoreOpen ? (
+              <>
                 <DropdownMenuItem asChild>
                   <a
-                    className="w-full cursor-pointer text-[13px]"
+                    className="w-full cursor-pointer pl-6 text-[13px]"
                     download
                     href="/api/export"
                     onClick={closeMobileSidebar}
@@ -207,7 +211,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                   </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="cursor-pointer text-[13px]"
+                  className="cursor-pointer pl-6 text-[13px]"
                   onSelect={() => {
                     closeMobileSidebar();
                     router.push("/archives");
@@ -217,7 +221,7 @@ export function SidebarUserNav({ user }: { user: User }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a
-                    className="w-full cursor-pointer text-[13px]"
+                    className="w-full cursor-pointer pl-6 text-[13px]"
                     href="https://mprojects.odoo.com/m-ai"
                     onClick={closeMobileSidebar}
                     rel="noreferrer"
@@ -226,8 +230,8 @@ export function SidebarUserNav({ user }: { user: User }) {
                     Notes de version
                   </a>
                 </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+              </>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">
               <button
