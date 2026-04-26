@@ -1,54 +1,59 @@
-"use client";
-
-import { BookOpenCheck, Database, Store, Trophy, UserCircle2, Users } from "lucide-react";
-import Image from "next/image";
+import { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import Image from "next/image";
+import { Gamepad2, ShoppingCart, Target, User, Users, Home } from "lucide-react";
+import { getQuizzlyProfile } from "@/lib/quizzly/actions";
+import { redirect } from "next/navigation";
 
-const items = [
-  { href: "/quizzly", label: "Jouer", icon: BookOpenCheck },
-  { href: "/quizzly/social", label: "Amis & Chat", icon: Users },
-  { href: "/quizzly/boutique", label: "Boutique", icon: Store },
-  { href: "/quizzly/quests", label: "Quêtes", icon: Trophy },
-  { href: "/quizzly/profile", label: "Profil", icon: UserCircle2 },
-  { href: "/quizzly/data", label: "Statistiques", icon: Database },
-] as const;
+export default async function QuizzlyLayout({ children }: { children: ReactNode }) {
+  let profile;
+  try {
+    profile = await getQuizzlyProfile();
+  } catch {
+    redirect("/login");
+  }
 
-export default function QuizzlyLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const navItems = [
+    { name: "Accueil", href: "/quizzly", icon: Home },
+    { name: "Jouer", href: "/quizzly/play", icon: Gamepad2 },
+    { name: "Quêtes", href: "/quizzly/quests", icon: Target },
+    { name: "Boutique", href: "/quizzly/boutique", icon: ShoppingCart },
+    { name: "Social", href: "/quizzly/social", icon: Users },
+    { name: "Profil", href: "/quizzly/profile", icon: User },
+  ];
 
   return (
-    <div className="quizzly-fun mx-auto flex h-full w-full max-w-7xl gap-4 p-4 md:p-8">
-      <aside className="w-full rounded-3xl border border-violet-200/80 bg-gradient-to-b from-fuchsia-100/90 via-violet-50/90 to-cyan-50/80 p-4 shadow-xl md:w-72">
-        <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3 shadow-sm">
-          <Image alt="Quizzly" className="size-11 rounded-xl" height={44} src="/logo.png" width={44} />
+    <div className="flex h-full w-full bg-slate-50 text-slate-900">
+      {/* Sidebar */}
+      <div className="w-64 border-r border-slate-200 bg-white flex flex-col">
+        <div className="p-6 flex items-center gap-3 border-b border-slate-100">
+          <Image src="/logo.png" alt="Quizzly" width={40} height={40} className="rounded-xl" />
           <div>
-            <h2 className="text-2xl font-black text-violet-700">Quizzly</h2>
-            <p className="text-xs text-violet-500">Apprendre en s'amusant ✨</p>
+            <h1 className="font-black text-xl text-violet-700 tracking-tight">Quizzly</h1>
+            <p className="text-xs text-slate-500 font-medium">Niv {profile.level} • {profile.diamonds} 💎</p>
           </div>
         </div>
 
-        <nav className="mt-4 space-y-2">
-          {items.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition ${
-                  isActive
-                    ? "border-violet-300 bg-violet-500 text-white shadow"
-                    : "border-violet-200 bg-white/80 text-violet-800 hover:bg-violet-100"
-                }`}
-                href={item.href}
-                key={item.href}
-              >
-                <item.icon className="size-4" /> {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-violet-50 hover:text-violet-700 transition-colors text-slate-600 font-semibold"
+            >
+              <item.icon className="w-5 h-5" />
+              {item.name}
+            </Link>
+          ))}
         </nav>
-      </aside>
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto relative">
+        <div className="max-w-5xl mx-auto p-6 md:p-10">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

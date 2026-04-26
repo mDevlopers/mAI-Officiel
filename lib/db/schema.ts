@@ -239,3 +239,80 @@ export const subscription = pgTable("Subscription", {
 });
 
 export type Subscription = InferSelectModel<typeof subscription>;
+
+// --- QUIZZLY TABLES ---
+
+export const quizzlyProfile = pgTable("QuizzlyProfile", {
+  userId: uuid("userId")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  pseudo: varchar("pseudo", { length: 64 }).notNull().default("Player"),
+  bio: text("bio").notNull().default("Prêt(e) à apprendre en m'amusant 🎯"),
+  avatarDataUrl: text("avatarDataUrl"),
+  emoji: varchar("emoji", { length: 8 }).notNull().default("🧠"),
+  level: integer("level").notNull().default(1),
+  xp: integer("xp").notNull().default(0),
+  diamonds: integer("diamonds").notNull().default(150),
+  stars: integer("stars").notNull().default(3),
+  streak: integer("streak").notNull().default(0),
+  lastClaimDay: varchar("lastClaimDay", { length: 32 }).notNull().default(""),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type QuizzlyProfile = InferSelectModel<typeof quizzlyProfile>;
+
+export const quizzlyInventory = pgTable("QuizzlyInventory", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  itemKey: varchar("itemKey", { length: 64 }).notNull(), // e.g. "booster_x1.5", "booster_x2"
+  quantity: integer("quantity").notNull().default(0),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type QuizzlyInventory = InferSelectModel<typeof quizzlyInventory>;
+
+export const quizzlyUserQuest = pgTable("QuizzlyUserQuest", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  questId: varchar("questId", { length: 64 }).notNull(), // ref to daily/weekly JSON quest id
+  type: varchar("type", { enum: ["daily", "weekly"] }).notNull(),
+  progress: integer("progress").notNull().default(0),
+  isCompleted: boolean("isCompleted").notNull().default(false),
+  assignedAt: timestamp("assignedAt").notNull().defaultNow(),
+  expiresAt: timestamp("expiresAt").notNull(),
+});
+
+export type QuizzlyUserQuest = InferSelectModel<typeof quizzlyUserQuest>;
+
+export const quizzlyFriendship = pgTable("QuizzlyFriendship", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  friendId: uuid("friendId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  status: varchar("status", { enum: ["pending", "accepted"] }).notNull().default("pending"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type QuizzlyFriendship = InferSelectModel<typeof quizzlyFriendship>;
+
+export const quizzlyMessage = pgTable("QuizzlyMessage", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  senderId: uuid("senderId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  receiverId: uuid("receiverId") // null for global/tribe chat, or specific user for DM
+    .references(() => user.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type QuizzlyMessage = InferSelectModel<typeof quizzlyMessage>;

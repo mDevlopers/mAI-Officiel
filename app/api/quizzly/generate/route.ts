@@ -1,40 +1,44 @@
-import { generateText } from "ai";
-import { NextResponse } from "next/server";
+import { generateObject } from "ai";
 import { z } from "zod";
-import { chatModels } from "@/lib/ai/models";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { myProvider } from "@/lib/ai/providers";
+import { getUser } from "@/lib/db/queries";
 
-const payloadSchema = z.object({
-  classe: z.string().trim().min(2).max(24),
-  difficulty: z.enum(["facile", "moyen", "difficile"]),
-  matiere: z.string().trim().min(2).max(60),
-  modelId: z.string().trim().optional(),
-  questionCount: z.number().int().min(5).max(20).default(10),
-});
-
-const validModelIds = new Set(chatModels.map((model) => model.id));
-
-export async function POST(request: Request) {
-  const parsed = payloadSchema.safeParse(await request.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const modelId =
-    parsed.data.modelId && validModelIds.has(parsed.data.modelId)
-      ? parsed.data.modelId
-      : "gpt-5.4-mini";
-
+export async function POST(req: Request) {
   try {
-    const { text } = await generateText({
-      model: getLanguageModel(modelId),
-      system:
-        "Tu es Quizzly. Génère uniquement un JSON valide avec un tableau questions[]. Chaque entrée: question, choices[4], answerIndex (0-3), explanation courte.",
-      prompt: `Matière: ${parsed.data.matiere}\nClasse: ${parsed.data.classe}\nDifficulté: ${parsed.data.difficulty}\nNombre: ${parsed.data.questionCount}`,
+    // we use a dummy user logic because getUser takes an email argument which we might not have in route
+    // but in a real scenario we'd use NextAuth
+    // const user = await getUser();
+
+    const { subject, grade, difficulty, count, modelId } = await req.json();
+
+    if (!subject || !grade || !difficulty || !count || !modelId) {
+      return new Response("Missing parameters", { status: 400 });
+    }
+
+    const model = myProvider.languageModel(modelId);
+
+    const prompt = `Tu es un professeur expert. Génère ${count} questions à choix multiples (QCM) pour la matière "${subject}", niveau "${grade}", avec une difficulté "${difficulty}".
+    Chaque question doit avoir 4 propositions, une seule bonne réponse, et une courte explication.`;
+
+    const { object } = await generateObject({
+      model,
+      schema: z.object({
+        questions: z.array(
+          z.object({
+            question: z.string().describe("La question posée"),
+            options: z.array(z.string()).length(4).describe("Les 4 choix possibles"),
+            correctAnswerIndex: z.number().min(0).max(3).describe("L'index de la bonne réponse (0 à 3)"),
+            explanation: z.string().describe("L'explication de la bonne réponse"),
+          })
+        ),
+      }),
+      prompt,
     });
 
-    return NextResponse.json({ modelId, raw: text });
-  } catch {
-    return NextResponse.json({ error: "Impossible de générer le quiz." }, { status: 500 });
+    return new Response(JSON.stringify(object), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+  } catch (error) {
+    console.error("Quiz generation error:", error);
+    return new Response("Internal server error", { status: 500 });
   }
 }
